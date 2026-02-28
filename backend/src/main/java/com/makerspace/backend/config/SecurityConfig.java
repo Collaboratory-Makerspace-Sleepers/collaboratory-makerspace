@@ -2,25 +2,39 @@ package com.makerspace.backend.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+//import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
-@EnableWebSecurity
+//@EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
+//    @Bean
+//    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+//        return http
+//                .authorizeHttpRequests(auth -> {
+//                    auth.requestMatchers("/").permitAll();
+//                    // auth.requestMatchers("/favicon.ico").permitAll();
+//                    auth.anyRequest().authenticated();
+//                })
+//                .oauth2Login(oauth2 -> oauth2
+//                        .defaultSuccessUrl("/", true))
+//                .oauth2ResourceServer(oauth2 -> oauth2.jwt(withDefaults()))
+//                .formLogin(withDefaults())
+//                .build();
+//    }
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http
-                .authorizeHttpRequests(auth -> {
-                    auth.requestMatchers("/").permitAll();
-                    auth.requestMatchers("/favicon.ico").permitAll();
-                    auth.anyRequest().authenticated();
-                })
-                .oauth2Login(oauth2 -> oauth2
-                        .defaultSuccessUrl("/secured", true))
-                .formLogin(withDefaults())
-                .build();
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+                .authorizeHttpRequests(authorize -> authorize
+                        .anyRequest().authenticated()
+                )
+                .oauth2Login(withDefaults())
+                .oauth2ResourceServer(jwt -> jwt.jwt(withDefaults()));
+        return http.build();
     }
+
 }

@@ -1,0 +1,85 @@
+package com.makerspace.backend.security;
+
+import com.makerspace.backend.config.security.UserPrincipal;
+import com.makerspace.backend.services.JwtService;
+import com.makerspace.backend.services.UserStateService;
+import com.makerspace.backend.services.UserStateService.State;
+import io.jsonwebtoken.Claims;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.lang.NonNull;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.util.List;
+
+@Component
+public class JwtAuthFilter extends OncePerRequestFilter {
+
+    private final JwtService jwtService;
+    private final UserStateService userStateService;
+
+    public JwtAuthFilter(JwtService jwtService, UserStateService userStateService) {
+        this.jwtService = jwtService;
+        this.userStateService = userStateService;
+    }
+
+    @Override
+    protected void doFilterInternal(@NonNull HttpServletRequest request,
+                                    @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain chain)
+            throws ServletException, IOException {
+
+        String token = extractBearerToken(request);
+
+        if (token == null || !jwtService.isValid(token)) {
+            chain.doFilter(request, response);
+            return;
+        }
+
+        Claims claims = jwtService.parseToken(token);
+        String email = claims.get("email", String.class);
+        String role = claims.get("role", String.class);
+
+        State state = userStateService.stateOf(email);
+
+        switch (state) {
+            case ACTIVE -> {
+                Long userId = Long.parseLong(claims.getSubject());
+                var principal = new UserPrincipal(
+                        userId,
+                        claims.getSubject(),
+                        email,
+                        List.of(UserPrincipal.roleAuthority(role)));
+                var auth = new UsernamePasswordAuthenticationToken(
+                        principal, null, principal.authorities());
+                SecurityContextHolder.getContext().setAuthentication(auth);
+                chain.doFilter(request, response);
+            }
+            case DELETED -> {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.setContentType("application/json");
+                response.getWriter().write(
+                        "{\"error\":\"account_closed\",\"message\":\"This account has been closed.\"}");
+            }
+            case NOT_FOUND -> {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\":\"unknown_user\"}");
+            }
+        }
+    }
+
+    private String extractBearerToken(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) {
+            return header.substring(7);
+        }
+        return null;
+    }
+}

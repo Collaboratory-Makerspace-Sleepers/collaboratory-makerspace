@@ -4,13 +4,14 @@ import com.makerspace.backend.model.Role;
 import com.makerspace.backend.model.User;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 public record UserAdminDTO(
         Long id,
         String email,
         String firstName,
         String lastName,
-        Role role,
+        Set<Role> roles,
         LocalDateTime createdAt,
         LocalDateTime deletedAt
 ) {
@@ -20,7 +21,7 @@ public record UserAdminDTO(
                 user.getEmail(),
                 user.getFirstName(),
                 user.getLastName(),
-                user.getRole(),
+                user.getRoles(),
                 user.getCreatedAt(),
                 user.getDeletedAt()
         );

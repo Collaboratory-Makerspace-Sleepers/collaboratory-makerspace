@@ -50,13 +50,13 @@ public class UserController {
     // -------------------------------------------------------------------------
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    @PreAuthorize("hasRole('STAFF')")
     public Page<UserAdminDTO> listUsers(@PageableDefault(size = 50) Pageable pageable) {
         return userService.findAllActive(pageable).map(UserAdminDTO::from);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN') or @userSecurity.isSelf(#id, authentication)")
+    @PreAuthorize("hasRole('STAFF') or @userSecurity.isSelf(#id, authentication)")
     public UserDTO getUser(@PathVariable Long id) {
         return UserDTO.from(userService.findById(id));
     }
@@ -69,7 +69,7 @@ public class UserController {
         if (currentUserId(auth).equals(id)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot change your own role");
         }
-        return UserDTO.from(userService.updateRole(id, req.role()));
+        return UserDTO.from(userService.updateRoles(id, req.roles()));
     }
 
     @DeleteMapping("/{id}")

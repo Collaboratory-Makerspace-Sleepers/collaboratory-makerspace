@@ -15,6 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Set;
+
 @Slf4j
 @Service
 public class UserService {
@@ -79,7 +81,7 @@ public class UserService {
     /**
      * Creates a new user from a verified OAuth identity.
      * Caller is responsible for calling resolve() first and only dispatching here
-     * on a NotFound result.
+     * on a NotFound result. New users start with an empty authority role set.
      */
     @Transactional
     public User provision(OAuthProfile profile) {
@@ -87,7 +89,6 @@ public class UserService {
         user.setEmail(profile.email());
         user.setFirstName(profile.firstName());
         user.setLastName(profile.lastName());
-        user.setRole(Role.MEMBER);
         return userRepository.save(user);
     }
 
@@ -99,13 +100,18 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    /**
+     * Replaces the authority role set for a user. Only authority roles
+     * (ADMIN, STAFF, INSTRUCTOR) should be passed; customer-type values
+     * must not be stored here.
+     */
     @Transactional
-    public User updateRole(Long id, Role newRole) {
+    public User updateRoles(Long id, Set<Role> newRoles) {
         User user = findById(id);
-        Role oldRole = user.getRole();
-        user.setRole(newRole);
+        Set<Role> oldRoles = user.getRoles();
+        user.setRoles(newRoles);
         User saved = userRepository.save(user);
-        log.info("Role change: user {} (id={}) changed from {} to {}", saved.getEmail(), id, oldRole, newRole);
+        log.info("Role change: user {} (id={}) changed from {} to {}", saved.getEmail(), id, oldRoles, newRoles);
         return saved;
     }
 
@@ -132,7 +138,7 @@ public class UserService {
     @Transactional
     public void softDeleteUser(Long id, Long actorId) {
         User user = findById(id);
-        if (user.getRole() == Role.ADMIN && countActiveAdmins() <= 1) {
+        if (user.getRoles().contains(Role.ADMIN) && countActiveAdmins() <= 1) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot delete the last admin");
         }
         log.info("User {} (id={}) soft-deleted by actor id={}", user.getEmail(), id, actorId);

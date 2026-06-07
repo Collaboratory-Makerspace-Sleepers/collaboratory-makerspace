@@ -20,5 +20,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query(value = "SELECT * FROM users WHERE id = :id", nativeQuery = true)
     Optional<User> findByIdIncludingDeleted(@Param("id") Long id);
 
-    long countByRole(Role role);
+    @Query("SELECT COUNT(u) FROM User u JOIN u.roles r WHERE r = :role")
+    long countByRole(@Param("role") Role role);
 }

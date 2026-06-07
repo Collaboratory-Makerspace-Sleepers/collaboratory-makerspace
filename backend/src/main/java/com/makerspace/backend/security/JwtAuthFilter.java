@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -44,18 +45,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         Claims claims = jwtService.parseToken(token);
         String email = claims.get("email", String.class);
-        String role = claims.get("role", String.class);
 
         State state = userStateService.stateOf(email);
 
         switch (state) {
             case ACTIVE -> {
                 Long userId = Long.parseLong(claims.getSubject());
-                var principal = new UserPrincipal(
-                        userId,
-                        claims.getSubject(),
-                        email,
-                        List.of(UserPrincipal.roleAuthority(role)));
+                List<?> rawRoles = claims.get("roles", List.class);
+                List<GrantedAuthority> authorities = rawRoles == null ? List.of() :
+                        rawRoles.stream()
+                                .map(r -> (GrantedAuthority) UserPrincipal.roleAuthority(r.toString()))
+                                .toList();
+                var principal = new UserPrincipal(userId, claims.getSubject(), email, authorities);
                 var auth = new UsernamePasswordAuthenticationToken(
                         principal, null, principal.authorities());
                 SecurityContextHolder.getContext().setAuthentication(auth);

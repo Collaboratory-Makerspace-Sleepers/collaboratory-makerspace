@@ -33,7 +33,7 @@ public class UserSecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(GET, "/api/users").hasAnyRole("STAFF", "ADMIN")
+                        .requestMatchers(GET, "/api/users").hasRole("STAFF")
                         .requestMatchers(PATCH, "/api/users/*/role").hasRole("ADMIN")
                         .requestMatchers(POST, "/api/users/*/restore").hasRole("ADMIN")
                         .anyRequest().authenticated()

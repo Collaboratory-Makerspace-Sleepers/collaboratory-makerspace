@@ -5,9 +5,10 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
-import org.springframework.data.annotation.CreatedDate;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 
 @Entity
@@ -28,8 +29,11 @@ public class User {
 
     private String lastName;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Enumerated(EnumType.STRING)
-    private Role role = Role.MEMBER;
+    @Column(name = "role")
+    private Set<Role> roles = new HashSet<>();
 
 //    @CreatedDate
     @Column(name = "created_at")
@@ -38,4 +42,3 @@ public class User {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt = null;
 }
-

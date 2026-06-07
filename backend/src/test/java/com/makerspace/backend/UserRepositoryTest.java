@@ -1,6 +1,5 @@
 package com.makerspace.backend;
 
-import com.makerspace.backend.model.Role;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.repository.UserRepository;
 import jakarta.persistence.EntityManager;
@@ -36,7 +35,6 @@ class UserRepositoryTest {
         user.setEmail(email);
         user.setFirstName("Test");
         user.setLastName("User");
-        user.setRole(Role.MEMBER);
         return userRepository.save(user);
     }
 
@@ -161,7 +159,6 @@ class UserRepositoryTest {
         duplicate.setEmail("reregister@test.com");
         duplicate.setFirstName("Same");
         duplicate.setLastName("Email");
-        duplicate.setRole(Role.MEMBER);
 
         assertThatThrownBy(() -> {
             userRepository.save(duplicate);

@@ -50,19 +50,19 @@ public class EquipmentController {
     * Admins and staff can create and update
     */
     @PostMapping
-    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    @PreAuthorize("hasRole('STAFF')")
     public Equipment create(@RequestBody Equipment equipment) {
         return equipmentService.create(equipment);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    @PreAuthorize("hasRole('STAFF')")
     public Equipment update(@PathVariable Long id, @RequestBody Equipment equipment) {
         return equipmentService.update(id, equipment);
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    @PreAuthorize("hasRole('STAFF')")
     public Equipment updateStatus(@PathVariable Long id,
                                   @RequestBody Map<String, String> body) {
         EquipmentStatus status = EquipmentStatus.valueOf(body.get("status"));

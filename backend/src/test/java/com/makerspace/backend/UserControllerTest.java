@@ -1,6 +1,7 @@
 package com.makerspace.backend;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.makerspace.backend.config.security.RoleHierarchyConfig;
 import com.makerspace.backend.config.security.UserPrincipal;
 import com.makerspace.backend.config.security.UserSecurity;
 import com.makerspace.backend.config.security.UserSecurityConfig;
@@ -32,6 +33,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -48,9 +50,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * with a real UserPrincipal, matching what JwtAuthFilter places on the SecurityContext
  * in production. This ensures isSelf() SpEL checks and currentUserId() behave the same
  * in tests as at runtime.
+ *
+ * SecurityConfig is imported to bring the RoleHierarchy bean into scope, so that
+ * ADMIN → STAFF and ADMIN → INSTRUCTOR hierarchy checks work in tests.
  */
 @WebMvcTest(UserController.class)
-@Import({UserSecurityConfig.class, UserSecurity.class})
+@Import({UserSecurityConfig.class, UserSecurity.class, RoleHierarchyConfig.class})
 class UserControllerTest {
 
     @TestConfiguration
@@ -74,14 +79,13 @@ class UserControllerTest {
         activeUser.setEmail("member@test.com");
         activeUser.setFirstName("Test");
         activeUser.setLastName("Member");
-        activeUser.setRole(Role.MEMBER);
 
         adminUser = new User();
         adminUser.setId(2L);
         adminUser.setEmail("admin@test.com");
         adminUser.setFirstName("Test");
         adminUser.setLastName("Admin");
-        adminUser.setRole(Role.ADMIN);
+        adminUser.setRoles(Set.of(Role.ADMIN));
     }
 
     /** Builds an Authentication with a UserPrincipal, matching production JwtAuthFilter output. */
@@ -105,8 +109,7 @@ class UserControllerTest {
                         .with(authentication(authFor(1L, "MEMBER"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.email").value("member@test.com"))
-                .andExpect(jsonPath("$.role").value("MEMBER"));
+                .andExpect(jsonPath("$.email").value("member@test.com"));
     }
 
     @Test
@@ -126,7 +129,6 @@ class UserControllerTest {
         updated.setEmail("member@test.com");
         updated.setFirstName("Jane");
         updated.setLastName("Doe");
-        updated.setRole(Role.MEMBER);
         when(userService.updateProfile(1L, "Jane", "Doe")).thenReturn(updated);
 
         mockMvc.perform(patch("/api/users/me")
@@ -175,6 +177,21 @@ class UserControllerTest {
 
         mockMvc.perform(get("/api/users")
                         .with(authentication(authFor(1L, "STAFF"))))
+                .andExpect(status().isOk());
+    }
+
+    // -------------------------------------------------------------------------
+    // Hierarchy acceptance tests — ADMIN implies STAFF (IUM-06/07/08)
+    // -------------------------------------------------------------------------
+
+    @Test
+    void listUsers_adminPassesStaffEndpoint_viaHierarchy() throws Exception {
+        // GET /api/users is guarded by hasRole('STAFF').
+        // ADMIN implies STAFF in the hierarchy, so an ADMIN-only principal must pass.
+        when(userService.findAllActive(any())).thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/api/users")
+                        .with(authentication(authFor(2L, "ADMIN"))))
                 .andExpect(status().isOk());
     }
 
@@ -228,22 +245,22 @@ class UserControllerTest {
         promoted.setEmail("member@test.com");
         promoted.setFirstName("Test");
         promoted.setLastName("Member");
-        promoted.setRole(Role.STAFF);
-        when(userService.updateRole(1L, Role.STAFF)).thenReturn(promoted);
+        promoted.setRoles(Set.of(Role.STAFF));
+        when(userService.updateRoles(1L, Set.of(Role.STAFF))).thenReturn(promoted);
 
         mockMvc.perform(patch("/api/users/1/role")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateRoleRequest(Role.STAFF)))
+                        .content(objectMapper.writeValueAsString(new UpdateRoleRequest(Set.of(Role.STAFF))))
                         .with(authentication(authFor(2L, "ADMIN"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.role").value("STAFF"));
+                .andExpect(jsonPath("$.roles[0]").value("STAFF"));
     }
 
     @Test
     void updateRole_selfChange_returns400() throws Exception {
         mockMvc.perform(patch("/api/users/2/role")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateRoleRequest(Role.MEMBER)))
+                        .content(objectMapper.writeValueAsString(new UpdateRoleRequest(Set.of(Role.STAFF))))
                         .with(authentication(authFor(2L, "ADMIN"))))
                 .andExpect(status().isBadRequest());
     }
@@ -252,7 +269,7 @@ class UserControllerTest {
     void updateRole_asMember_returns403() throws Exception {
         mockMvc.perform(patch("/api/users/2/role")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateRoleRequest(Role.STAFF)))
+                        .content(objectMapper.writeValueAsString(new UpdateRoleRequest(Set.of(Role.STAFF))))
                         .with(authentication(authFor(1L, "MEMBER"))))
                 .andExpect(status().isForbidden());
     }

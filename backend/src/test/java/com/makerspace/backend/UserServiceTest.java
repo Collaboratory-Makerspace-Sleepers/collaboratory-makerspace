@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -41,7 +42,12 @@ class UserServiceTest {
         user.setEmail(email);
         user.setFirstName("Test");
         user.setLastName("User");
-        user.setRole(Role.MEMBER);
+        return user;
+    }
+
+    private User makeAdminUser(String email) {
+        User user = makeUser(email);
+        user.setRoles(Set.of(Role.ADMIN));
         return user;
     }
 
@@ -73,17 +79,17 @@ class UserServiceTest {
         assertThat(result.getEmail()).isEqualTo("new@test.com");
         assertThat(result.getFirstName()).isEqualTo("New");
         assertThat(result.getLastName()).isEqualTo("Person");
-        assertThat(result.getRole()).isEqualTo(Role.MEMBER);
+        assertThat(result.getRoles()).isEmpty();
         verify(userRepository).save(any(User.class));
     }
 
     @Test
-    void provision_assignsMemberRole_toNewUser() {
+    void provision_newUser_hasNoAuthorityRoles() {
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
         User result = userService.provision(makeProfile("member@test.com", "Member", "User"));
 
-        assertThat(result.getRole()).isEqualTo(Role.MEMBER);
+        assertThat(result.getRoles()).isEmpty();
     }
 
     /**
@@ -136,18 +142,29 @@ class UserServiceTest {
         verify(userRepository).save(user);
     }
 
-    // --- updateRole ---
+    // --- updateRoles ---
 
     @Test
-    void updateRole_changesRoleAndSaves() {
+    void updateRoles_replacesRoleSetAndSaves() {
         User user = makeUser("role@test.com");
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        User result = userService.updateRole(1L, Role.STAFF);
+        User result = userService.updateRoles(1L, Set.of(Role.STAFF));
 
-        assertThat(result.getRole()).isEqualTo(Role.STAFF);
+        assertThat(result.getRoles()).containsExactly(Role.STAFF);
         verify(userRepository).save(user);
+    }
+
+    @Test
+    void updateRoles_canGrantMultipleRoles() {
+        User user = makeUser("multi@test.com");
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        User result = userService.updateRoles(1L, Set.of(Role.STAFF, Role.INSTRUCTOR));
+
+        assertThat(result.getRoles()).containsExactlyInAnyOrder(Role.STAFF, Role.INSTRUCTOR);
     }
 
     // --- restore ---
@@ -181,6 +198,29 @@ class UserServiceTest {
         when(userRepository.countByRole(Role.ADMIN)).thenReturn(3L);
 
         assertThat(userService.countActiveAdmins()).isEqualTo(3L);
+    }
+
+    // --- softDeleteUser last-admin guard ---
+
+    @Test
+    void softDeleteUser_blocksLastAdmin() {
+        User admin = makeAdminUser("admin@test.com");
+        when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
+        when(userRepository.countByRole(Role.ADMIN)).thenReturn(1L);
+
+        assertThatThrownBy(() -> userService.softDeleteUser(1L, 99L))
+                .hasMessageContaining("Cannot delete the last admin");
+    }
+
+    @Test
+    void softDeleteUser_allowsDeletionWhenMultipleAdmins() {
+        User admin = makeAdminUser("admin@test.com");
+        when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
+        when(userRepository.countByRole(Role.ADMIN)).thenReturn(2L);
+
+        userService.softDeleteUser(1L, 99L);
+
+        verify(userRepository).delete(admin);
     }
 
     // --- findAllActive (paginated) ---

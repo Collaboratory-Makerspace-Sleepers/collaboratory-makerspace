@@ -7,8 +7,6 @@ import com.makerspace.backend.services.UserStateService;
 import com.makerspace.backend.services.UserStateService.State;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,6 +15,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -43,11 +43,11 @@ class JwtAuthFilterTest {
         return req;
     }
 
-    private void stubValidToken(String token, String email, String role) {
+    /** Stubs the parts of the JWT validation common to all active-path tests. */
+    private void stubTokenParseable(String token, String email) {
         when(jwtService.isValid(token)).thenReturn(true);
         when(jwtService.parseToken(token)).thenReturn(claims);
         when(claims.get("email", String.class)).thenReturn(email);
-        when(claims.get("role", String.class)).thenReturn(role);
     }
 
     // --- No token / invalid token ---
@@ -79,8 +79,9 @@ class JwtAuthFilterTest {
 
     @Test
     void validToken_activeUser_populatesSecurityContext() throws Exception {
-        stubValidToken("valid.token", "active@test.com", "MEMBER");
+        stubTokenParseable("valid.token", "active@test.com");
         when(claims.getSubject()).thenReturn("42");
+        when(claims.get("roles", List.class)).thenReturn(List.of());
         when(userStateService.stateOf("active@test.com")).thenReturn(State.ACTIVE);
 
         MockHttpServletRequest req = requestWithToken("valid.token");
@@ -99,7 +100,7 @@ class JwtAuthFilterTest {
 
     @Test
     void validToken_deletedUser_returns403_andDoesNotContinueChain() throws Exception {
-        stubValidToken("valid.token", "deleted@test.com", "MEMBER");
+        stubTokenParseable("valid.token", "deleted@test.com");
         when(userStateService.stateOf("deleted@test.com")).thenReturn(State.DELETED);
 
         MockHttpServletRequest req = requestWithToken("valid.token");
@@ -117,7 +118,7 @@ class JwtAuthFilterTest {
 
     @Test
     void validToken_unknownUser_returns401_andDoesNotContinueChain() throws Exception {
-        stubValidToken("valid.token", "ghost@test.com", "MEMBER");
+        stubTokenParseable("valid.token", "ghost@test.com");
         when(userStateService.stateOf("ghost@test.com")).thenReturn(State.NOT_FOUND);
 
         MockHttpServletRequest req = requestWithToken("valid.token");
@@ -130,12 +131,13 @@ class JwtAuthFilterTest {
         assertThat(res.getContentAsString()).contains("unknown_user");
     }
 
-    // --- Role authority ---
+    // --- Role authorities ---
 
     @Test
     void validToken_activeAdminUser_setsAdminAuthority() throws Exception {
-        stubValidToken("admin.token", "admin@test.com", "ADMIN");
+        stubTokenParseable("admin.token", "admin@test.com");
         when(claims.getSubject()).thenReturn("42");
+        when(claims.get("roles", List.class)).thenReturn(List.of("ADMIN"));
         when(userStateService.stateOf("admin@test.com")).thenReturn(State.ACTIVE);
 
         MockHttpServletRequest req = requestWithToken("admin.token");
@@ -145,5 +147,38 @@ class JwtAuthFilterTest {
 
         var authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities();
         assertThat(authorities).extracting(Object::toString).containsExactly("ROLE_ADMIN");
+    }
+
+    @Test
+    void validToken_multiRoleUser_setsAllAuthorities() throws Exception {
+        stubTokenParseable("multi.token", "multi@test.com");
+        when(claims.getSubject()).thenReturn("7");
+        when(claims.get("roles", List.class)).thenReturn(List.of("STAFF", "INSTRUCTOR"));
+        when(userStateService.stateOf("multi@test.com")).thenReturn(State.ACTIVE);
+
+        MockHttpServletRequest req = requestWithToken("multi.token");
+        MockHttpServletResponse res = new MockHttpServletResponse();
+
+        filter.doFilter(req, res, chain);
+
+        var authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities();
+        assertThat(authorities).extracting(Object::toString)
+                .containsExactlyInAnyOrder("ROLE_STAFF", "ROLE_INSTRUCTOR");
+    }
+
+    @Test
+    void validToken_noRoles_setsEmptyAuthorities() throws Exception {
+        stubTokenParseable("norole.token", "norole@test.com");
+        when(claims.getSubject()).thenReturn("8");
+        when(claims.get("roles", List.class)).thenReturn(List.of());
+        when(userStateService.stateOf("norole@test.com")).thenReturn(State.ACTIVE);
+
+        MockHttpServletRequest req = requestWithToken("norole.token");
+        MockHttpServletResponse res = new MockHttpServletResponse();
+
+        filter.doFilter(req, res, chain);
+
+        var authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities();
+        assertThat(authorities).isEmpty();
     }
 }

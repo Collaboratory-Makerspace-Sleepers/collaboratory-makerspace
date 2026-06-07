@@ -1,6 +1,5 @@
 package com.makerspace.backend;
 
-import com.makerspace.backend.model.Role;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.repository.UserRepository;
 import com.makerspace.backend.services.UserStateService;
@@ -31,7 +30,6 @@ class UserStateServiceTest {
         user.setEmail(email);
         user.setFirstName("Test");
         user.setLastName("User");
-        user.setRole(Role.MEMBER);
         // deletedAt defaults to null
         return user;
     }

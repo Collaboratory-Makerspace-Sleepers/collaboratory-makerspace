@@ -33,8 +33,6 @@ class UserRepositoryTest {
     private User createUser(String email) {
         User user = new User();
         user.setEmail(email);
-        user.setFirstName("Test");
-        user.setLastName("User");
         return userRepository.save(user);
     }
 
@@ -157,8 +155,6 @@ class UserRepositoryTest {
 
         User duplicate = new User();
         duplicate.setEmail("reregister@test.com");
-        duplicate.setFirstName("Same");
-        duplicate.setLastName("Email");
 
         assertThatThrownBy(() -> {
             userRepository.save(duplicate);

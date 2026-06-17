@@ -2,6 +2,7 @@ package com.makerspace.backend.controller.dto;
 
 import com.makerspace.backend.model.Role;
 import com.makerspace.backend.model.User;
+import com.makerspace.backend.model.UserProfile;
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -16,11 +17,12 @@ public record UserAdminDTO(
         LocalDateTime deletedAt
 ) {
     public static UserAdminDTO from(User user) {
+        UserProfile profile = user.getProfile();
         return new UserAdminDTO(
                 user.getId(),
                 user.getEmail(),
-                user.getFirstName(),
-                user.getLastName(),
+                profile != null ? profile.getFirstName() : null,
+                profile != null ? profile.getLastName() : null,
                 user.getRoles(),
                 user.getCreatedAt(),
                 user.getDeletedAt()

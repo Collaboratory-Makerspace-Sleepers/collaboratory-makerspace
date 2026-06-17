@@ -10,6 +10,7 @@ import com.makerspace.backend.controller.dto.UpdateProfileRequest;
 import com.makerspace.backend.controller.dto.UpdateRoleRequest;
 import com.makerspace.backend.model.Role;
 import com.makerspace.backend.model.User;
+import com.makerspace.backend.model.UserProfile;
 import com.makerspace.backend.services.JwtService;
 import com.makerspace.backend.services.UserService;
 import com.makerspace.backend.services.UserStateService;
@@ -72,19 +73,21 @@ class UserControllerTest {
     private User activeUser;
     private User adminUser;
 
+    private static User makeUser(Long id, String email, String firstName, String lastName) {
+        UserProfile profile = new UserProfile();
+        profile.setFirstName(firstName);
+        profile.setLastName(lastName);
+        User user = new User();
+        user.setId(id);
+        user.setEmail(email);
+        user.setProfile(profile);
+        return user;
+    }
+
     @BeforeEach
     void setUp() {
-        activeUser = new User();
-        activeUser.setId(1L);
-        activeUser.setEmail("member@test.com");
-        activeUser.setFirstName("Test");
-        activeUser.setLastName("Member");
-
-        adminUser = new User();
-        adminUser.setId(2L);
-        adminUser.setEmail("admin@test.com");
-        adminUser.setFirstName("Test");
-        adminUser.setLastName("Admin");
+        activeUser = makeUser(1L, "member@test.com", "Test", "Member");
+        adminUser  = makeUser(2L, "admin@test.com",  "Test", "Admin");
         adminUser.setRoles(Set.of(Role.ADMIN));
     }
 
@@ -124,11 +127,7 @@ class UserControllerTest {
 
     @Test
     void updateMe_validRequest_returnsUpdatedProfile() throws Exception {
-        User updated = new User();
-        updated.setId(1L);
-        updated.setEmail("member@test.com");
-        updated.setFirstName("Jane");
-        updated.setLastName("Doe");
+        User updated = makeUser(1L, "member@test.com", "Jane", "Doe");
         when(userService.updateProfile(1L, "Jane", "Doe")).thenReturn(updated);
 
         mockMvc.perform(patch("/api/users/me")
@@ -240,11 +239,7 @@ class UserControllerTest {
 
     @Test
     void updateRole_asAdmin_changesRole() throws Exception {
-        User promoted = new User();
-        promoted.setId(1L);
-        promoted.setEmail("member@test.com");
-        promoted.setFirstName("Test");
-        promoted.setLastName("Member");
+        User promoted = makeUser(1L, "member@test.com", "Test", "Member");
         promoted.setRoles(Set.of(Role.STAFF));
         when(userService.updateRoles(1L, Set.of(Role.STAFF))).thenReturn(promoted);
 

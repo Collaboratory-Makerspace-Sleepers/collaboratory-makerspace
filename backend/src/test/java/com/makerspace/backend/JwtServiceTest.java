@@ -2,6 +2,7 @@ package com.makerspace.backend;
 
 import com.makerspace.backend.model.Role;
 import com.makerspace.backend.model.User;
+import com.makerspace.backend.model.UserProfile;
 import com.makerspace.backend.services.JwtService;
 import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,12 +28,18 @@ class JwtServiceTest {
         ReflectionTestUtils.setField(jwtService, "expiration", 86400000L);
     }
 
+    private static final String TEST_AUTH0_SUBJECT = "google-oauth2|test123";
+
     private User makeUser(Long id, String email, Set<Role> roles) {
+        UserProfile profile = new UserProfile();
+        profile.setFirstName("Test");
+        profile.setLastName("User");
+
         User user = new User();
         user.setId(id);
         user.setEmail(email);
-        user.setFirstName("Test");
-        user.setLastName("User");
+        user.setAuth0Subject(TEST_AUTH0_SUBJECT);
+        user.setProfile(profile);
         user.setRoles(roles);
         return user;
     }
@@ -40,14 +47,14 @@ class JwtServiceTest {
     @Test
     void generatedTokenIsValid() {
         User user = makeUser(1L, "staff@test.com", Set.of(Role.STAFF));
-        String token = jwtService.generateToken(user);
+        String token = jwtService.generateToken(user, TEST_AUTH0_SUBJECT);
         assertThat(jwtService.isValid(token)).isTrue();
     }
 
     @Test
     void parsedTokenHasCorrectClaims() {
         User user = makeUser(42L, "staff@test.com", Set.of(Role.STAFF));
-        String token = jwtService.generateToken(user);
+        String token = jwtService.generateToken(user, TEST_AUTH0_SUBJECT);
 
         Claims claims = jwtService.parseToken(token);
         assertThat(claims.getSubject()).isEqualTo("42");
@@ -58,7 +65,7 @@ class JwtServiceTest {
     @Test
     void parsedToken_multipleRoles_containsAllRoles() {
         User user = makeUser(7L, "admin@test.com", Set.of(Role.ADMIN, Role.INSTRUCTOR));
-        String token = jwtService.generateToken(user);
+        String token = jwtService.generateToken(user, TEST_AUTH0_SUBJECT);
 
         Claims claims = jwtService.parseToken(token);
         assertThat(claims.get("roles", List.class))
@@ -68,7 +75,7 @@ class JwtServiceTest {
     @Test
     void parsedToken_noRoles_containsEmptyList() {
         User user = makeUser(3L, "user@test.com", Set.of());
-        String token = jwtService.generateToken(user);
+        String token = jwtService.generateToken(user, TEST_AUTH0_SUBJECT);
 
         Claims claims = jwtService.parseToken(token);
         assertThat(claims.get("roles", List.class)).isEmpty();
@@ -77,7 +84,7 @@ class JwtServiceTest {
     @Test
     void tamperedTokenIsInvalid() {
         User user = makeUser(1L, "user@test.com", Set.of());
-        String token = jwtService.generateToken(user);
+        String token = jwtService.generateToken(user, TEST_AUTH0_SUBJECT);
         String tampered = token.substring(0, token.length() - 5) + "XXXXX";
         assertThat(jwtService.isValid(tampered)).isFalse();
     }

@@ -45,18 +45,25 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         Claims claims = jwtService.parseToken(token);
         String email = claims.get("email", String.class);
+        String auth0Subject = claims.get("auth0Subject", String.class);
 
         State state = userStateService.stateOf(email);
 
         switch (state) {
-            case ACTIVE -> {
+            case ACTIVE, PENDING -> {
                 Long userId = Long.parseLong(claims.getSubject());
                 List<?> rawRoles = claims.get("roles", List.class);
                 List<GrantedAuthority> authorities = rawRoles == null ? List.of() :
                         rawRoles.stream()
                                 .map(r -> (GrantedAuthority) UserPrincipal.roleAuthority(r.toString()))
                                 .toList();
-                var principal = new UserPrincipal(userId, claims.getSubject(), email, authorities);
+                // PENDING accounts carry no roles from DB but may have ROLE_PENDING from the JWT.
+                // If the JWT roles list is empty for a PENDING account, add ROLE_PENDING so
+                // Spring Security allows access only to /claim and /me.
+                List<GrantedAuthority> effectiveAuthorities = (state == State.PENDING && authorities.isEmpty())
+                        ? List.of(UserPrincipal.roleAuthority("PENDING"))
+                        : authorities;
+                var principal = new UserPrincipal(userId, auth0Subject, email, effectiveAuthorities);
                 var auth = new UsernamePasswordAuthenticationToken(
                         principal, null, principal.authorities());
                 SecurityContextHolder.getContext().setAuthentication(auth);

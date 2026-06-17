@@ -28,8 +28,6 @@ class UserStateServiceTest {
     private User activeUser(String email) {
         User user = new User();
         user.setEmail(email);
-        user.setFirstName("Test");
-        user.setLastName("User");
         // deletedAt defaults to null
         return user;
     }

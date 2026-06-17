@@ -22,7 +22,7 @@ public record UserPrincipal(Long userId, String auth0Subject, String email, Coll
                          String email,
                          Collection<GrantedAuthority> authorities) {
         this.userId = Objects.requireNonNull(userId, "userId");
-        this.auth0Subject = Objects.requireNonNull(auth0Subject, "auth0Subject");
+        this.auth0Subject = auth0Subject; // nullable — null for tokens issued before auth0Subject was added
         this.email = email;
         this.authorities = authorities == null
                 ? Collections.emptyList()

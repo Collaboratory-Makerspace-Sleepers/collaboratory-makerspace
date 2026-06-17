@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -51,6 +52,21 @@ public class SecurityConfig {
         return http.build();
 
     }
+    // Registration — pre-register (STAFF+) and claim (any authenticated incl. ROLE_PENDING)
+    @Bean
+    @Order(2)
+    public SecurityFilterChain registrationChain(HttpSecurity http) throws Exception {
+        applySharedConfig(http)
+                .securityMatcher("/api/admin/registrations/**", "/api/registrations/**")
+                .authorizeHttpRequests(reg -> reg
+                        .requestMatchers(HttpMethod.POST, "/api/admin/registrations/**").hasRole("STAFF")
+                        // /claim is reachable by ROLE_PENDING so pre-registered users can activate.
+                        .requestMatchers(HttpMethod.POST, "/api/registrations/claim").authenticated()
+                        .anyRequest().hasRole("STAFF")
+                );
+        return http.build();
+    }
+
     // Fallback — catches anything not claimed by a module chain
     @Bean
     @Order(100)

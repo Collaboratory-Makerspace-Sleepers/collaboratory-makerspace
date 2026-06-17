@@ -5,6 +5,7 @@ import com.makerspace.backend.model.User;
 import com.makerspace.backend.model.UserResolution;
 import com.makerspace.backend.services.JwtService;
 import com.makerspace.backend.services.UserService;
+import com.makerspace.backend.services.UserStateService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,10 +26,16 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     private UserService userService;
 
     @Autowired
+    private UserStateService userStateService;
+
+    @Autowired
     private JwtService jwtService;
 
     @Value("${app.frontend.url:http://localhost:5173}")
     private String frontendUrl;
+
+    @Value("${registration.require-explicit-claim:false}")
+    private boolean requireExplicitClaim;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -46,11 +53,30 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         switch (resolution) {
             case UserResolution.Active active ->
-                    issueTokenAndRedirect(active.user(), response);
+                    issueTokenAndRedirect(active.user(), profile.subject(), response);
+
+            case UserResolution.Pending pending -> {
+                try {
+                    if (requireExplicitClaim) {
+                        // Issue a restricted ROLE_PENDING token; account activates on /claim.
+                        issueTokenAndRedirect(pending.user(), profile.subject(), response);
+                    } else {
+                        // Auto-claim: link the Auth0 subject and flip the account to ACTIVE.
+                        User activated = userStateService.autoClaimByEmail(
+                                pending.user().getId(), profile.subject());
+                        issueTokenAndRedirect(activated, profile.subject(), response);
+                    }
+                } catch (Exception e) {
+                    response.sendRedirect(frontendUrl + "/login?error=server");
+                }
+            }
 
             case UserResolution.NotFound notFound -> {
+                // DECISION: self-provision as GUEST so staff can log in without pre-registration.
+                // To require admin-initiated accounts instead, replace with a redirect to an error page.
                 try {
-                    issueTokenAndRedirect(userService.provision(notFound.profile()), response);
+                    User provisioned = userService.provision(notFound.profile());
+                    issueTokenAndRedirect(provisioned, profile.subject(), response);
                 } catch (Exception e) {
                     response.sendRedirect(frontendUrl + "/login?error=server");
                 }
@@ -61,8 +87,9 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         }
     }
 
-    private void issueTokenAndRedirect(User user, HttpServletResponse response) throws IOException {
-        String token = jwtService.generateToken(user);
+    private void issueTokenAndRedirect(User user, String auth0Subject, HttpServletResponse response)
+            throws IOException {
+        String token = jwtService.generateToken(user, auth0Subject);
 
         Cookie cookie = new Cookie("access_token", token);
         cookie.setHttpOnly(true);

@@ -1,8 +1,10 @@
 package com.makerspace.backend.services;
 
 import com.makerspace.backend.config.security.OAuthProfile;
+import com.makerspace.backend.model.AccountStatus;
 import com.makerspace.backend.model.Role;
 import com.makerspace.backend.model.User;
+import com.makerspace.backend.model.UserProfile;
 import com.makerspace.backend.model.UserResolution;
 import com.makerspace.backend.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -33,8 +35,12 @@ public class UserService {
 
     public User findUser(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "User not found"));
+                .orElseThrow(() -> {
+                    boolean deleted = userRepository.findByEmailIncludingDeleted(email).isPresent();
+                    return new ResponseStatusException(
+                            deleted ? HttpStatus.GONE : HttpStatus.NOT_FOUND,
+                            deleted ? "User account has been deleted" : "User not found");
+                });
     }
 
     public User findById(Long id) {
@@ -64,14 +70,29 @@ public class UserService {
     /**
      * Resolves a verified OAuth identity to a user state.
      * Read-only — does not mutate. Caller decides what to do with the result.
+     *
+     * Resolution order:
+     * 1. Exact auth0Subject match — returning active/deleted user.
+     * 2. Email match — pre-registered (Pending) or active user waiting to be linked.
+     * 3. No match — NotFound (caller provisions a new GUEST or rejects).
      */
     @Transactional(readOnly = true)
     public UserResolution resolve(OAuthProfile profile) {
-        return userRepository.findByEmailIncludingDeleted(profile.email())
-                .map(user -> user.getDeletedAt() == null
-                        ? (UserResolution) new UserResolution.Active(user)
-                        : new UserResolution.Deleted(user.getId(), user.getDeletedAt()))
-                .orElseGet(() -> new UserResolution.NotFound(profile));
+        // 1. Exact subject match (fast path for returning users).
+        return userRepository.findByAuth0Subject(profile.subject())
+                .map(user -> user.getDeletedAt() != null
+                        ? (UserResolution) new UserResolution.Deleted(user.getId(), user.getDeletedAt())
+                        : new UserResolution.Active(user))
+                // 2. Email match — handle pre-registered and already-active accounts.
+                .orElseGet(() -> userRepository.findByEmailIncludingDeleted(profile.email())
+                        .map(user -> {
+                            if (user.getDeletedAt() != null)
+                                return (UserResolution) new UserResolution.Deleted(user.getId(), user.getDeletedAt());
+                            if (user.getAccountStatus() == AccountStatus.PRE_REGISTERED)
+                                return new UserResolution.Pending(user);
+                            return new UserResolution.Active(user);
+                        })
+                        .orElseGet(() -> new UserResolution.NotFound(profile)));
     }
 
     // -------------------------------------------------------------------------
@@ -84,19 +105,29 @@ public class UserService {
      * on a NotFound result. New users start with an empty authority role set.
      */
     @Transactional
-    public User provision(OAuthProfile profile) {
+    public User provision(OAuthProfile oAuthProfile) {
+        UserProfile profile = new UserProfile();
+        profile.setFirstName(oAuthProfile.firstName());
+        profile.setLastName(oAuthProfile.lastName());
+
         User user = new User();
-        user.setEmail(profile.email());
-        user.setFirstName(profile.firstName());
-        user.setLastName(profile.lastName());
+        user.setEmail(oAuthProfile.email());
+        user.setAuth0Subject(oAuthProfile.subject());
+        user.setAccountStatus(AccountStatus.ACTIVE);
+        user.setProfile(profile);
         return userRepository.save(user);
     }
 
     @Transactional
     public User updateProfile(Long id, String firstName, String lastName) {
         User user = findById(id);
-        user.setFirstName(firstName);
-        user.setLastName(lastName);
+        UserProfile profile = user.getProfile();
+        if (profile == null) {
+            profile = new UserProfile();
+            user.setProfile(profile);
+        }
+        profile.setFirstName(firstName);
+        profile.setLastName(lastName);
         return userRepository.save(user);
     }
 

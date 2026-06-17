@@ -3,6 +3,7 @@ package com.makerspace.backend;
 import com.makerspace.backend.config.security.OAuthProfile;
 import com.makerspace.backend.model.Role;
 import com.makerspace.backend.model.User;
+import com.makerspace.backend.model.UserProfile;
 import com.makerspace.backend.repository.UserRepository;
 import com.makerspace.backend.services.UserService;
 import com.makerspace.backend.services.UserStateService;
@@ -37,11 +38,13 @@ class UserServiceTest {
     private UserService userService;
 
     private User makeUser(String email) {
+        UserProfile profile = new UserProfile();
+        profile.setFirstName("Test");
+        profile.setLastName("User");
         User user = new User();
         user.setId(1L);
         user.setEmail(email);
-        user.setFirstName("Test");
-        user.setLastName("User");
+        user.setProfile(profile);
         return user;
     }
 
@@ -77,8 +80,8 @@ class UserServiceTest {
         User result = userService.provision(makeProfile("new@test.com", "New", "Person"));
 
         assertThat(result.getEmail()).isEqualTo("new@test.com");
-        assertThat(result.getFirstName()).isEqualTo("New");
-        assertThat(result.getLastName()).isEqualTo("Person");
+        assertThat(result.getProfile().getFirstName()).isEqualTo("New");
+        assertThat(result.getProfile().getLastName()).isEqualTo("Person");
         assertThat(result.getRoles()).isEmpty();
         verify(userRepository).save(any(User.class));
     }
@@ -137,8 +140,8 @@ class UserServiceTest {
 
         User result = userService.updateProfile(1L, "Updated", "Name");
 
-        assertThat(result.getFirstName()).isEqualTo("Updated");
-        assertThat(result.getLastName()).isEqualTo("Name");
+        assertThat(result.getProfile().getFirstName()).isEqualTo("Updated");
+        assertThat(result.getProfile().getLastName()).isEqualTo("Name");
         verify(userRepository).save(user);
     }
 

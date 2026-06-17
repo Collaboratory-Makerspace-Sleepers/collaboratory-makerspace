@@ -27,7 +27,14 @@ public class JwtService {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateToken(User user) {
+    /**
+     * Generates an internal JWT for the given user.
+     *
+     * @param user           the user to issue the token for
+     * @param auth0Subject   the Auth0 subject claim from the OidcUser (may differ from
+     *                       user.getAuth0Subject() for PRE_REGISTERED accounts not yet linked in DB)
+     */
+    public String generateToken(User user, String auth0Subject) {
         List<String> roleNames = user.getRoles().stream()
                 .map(Role::name)
                 .toList();
@@ -35,6 +42,7 @@ public class JwtService {
                 .subject(user.getId().toString())
                 .claim("email", user.getEmail())
                 .claim("roles", roleNames)
+                .claim("auth0Subject", auth0Subject)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSignInKey())

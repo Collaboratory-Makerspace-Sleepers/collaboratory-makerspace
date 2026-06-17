@@ -48,6 +48,7 @@ class JwtAuthFilterTest {
         when(jwtService.isValid(token)).thenReturn(true);
         when(jwtService.parseToken(token)).thenReturn(claims);
         when(claims.get("email", String.class)).thenReturn(email);
+        when(claims.get("auth0Subject", String.class)).thenReturn("google-oauth2|test-subject");
     }
 
     // --- No token / invalid token ---

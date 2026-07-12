@@ -36,4 +36,13 @@ public class EquipmentReservation {
     @Column(name = "end_time", nullable = false)
     private ZonedDateTime endTime;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ReservationStatus status = ReservationStatus.ACTIVE;
+
+    @Column(name = "cancelled_at")
+    private ZonedDateTime cancelledAt;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private ZonedDateTime createdAt = ZonedDateTime.now();
 }

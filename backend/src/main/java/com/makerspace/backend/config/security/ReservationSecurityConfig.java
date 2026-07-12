@@ -35,7 +35,7 @@ public class ReservationSecurityConfig {
                         .requestMatchers(POST, "/api/reservations").authenticated()
                         .requestMatchers(GET, "/api/reservations/me/**").authenticated()
                         .requestMatchers(PATCH, "/api/reservations/{id}/extend").hasRole("STAFF")
-                        .requestMatchers(PATCH, "/api/reservations/{id}/cancel").hasRole("STAFF")
+                        .requestMatchers(PATCH, "/api/reservations/{id}/cancel").authenticated()
                         .requestMatchers(PATCH, "/api/equipment/{id}/status").hasRole("STAFF")
                         .requestMatchers("/api/reservations/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()

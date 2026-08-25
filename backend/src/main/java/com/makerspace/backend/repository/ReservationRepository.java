@@ -4,6 +4,7 @@ import com.makerspace.backend.model.EquipmentReservation;
 import com.makerspace.backend.model.ReservationStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,10 +16,13 @@ import java.util.List;
 @Repository
 public interface ReservationRepository extends JpaRepository<EquipmentReservation, Long> {
 
+    @EntityGraph(attributePaths = {"equipment"})
     List<EquipmentReservation> findByUserIdOrderByStartTimeDesc(Long userId);
 
+    @EntityGraph(attributePaths = {"equipment"})
     Page<EquipmentReservation> findAllByOrderByStartTimeDesc(Pageable pageable);
 
+    @EntityGraph(attributePaths = {"equipment"})
     List<EquipmentReservation> findByEquipmentIdOrderByStartTimeDesc(Long equipmentId);
 
     /**

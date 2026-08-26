@@ -1,5 +1,6 @@
 # docker compose file for postgres testing in pg admin, see db setup notes
 services:
+# postgres db service info
   postgres:
     image: postgres:15
     container_name: makerspace-postgres
@@ -12,7 +13,8 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
+# pg admin service and login information
+# depends on postgres to ensure it starts correctly
   pgadmin:
     image: dpage/pgadmin4
     container_name: makerspace-pgadmin

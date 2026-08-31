@@ -159,6 +159,7 @@ public class ReservationService {
 
     private boolean isStaffOrAdmin(UserPrincipal principal) {
         return principal.authorities().stream().anyMatch(a ->
-                a.getAuthority().equals("ROLE_STAFF") || a.getAuthority().equals("ROLE_ADMIN"));
+                a.equals(UserPrincipal.roleAuthority(Role.STAFF.name())) ||
+                a.equals(UserPrincipal.roleAuthority(Role.ADMIN.name())));
     }
 }

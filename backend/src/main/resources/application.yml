@@ -1,0 +1,19 @@
+# spring boot app runs 8080(server port)
+# postgres runs on 5432 inside docker
+# postgres is on 5433 outside docker to avoid conflicts
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/collab_app
+    username: app_admin
+    password: admin123
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+server:
+  port: 8080

@@ -1,0 +1,29 @@
+For DB setup(local testing for now), I tested this already but 
+let me know if any of this stops working -- Sarina 
+Use the values provided
+
+
+Make sure docker desktop is running
+In Bash compose up -d 
+You will get an error if the port is in use
+
+go to localhost:5050/browser/
+login 
+admin@local.com
+admin123
+
+Server -> Register Server
+
+General Tab
+Name: Local PostgreSQL
+
+Connection Tab
+Host: postgres
+port: 5432
+username: app_admin
+password: admin123
+database: collab_app
+Save
+
+Go to the query tab, select existing server
+paste in the init script I have provided, then the schema script, and finally the test data

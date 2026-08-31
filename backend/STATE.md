@@ -1,6 +1,6 @@
 # Backend Application State
 
-_Last updated: 2026-05-17 (all tests passing)_
+_Last updated: 2026-08-31_
 
 ---
 
@@ -38,34 +38,58 @@ com.makerspace.backend
 │   └── security/
 │       ├── OAuthProfile.java           Record: email, firstName, lastName, subject (OIDC → app DTO)
 │       ├── ReservationSecurityConfig.java  Security chain (Order 2) for /api/reservations/**
+│       ├── RoleHierarchyConfig.java    RoleHierarchy bean: ADMIN → STAFF → INSTRUCTOR
 │       ├── UserPrincipal.java          Record: userId, auth0Subject, email, authorities — set on SecurityContext by JwtAuthFilter
 │       ├── UserSecurity.java           @Component("userSecurity") — isSelf(id, auth) for SpEL @PreAuthorize
 │       └── UserSecurityConfig.java     Security chain (Order 3) for /api/users/**
 ├── controller/
 │   ├── dto/
+│   │   ├── ClaimRequest.java           record: token, password
+│   │   ├── CreateReservationRequest.java record: equipmentId, startTime (@Future), endTime (@Future)
+│   │   ├── ExtendReservationRequest.java record: newEndTime (@Future)
+│   │   ├── PreRegisterRequest.java     record: email, firstName, lastName, roles
+│   │   ├── PreRegisterResponse.java    record: inviteId, email, claimToken, expiresAt
+│   │   ├── ReservationDTO.java         record + static from(EquipmentReservation)
 │   │   ├── UpdateProfileRequest.java   record: firstName, lastName (@NotBlank, @Size(max=100))
 │   │   ├── UpdateRoleRequest.java      record: role (@NotNull)
-│   │   ├── UserAdminDTO.java           record: id, email, firstName, lastName, role, createdAt, deletedAt
-│   │   └── UserDTO.java                record: id, email, firstName, lastName, role
+│   │   ├── UserAdminDTO.java           record: id, email, firstName, lastName, roles, createdAt, deletedAt
+│   │   └── UserDTO.java                record: id, email, firstName, lastName, roles
+│   ├── AdminRegistrationController.java  POST /api/admin/registrations (STAFF+)
 │   ├── EquipmentController.java        Full CRUD for equipment
+│   ├── RegistrationClaimController.java  POST /api/registrations/claim (authenticated incl. ROLE_PENDING)
+│   ├── ReservationController.java      7 endpoints: create, /me, /me/{id}, cancel, extend, /admin/all, /admin/equipment/{id}
 │   ├── TokenController.java            Cookie → Bearer token exchange (/api/auth/token)
 │   └── UserController.java             7 endpoints (see API section)
 ├── model/
+│   ├── AccountStatus.java              Enum: PENDING, ACTIVE, SUSPENDED
+│   ├── Address.java                    id, street, city, state, zip, country
 │   ├── Equipment.java                  id, name, description, category, imageUrl, status, createdAt
-│   ├── EquipmentReservation.java       id, user, equipment, startTime, endTime
+│   ├── EquipmentReservation.java       id, user (ManyToOne lazy), userId (read-only col), equipment (ManyToOne lazy), startTime, endTime, status, cancelledAt, createdAt
 │   ├── EquipmentStatus.java            Enum: AVAILABLE, IN_USE, MAINTENANCE, RETIRED
-│   ├── Role.java                       Enum: MEMBER, STAFF, ADMIN, GUEST, INSTRUCTOR, RENTEE, STUDENT
-│   ├── User.java                       id, email, firstName, lastName, role, createdAt, deletedAt
+│   ├── PhoneNumber.java                id, number, type
+│   ├── RegistrationInvite.java         id, email, token (hashed), expiresAt, claimedAt, createdByUserId
+│   ├── ReservationStatus.java          Enum: ACTIVE, CANCELLED, COMPLETED
+│   ├── Role.java                       Enum: MEMBER, STAFF, ADMIN, GUEST, INSTRUCTOR, RENTEE, STUDENT; isAuthorityRole()
+│   ├── User.java                       id, email, firstName, lastName, Set<Role> userRoles, createdAt, deletedAt
+│   ├── UserProfile.java                id, userId, bio, address, phoneNumbers
 │   └── UserResolution.java             Sealed interface: Active(user) | Deleted(id, deletedOn) | NotFound(profile)
 ├── repository/
 │   ├── EquipmentRepository.java        findByStatus, findByCategory, findByNameContainingIgnoreCase
-│   └── UserRepository.java             findByEmail, findByEmailIncludingDeleted, findByIdIncludingDeleted (native), countByRole
+│   ├── RegistrationInviteRepository.java  findByToken, findByEmail, existsByEmailAndClaimedAtIsNull
+│   ├── ReservationRepository.java      findByUserIdOrderByStartTimeDesc (@EntityGraph), findAllByOrderByStartTimeDesc (@EntityGraph), findByEquipmentIdOrderByStartTimeDesc (@EntityGraph), findOverlapping (JPQL overlap query)
+│   └── UserRepository.java             findByEmail, findByEmailIncludingDeleted, findByIdIncludingDeleted (native), countByRole, existsByEmailIncludingDeleted
 ├── security/
-│   ├── JwtAuthFilter.java              Per-request JWT validation + soft-delete enforcement; sets UserPrincipal on SecurityContext
+│   ├── JwtAuthFilter.java              Per-request JWT validation + soft-delete enforcement; sets UserPrincipal on SecurityContext; reads roles list claim
 │   └── OAuth2SuccessHandler.java       OAuth2 success → provision user → set JWT cookie → redirect
 └── services/
+    ├── AccountClaimService.java        claim(token, password) → activates PENDING user; validates token, sets credentials, transitions AccountStatus
+    ├── AdminRegistrationService.java   preRegister(req, adminId) → creates RegistrationInvite, sends email; existsById guard
+    ├── EmailService.java               Interface: sendInvite(email, token)
     ├── EquipmentService.java           findAll, findById, findByStatus, findByCategory, search, create, update, updateStatus, delete
-    ├── JwtService.java                 generateToken, parseToken, isValid
+    ├── InviteTokenService.java         generate(), hash(), verify()
+    ├── JwtService.java                 generateToken (roles list claim), parseToken, isValid
+    ├── ReservationService.java         create (conflict + status check), findByUser, findById, findByIdForUser (ownership), extend (conflict check), cancel (ownership + status guard), findAll (paginated), findByEquipment
+    ├── StubEmailService.java           EmailService impl — logs to console, used in dev/test
     ├── UserService.java                findUser, findById, findAllActive(Pageable), resolve, provision, updateProfile, updateRole, softDelete (@CacheEvict), softDeleteUser (guard + evict), restore, countActiveAdmins
     └── UserStateService.java           stateOf(email) → ACTIVE|DELETED|NOT_FOUND, @Cacheable("userState"), evict(email)
 ```
@@ -83,7 +107,7 @@ com.makerspace.backend
       - Active → reuse existing user
       - NotFound → provision (INSERT)
       - Deleted → redirect to /account-closed, no JWT issued
-   c. Generates JWT via JwtService.generateToken(user) [sub=userId, email, role, exp=1h]
+   c. Generates JWT via JwtService.generateToken(user) [sub=userId, email, roles (list), exp=1h]
    d. Sets JWT in HttpOnly Secure cookie (access_token, maxAge=1h, SameSite=Lax)
    e. Redirects to {frontend}/oauth-callback
 4. Frontend calls GET /api/auth/token
@@ -107,7 +131,7 @@ After JWT validation, `JwtAuthFilter` places a `UserPrincipal` record on the `Se
 - `userId` (Long) — the database primary key, used by `currentUserId()` in controllers and `isSelf()` ownership checks
 - `auth0Subject` (String) — the JWT `sub` claim (currently the DB user ID; the actual Auth0 sub is not stored in the JWT)
 - `email` (String) — for reference; not used for identity decisions after filter
-- `authorities` (Collection) — `ROLE_<ROLE>` authority derived from the JWT `role` claim
+- `authorities` (Collection) — `ROLE_<ROLE>` authorities derived from the JWT `roles` list claim (multi-role)
 
 `UserSecurity.isSelf(id, auth)` and `getUserId(auth)` read directly from `UserPrincipal`. If the principal is not a `UserPrincipal` (unauthenticated slip-through or misconfiguration), both fail closed — `isSelf` returns `false`, `getUserId` returns `null`.
 
@@ -120,24 +144,29 @@ After JWT validation, `JwtAuthFilter` places a `UserPrincipal` record on the `Se
 | Order | Chain | Matcher | Rules |
 |---|---|---|---|
 | 1 | `filterChain` (SecurityConfig) | `/api/auth/**`, `/oauth2/**`, `/login/**` | `/api/auth/token` permitAll; `/api/auth/me` authenticated; others permitAll. Handles OAuth2 login. |
-| 2 | `reservationChain` (ReservationSecurityConfig) | `/api/reservations/**` | POST create: authenticated; GET me/**: authenticated; PATCH extend/cancel: STAFF or ADMIN; admin/**: ADMIN |
-| 3 | `userChain` (UserSecurityConfig) | `/api/users/**` | GET `/api/users`: STAFF or ADMIN; PATCH `*/role`: ADMIN; POST `*/restore`: ADMIN; any other: authenticated. Returns 401 (not 403) for unauthenticated via explicit AuthenticationEntryPoint. |
+| 2 | `registrationChain` (SecurityConfig) | `/api/admin/registrations/**`, `/api/registrations/**` | POST admin/registrations: STAFF+; POST registrations/claim: authenticated (incl. ROLE_PENDING); others: STAFF+ |
+| 3 | `reservationChain` (ReservationSecurityConfig) | `/api/reservations/**` | POST create: authenticated; GET me/**: authenticated; PATCH extend: STAFF+; PATCH cancel: authenticated (ownership enforced in service); admin/**: ADMIN; /admin/equipment/{id}: STAFF+ |
+| 4 | `userChain` (UserSecurityConfig) | `/api/users/**` | GET `/api/users`: STAFF+; PATCH `*/role`: ADMIN; POST `*/restore`: ADMIN; any other: authenticated. Returns 401 (not 403) for unauthenticated via explicit AuthenticationEntryPoint. |
 | 100 | `fallbackChain` (SecurityConfig) | `/**` | `/actuator/health` permitAll; everything else authenticated |
 
 All chains: CSRF disabled, stateless session, `JwtAuthFilter` added before `UsernamePasswordAuthenticationFilter`.
 
 ### Role Hierarchy
 
-Roles are flat (no inheritance). A request matching `hasRole('ADMIN')` will not pass for `STAFF`. SpEL ownership checks are additive (`or @userSecurity.isSelf(...)`).
+Roles use Spring Security's `RoleHierarchy` DAG defined in `RoleHierarchyConfig`. A request matching `hasRole('STAFF')` will pass for both STAFF and ADMIN. SpEL ownership checks are additive (`or @userSecurity.isSelf(...)`).
+
+```
+ADMIN → STAFF → INSTRUCTOR   (ADMIN implies STAFF and INSTRUCTOR; STAFF implies INSTRUCTOR)
+```
 
 | Role | Privileges |
 |---|---|
 | GUEST | Lowest. Authenticated but minimal access. |
 | STUDENT, RENTEE | Authenticated general members. |
 | MEMBER | Default role assigned on first login. |
-| INSTRUCTOR | Authenticated general member. |
-| STAFF | Can read user list, create/update equipment. |
-| ADMIN | Full access including role changes, restores, deletes, hard-delete equipment. |
+| INSTRUCTOR | Implied by STAFF and ADMIN. |
+| STAFF | Can read user list, create/update equipment, extend/cancel reservations. Implies INSTRUCTOR. |
+| ADMIN | Full access including role changes, restores, deletes, hard-delete equipment. Implies STAFF. |
 
 ### Endpoint Authorization Matrix
 
@@ -170,8 +199,22 @@ Roles are flat (no inheritance). A request matching `hasRole('ADMIN')` will not 
 | DELETE | `/api/users/{id}` | ADMIN or self | `@userSecurity.isSelf(#id, authentication)`; last-admin guard in `UserService.softDeleteUser` |
 | POST | `/api/users/{id}/restore` | ADMIN | — |
 
+#### Registration — `/api/admin/registrations`, `/api/registrations`
+| Method | Path | Rule |
+|---|---|---|
+| POST | `/api/admin/registrations` | STAFF+ — pre-register a user (generates invite, sends claim email) |
+| POST | `/api/registrations/claim` | Authenticated (incl. ROLE_PENDING) — claim invite token, activate account |
+
 #### Reservations — `/api/reservations`
-_Security rules defined in `ReservationSecurityConfig` but no controller or service exists yet — the chain is inert._
+| Method | Path | Rule | Notes |
+|---|---|---|---|
+| POST | `/api/reservations` | Authenticated | Conflict-checked; MAINTENANCE/RETIRED equipment blocked |
+| GET | `/api/reservations/me` | Authenticated | User's own reservations, ordered by startTime desc |
+| GET | `/api/reservations/me/{id}` | Authenticated | Own reservation; STAFF+ can view any |
+| PATCH | `/api/reservations/{id}/cancel` | Authenticated | Ownership enforced in service; STAFF+ can cancel any |
+| PATCH | `/api/reservations/{id}/extend` | STAFF+ | Conflict-checked for the extension window |
+| GET | `/api/reservations/admin/all` | ADMIN | Paginated (default 50/page) |
+| GET | `/api/reservations/admin/equipment/{id}` | STAFF+ | All reservations for a piece of equipment |
 
 ---
 
@@ -216,7 +259,10 @@ All 55 tests pass.
 ## Known Issues / Incomplete Areas
 
 ### Functional gaps
-- **No reservation controller or service** — `ReservationSecurityConfig` defines access rules but there is no matching controller or service. The `/api/reservations/**` security config is inert.
+- **No COMPLETED reservation transition** — `ReservationStatus.COMPLETED` exists but nothing transitions a reservation to COMPLETED automatically after its `endTime` passes. Needs a scheduled task (`@Scheduled`) or a Quartz job.
+- **No automatic maintenance cancellation** — when equipment is set to MAINTENANCE, existing ACTIVE reservations are not cancelled or notified.
+- **Email is stub-only** — `StubEmailService` logs to console. No real mail provider configured.
+- **No waiver gating** — reservations can be created without a signed waiver.
 
 ### Security concerns
 - **`application.properties` contains plaintext secrets** — Auth0 client secret and JWT signing key are committed in plain text. These must move to environment variables or a secrets manager before any shared deployment.
@@ -229,6 +275,11 @@ All 55 tests pass.
 - **`@EnableJpaAuditing` vs inline `LocalDateTime.now()`** — `Application` has `@EnableJpaAuditing` but `User.createdAt` and `Equipment.createdAt` are initialised inline (`= LocalDateTime.now()`). The `@CreatedDate` annotation on `User.createdAt` is redundant and lacks `@Column(updatable=false)`.
 
 ### Fixed
+- ✅ Reservation system fully implemented (`ReservationController`, `ReservationService`, `ReservationRepository`, `ReservationDTO`, `ReservationStatus`)
+- ✅ Role hierarchy implemented — `RoleHierarchyConfig` publishes ADMIN → STAFF → INSTRUCTOR DAG; `hasRole('STAFF')` now covers ADMIN automatically
+- ✅ Multi-role support — `User.userRoles` is now `Set<Role>` via `user_roles` join table (V3 migration); JWT carries `roles` list claim
+- ✅ Local in-person registration — `AdminRegistrationController`/`RegistrationClaimController`, `RegistrationInvite` model, `AccountClaimService`, `InviteTokenService`, `StubEmailService`
+- ✅ `UserProfile`, `Address`, `PhoneNumber` decoupled from `User`
 - ✅ `EquipmentReservation.user` `@OneToOne` → `@ManyToOne`
 - ✅ `UserService.findUser` unused `fullName` parameter — removed
 - ✅ `UserService.provision` always INSERTs unconditionally — `OAuth2SuccessHandler` now calls `resolve()` first

@@ -28,14 +28,14 @@ public class UserSecurityConfig {
     @Order(3)
     SecurityFilterChain userChain(HttpSecurity http) throws Exception {
         return http
-                .securityMatcher("/api/users/**")
+                .securityMatcher("/api/v1/users/**")
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(GET, "/api/users").hasRole("STAFF")
-                        .requestMatchers(PATCH, "/api/users/*/role").hasRole("ADMIN")
-                        .requestMatchers(POST, "/api/users/*/restore").hasRole("ADMIN")
+                        .requestMatchers(GET, "/api/v1/users").hasRole("STAFF")
+                        .requestMatchers(PATCH, "/api/v1/users/*/role").hasRole("ADMIN")
+                        .requestMatchers(POST, "/api/v1/users/*/restore").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(e -> e

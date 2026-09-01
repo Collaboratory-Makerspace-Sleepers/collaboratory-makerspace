@@ -108,7 +108,7 @@ class UserControllerTest {
     void getMe_returnsCurrentUserProfile() throws Exception {
         when(userService.findById(1L)).thenReturn(activeUser);
 
-        mockMvc.perform(get("/api/users/me")
+        mockMvc.perform(get("/api/v1/users/me")
                         .with(authentication(authFor(1L, "MEMBER"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
@@ -117,7 +117,7 @@ class UserControllerTest {
 
     @Test
     void getMe_unauthenticated_returns401() throws Exception {
-        mockMvc.perform(get("/api/users/me"))
+        mockMvc.perform(get("/api/v1/users/me"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -130,7 +130,7 @@ class UserControllerTest {
         User updated = makeUser(1L, "member@test.com", "Jane", "Doe");
         when(userService.updateProfile(1L, "Jane", "Doe")).thenReturn(updated);
 
-        mockMvc.perform(patch("/api/users/me")
+        mockMvc.perform(patch("/api/v1/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateProfileRequest("Jane", "Doe")))
                         .with(authentication(authFor(1L, "MEMBER"))))
@@ -141,7 +141,7 @@ class UserControllerTest {
 
     @Test
     void updateMe_blankFirstName_returns400() throws Exception {
-        mockMvc.perform(patch("/api/users/me")
+        mockMvc.perform(patch("/api/v1/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateProfileRequest("", "Doe")))
                         .with(authentication(authFor(1L, "MEMBER"))))
@@ -157,7 +157,7 @@ class UserControllerTest {
         var page = new PageImpl<>(List.of(activeUser), PageRequest.of(0, 50), 1);
         when(userService.findAllActive(any())).thenReturn(page);
 
-        mockMvc.perform(get("/api/users")
+        mockMvc.perform(get("/api/v1/users")
                         .with(authentication(authFor(2L, "ADMIN"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].email").value("member@test.com"));
@@ -165,7 +165,7 @@ class UserControllerTest {
 
     @Test
     void listUsers_asMember_returns403() throws Exception {
-        mockMvc.perform(get("/api/users")
+        mockMvc.perform(get("/api/v1/users")
                         .with(authentication(authFor(1L, "MEMBER"))))
                 .andExpect(status().isForbidden());
     }
@@ -174,7 +174,7 @@ class UserControllerTest {
     void listUsers_asStaff_returns200() throws Exception {
         when(userService.findAllActive(any())).thenReturn(new PageImpl<>(List.of()));
 
-        mockMvc.perform(get("/api/users")
+        mockMvc.perform(get("/api/v1/users")
                         .with(authentication(authFor(1L, "STAFF"))))
                 .andExpect(status().isOk());
     }
@@ -185,11 +185,11 @@ class UserControllerTest {
 
     @Test
     void listUsers_adminPassesStaffEndpoint_viaHierarchy() throws Exception {
-        // GET /api/users is guarded by hasRole('STAFF').
+        // GET /api/v1/users is guarded by hasRole('STAFF').
         // ADMIN implies STAFF in the hierarchy, so an ADMIN-only principal must pass.
         when(userService.findAllActive(any())).thenReturn(new PageImpl<>(List.of()));
 
-        mockMvc.perform(get("/api/users")
+        mockMvc.perform(get("/api/v1/users")
                         .with(authentication(authFor(2L, "ADMIN"))))
                 .andExpect(status().isOk());
     }
@@ -202,7 +202,7 @@ class UserControllerTest {
     void getUser_self_returns200() throws Exception {
         when(userService.findById(1L)).thenReturn(activeUser);
 
-        mockMvc.perform(get("/api/users/1")
+        mockMvc.perform(get("/api/v1/users/1")
                         .with(authentication(authFor(1L, "MEMBER"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1));
@@ -210,7 +210,7 @@ class UserControllerTest {
 
     @Test
     void getUser_otherMember_returns403() throws Exception {
-        mockMvc.perform(get("/api/users/99")
+        mockMvc.perform(get("/api/v1/users/99")
                         .with(authentication(authFor(1L, "MEMBER"))))
                 .andExpect(status().isForbidden());
     }
@@ -219,7 +219,7 @@ class UserControllerTest {
     void getUser_asAdmin_returnsAnyUser() throws Exception {
         when(userService.findById(1L)).thenReturn(activeUser);
 
-        mockMvc.perform(get("/api/users/1")
+        mockMvc.perform(get("/api/v1/users/1")
                         .with(authentication(authFor(2L, "ADMIN"))))
                 .andExpect(status().isOk());
     }
@@ -228,7 +228,7 @@ class UserControllerTest {
     void getUser_notFound_returns404() throws Exception {
         when(userService.findById(99L)).thenThrow(new ResponseStatusException(NOT_FOUND));
 
-        mockMvc.perform(get("/api/users/99")
+        mockMvc.perform(get("/api/v1/users/99")
                         .with(authentication(authFor(2L, "ADMIN"))))
                 .andExpect(status().isNotFound());
     }
@@ -243,7 +243,7 @@ class UserControllerTest {
         promoted.setRoles(Set.of(Role.STAFF));
         when(userService.updateRoles(1L, Set.of(Role.STAFF))).thenReturn(promoted);
 
-        mockMvc.perform(patch("/api/users/1/role")
+        mockMvc.perform(patch("/api/v1/users/1/role")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateRoleRequest(Set.of(Role.STAFF))))
                         .with(authentication(authFor(2L, "ADMIN"))))
@@ -253,7 +253,7 @@ class UserControllerTest {
 
     @Test
     void updateRole_selfChange_returns400() throws Exception {
-        mockMvc.perform(patch("/api/users/2/role")
+        mockMvc.perform(patch("/api/v1/users/2/role")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateRoleRequest(Set.of(Role.STAFF))))
                         .with(authentication(authFor(2L, "ADMIN"))))
@@ -262,7 +262,7 @@ class UserControllerTest {
 
     @Test
     void updateRole_asMember_returns403() throws Exception {
-        mockMvc.perform(patch("/api/users/2/role")
+        mockMvc.perform(patch("/api/v1/users/2/role")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateRoleRequest(Set.of(Role.STAFF))))
                         .with(authentication(authFor(1L, "MEMBER"))))
@@ -275,7 +275,7 @@ class UserControllerTest {
 
     @Test
     void deleteUser_self_returns204() throws Exception {
-        mockMvc.perform(delete("/api/users/1")
+        mockMvc.perform(delete("/api/v1/users/1")
                         .with(authentication(authFor(1L, "MEMBER"))))
                 .andExpect(status().isNoContent());
 
@@ -284,7 +284,7 @@ class UserControllerTest {
 
     @Test
     void deleteUser_asAdmin_returns204() throws Exception {
-        mockMvc.perform(delete("/api/users/1")
+        mockMvc.perform(delete("/api/v1/users/1")
                         .with(authentication(authFor(2L, "ADMIN"))))
                 .andExpect(status().isNoContent());
 
@@ -293,7 +293,7 @@ class UserControllerTest {
 
     @Test
     void deleteUser_otherMember_returns403() throws Exception {
-        mockMvc.perform(delete("/api/users/99")
+        mockMvc.perform(delete("/api/v1/users/99")
                         .with(authentication(authFor(1L, "MEMBER"))))
                 .andExpect(status().isForbidden());
     }
@@ -303,7 +303,7 @@ class UserControllerTest {
         doThrow(new ResponseStatusException(BAD_REQUEST, "Cannot delete the last admin"))
                 .when(userService).softDeleteUser(2L, 2L);
 
-        mockMvc.perform(delete("/api/users/2")
+        mockMvc.perform(delete("/api/v1/users/2")
                         .with(authentication(authFor(2L, "ADMIN"))))
                 .andExpect(status().isBadRequest());
     }
@@ -316,7 +316,7 @@ class UserControllerTest {
     void restoreUser_asAdmin_returns200() throws Exception {
         when(userService.restore(1L)).thenReturn(activeUser);
 
-        mockMvc.perform(post("/api/users/1/restore")
+        mockMvc.perform(post("/api/v1/users/1/restore")
                         .with(authentication(authFor(2L, "ADMIN"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1));
@@ -326,14 +326,14 @@ class UserControllerTest {
     void restoreUser_notDeleted_returns400() throws Exception {
         when(userService.restore(1L)).thenThrow(new ResponseStatusException(BAD_REQUEST, "User is not deleted"));
 
-        mockMvc.perform(post("/api/users/1/restore")
+        mockMvc.perform(post("/api/v1/users/1/restore")
                         .with(authentication(authFor(2L, "ADMIN"))))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void restoreUser_asMember_returns403() throws Exception {
-        mockMvc.perform(post("/api/users/1/restore")
+        mockMvc.perform(post("/api/v1/users/1/restore")
                         .with(authentication(authFor(1L, "MEMBER"))))
                 .andExpect(status().isForbidden());
     }

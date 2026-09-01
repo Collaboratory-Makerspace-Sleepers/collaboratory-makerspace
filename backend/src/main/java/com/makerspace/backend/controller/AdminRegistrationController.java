@@ -13,7 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/admin/registrations")
+@RequestMapping("/api/v1/admin/registrations")
 public class AdminRegistrationController {
 
     private final AdminRegistrationService registrationService;

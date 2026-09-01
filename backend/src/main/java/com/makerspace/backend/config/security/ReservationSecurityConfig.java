@@ -27,17 +27,17 @@ public class ReservationSecurityConfig {
     @Order(2)
     SecurityFilterChain reservationChain(HttpSecurity http) throws Exception {
         return http
-                .securityMatcher("/api/reservations/**")
+                .securityMatcher("/api/v1/reservations/**")
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(POST, "/api/reservations").authenticated()
-                        .requestMatchers(GET, "/api/reservations/me/**").authenticated()
-                        .requestMatchers(PATCH, "/api/reservations/{id}/extend").hasRole("STAFF")
-                        .requestMatchers(PATCH, "/api/reservations/{id}/cancel").authenticated()
-                        .requestMatchers(PATCH, "/api/equipment/{id}/status").hasRole("STAFF")
-                        .requestMatchers("/api/reservations/admin/**").hasRole("ADMIN")
+                        .requestMatchers(POST, "/api/v1/reservations").authenticated()
+                        .requestMatchers(GET, "/api/v1/reservations/me/**").authenticated()
+                        .requestMatchers(PATCH, "/api/v1/reservations/{id}/extend").hasRole("STAFF")
+                        .requestMatchers(PATCH, "/api/v1/reservations/{id}/cancel").authenticated()
+                        .requestMatchers(PATCH, "/api/v1/equipment/{id}/status").hasRole("STAFF")
+                        .requestMatchers("/api/v1/reservations/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .build();

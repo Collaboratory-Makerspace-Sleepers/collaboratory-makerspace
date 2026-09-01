@@ -41,10 +41,10 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         applySharedConfig(http)
-                .securityMatcher("/api/auth/**", "/oauth2/**", "/login/**")
+                .securityMatcher("/api/v1/auth/**", "/oauth2/**", "/login/**")
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/token").permitAll()
-                        .requestMatchers("/api/auth/me").authenticated()
+                        .requestMatchers("/api/v1/auth/token").permitAll()
+                        .requestMatchers("/api/v1/auth/me").authenticated()
                         .anyRequest().permitAll()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -57,11 +57,11 @@ public class SecurityConfig {
     @Order(2)
     public SecurityFilterChain registrationChain(HttpSecurity http) throws Exception {
         applySharedConfig(http)
-                .securityMatcher("/api/admin/registrations/**", "/api/registrations/**")
+                .securityMatcher("/api/v1/admin/registrations/**", "/api/v1/registrations/**")
                 .authorizeHttpRequests(reg -> reg
-                        .requestMatchers(HttpMethod.POST, "/api/admin/registrations/**").hasRole("STAFF")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/admin/registrations/**").hasRole("STAFF")
                         // /claim is reachable by ROLE_PENDING so pre-registered users can activate.
-                        .requestMatchers(HttpMethod.POST, "/api/registrations/claim").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/registrations/claim").authenticated()
                         .anyRequest().hasRole("STAFF")
                 );
         return http.build();

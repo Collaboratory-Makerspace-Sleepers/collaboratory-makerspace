@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/registrations")
+@RequestMapping("/api/v1/registrations")
 public class RegistrationClaimController {
 
     private final AccountClaimService claimService;

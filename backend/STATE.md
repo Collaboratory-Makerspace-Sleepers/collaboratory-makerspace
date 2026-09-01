@@ -37,11 +37,11 @@ com.makerspace.backend
 │   ├── SecurityConfig.java             JWT filter chain (Order 1: auth/oauth2, Order 100: fallback)
 │   └── security/
 │       ├── OAuthProfile.java           Record: email, firstName, lastName, subject (OIDC → app DTO)
-│       ├── ReservationSecurityConfig.java  Security chain (Order 2) for /api/reservations/**
+│       ├── ReservationSecurityConfig.java  Security chain (Order 2) for /api/v1/reservations/**
 │       ├── RoleHierarchyConfig.java    RoleHierarchy bean: ADMIN → STAFF → INSTRUCTOR
 │       ├── UserPrincipal.java          Record: userId, auth0Subject, email, authorities — set on SecurityContext by JwtAuthFilter
 │       ├── UserSecurity.java           @Component("userSecurity") — isSelf(id, auth) for SpEL @PreAuthorize
-│       └── UserSecurityConfig.java     Security chain (Order 3) for /api/users/**
+│       └── UserSecurityConfig.java     Security chain (Order 3) for /api/v1/users/**
 ├── controller/
 │   ├── dto/
 │   │   ├── ClaimRequest.java           record: token, password
@@ -54,11 +54,11 @@ com.makerspace.backend
 │   │   ├── UpdateRoleRequest.java      record: role (@NotNull)
 │   │   ├── UserAdminDTO.java           record: id, email, firstName, lastName, roles, createdAt, deletedAt
 │   │   └── UserDTO.java                record: id, email, firstName, lastName, roles
-│   ├── AdminRegistrationController.java  POST /api/admin/registrations (STAFF+)
+│   ├── AdminRegistrationController.java  POST /api/v1/admin/registrations (STAFF+)
 │   ├── EquipmentController.java        Full CRUD for equipment
-│   ├── RegistrationClaimController.java  POST /api/registrations/claim (authenticated incl. ROLE_PENDING)
+│   ├── RegistrationClaimController.java  POST /api/v1/registrations/claim (authenticated incl. ROLE_PENDING)
 │   ├── ReservationController.java      7 endpoints: create, /me, /me/{id}, cancel, extend, /admin/all, /admin/equipment/{id}
-│   ├── TokenController.java            Cookie → Bearer token exchange (/api/auth/token)
+│   ├── TokenController.java            Cookie → Bearer token exchange (/api/v1/auth/token)
 │   └── UserController.java             7 endpoints (see API section)
 ├── model/
 │   ├── AccountStatus.java              Enum: PENDING, ACTIVE, SUSPENDED
@@ -110,7 +110,7 @@ com.makerspace.backend
    c. Generates JWT via JwtService.generateToken(user) [sub=userId, email, roles (list), exp=1h]
    d. Sets JWT in HttpOnly Secure cookie (access_token, maxAge=1h, SameSite=Lax)
    e. Redirects to {frontend}/oauth-callback
-4. Frontend calls GET /api/auth/token
+4. Frontend calls GET /api/v1/auth/token
    a. TokenController reads cookie, validates JWT signature
    b. Calls UserStateService.stateOf(email) — returns 403 for DELETED, 401 for NOT_FOUND
    c. Returns { "access_token": "<jwt>" } in response body
@@ -143,10 +143,10 @@ After JWT validation, `JwtAuthFilter` places a `UserPrincipal` record on the `Se
 
 | Order | Chain | Matcher | Rules |
 |---|---|---|---|
-| 1 | `filterChain` (SecurityConfig) | `/api/auth/**`, `/oauth2/**`, `/login/**` | `/api/auth/token` permitAll; `/api/auth/me` authenticated; others permitAll. Handles OAuth2 login. |
-| 2 | `registrationChain` (SecurityConfig) | `/api/admin/registrations/**`, `/api/registrations/**` | POST admin/registrations: STAFF+; POST registrations/claim: authenticated (incl. ROLE_PENDING); others: STAFF+ |
-| 3 | `reservationChain` (ReservationSecurityConfig) | `/api/reservations/**` | POST create: authenticated; GET me/**: authenticated; PATCH extend: STAFF+; PATCH cancel: authenticated (ownership enforced in service); admin/**: ADMIN; /admin/equipment/{id}: STAFF+ |
-| 4 | `userChain` (UserSecurityConfig) | `/api/users/**` | GET `/api/users`: STAFF+; PATCH `*/role`: ADMIN; POST `*/restore`: ADMIN; any other: authenticated. Returns 401 (not 403) for unauthenticated via explicit AuthenticationEntryPoint. |
+| 1 | `filterChain` (SecurityConfig) | `/api/v1/auth/**`, `/oauth2/**`, `/login/**` | `/api/v1/auth/token` permitAll; `/api/v1/auth/me` authenticated; others permitAll. Handles OAuth2 login. |
+| 2 | `registrationChain` (SecurityConfig) | `/api/v1/admin/registrations/**`, `/api/v1/registrations/**` | POST admin/registrations: STAFF+; POST registrations/claim: authenticated (incl. ROLE_PENDING); others: STAFF+ |
+| 3 | `reservationChain` (ReservationSecurityConfig) | `/api/v1/reservations/**` | POST create: authenticated; GET me/**: authenticated; PATCH extend: STAFF+; PATCH cancel: authenticated (ownership enforced in service); admin/**: ADMIN; /admin/equipment/{id}: STAFF+ |
+| 4 | `userChain` (UserSecurityConfig) | `/api/v1/users/**` | GET `/api/v1/users`: STAFF+; PATCH `*/role`: ADMIN; POST `*/restore`: ADMIN; any other: authenticated. Returns 401 (not 403) for unauthenticated via explicit AuthenticationEntryPoint. |
 | 100 | `fallbackChain` (SecurityConfig) | `/**` | `/actuator/health` permitAll; everything else authenticated |
 
 All chains: CSRF disabled, stateless session, `JwtAuthFilter` added before `UsernamePasswordAuthenticationFilter`.
@@ -170,51 +170,51 @@ ADMIN → STAFF → INSTRUCTOR   (ADMIN implies STAFF and INSTRUCTOR; STAFF impl
 
 ### Endpoint Authorization Matrix
 
-#### Auth — `/api/auth`
+#### Auth — `/api/v1/auth`
 | Method | Path | Rule |
 |---|---|---|
-| GET | `/api/auth/token` | Public (reads HttpOnly cookie, validates JWT, checks user state) |
+| GET | `/api/v1/auth/token` | Public (reads HttpOnly cookie, validates JWT, checks user state) |
 
-#### Equipment — `/api/equipment`
+#### Equipment — `/api/v1/equipment`
 | Method | Path | Rule |
 |---|---|---|
-| GET | `/api/equipment` | Authenticated |
-| GET | `/api/equipment/{id}` | Authenticated |
-| GET | `/api/equipment/status/{status}` | Authenticated |
-| GET | `/api/equipment/category/{category}` | Authenticated |
-| GET | `/api/equipment/search?q=` | Authenticated |
-| POST | `/api/equipment` | STAFF or ADMIN |
-| PUT | `/api/equipment/{id}` | STAFF or ADMIN |
-| PATCH | `/api/equipment/{id}/status` | STAFF or ADMIN |
-| DELETE | `/api/equipment/{id}` | ADMIN |
+| GET | `/api/v1/equipment` | Authenticated |
+| GET | `/api/v1/equipment/{id}` | Authenticated |
+| GET | `/api/v1/equipment/status/{status}` | Authenticated |
+| GET | `/api/v1/equipment/category/{category}` | Authenticated |
+| GET | `/api/v1/equipment/search?q=` | Authenticated |
+| POST | `/api/v1/equipment` | STAFF or ADMIN |
+| PUT | `/api/v1/equipment/{id}` | STAFF or ADMIN |
+| PATCH | `/api/v1/equipment/{id}/status` | STAFF or ADMIN |
+| DELETE | `/api/v1/equipment/{id}` | ADMIN |
 
-#### Users — `/api/users`
+#### Users — `/api/v1/users`
 | Method | Path | Rule | Guard |
 |---|---|---|---|
-| GET | `/api/users/me` | Authenticated | — |
-| PATCH | `/api/users/me` | Authenticated | — |
-| GET | `/api/users` | STAFF or ADMIN | — |
-| GET | `/api/users/{id}` | STAFF, ADMIN, or self | `@userSecurity.isSelf(#id, authentication)` |
-| PATCH | `/api/users/{id}/role` | ADMIN | Self-change rejected (400) |
-| DELETE | `/api/users/{id}` | ADMIN or self | `@userSecurity.isSelf(#id, authentication)`; last-admin guard in `UserService.softDeleteUser` |
-| POST | `/api/users/{id}/restore` | ADMIN | — |
+| GET | `/api/v1/users/me` | Authenticated | — |
+| PATCH | `/api/v1/users/me` | Authenticated | — |
+| GET | `/api/v1/users` | STAFF or ADMIN | — |
+| GET | `/api/v1/users/{id}` | STAFF, ADMIN, or self | `@userSecurity.isSelf(#id, authentication)` |
+| PATCH | `/api/v1/users/{id}/role` | ADMIN | Self-change rejected (400) |
+| DELETE | `/api/v1/users/{id}` | ADMIN or self | `@userSecurity.isSelf(#id, authentication)`; last-admin guard in `UserService.softDeleteUser` |
+| POST | `/api/v1/users/{id}/restore` | ADMIN | — |
 
-#### Registration — `/api/admin/registrations`, `/api/registrations`
+#### Registration — `/api/v1/admin/registrations`, `/api/v1/registrations`
 | Method | Path | Rule |
 |---|---|---|
-| POST | `/api/admin/registrations` | STAFF+ — pre-register a user (generates invite, sends claim email) |
-| POST | `/api/registrations/claim` | Authenticated (incl. ROLE_PENDING) — claim invite token, activate account |
+| POST | `/api/v1/admin/registrations` | STAFF+ — pre-register a user (generates invite, sends claim email) |
+| POST | `/api/v1/registrations/claim` | Authenticated (incl. ROLE_PENDING) — claim invite token, activate account |
 
-#### Reservations — `/api/reservations`
+#### Reservations — `/api/v1/reservations`
 | Method | Path | Rule | Notes |
 |---|---|---|---|
-| POST | `/api/reservations` | Authenticated | Conflict-checked; MAINTENANCE/RETIRED equipment blocked |
-| GET | `/api/reservations/me` | Authenticated | User's own reservations, ordered by startTime desc |
-| GET | `/api/reservations/me/{id}` | Authenticated | Own reservation; STAFF+ can view any |
-| PATCH | `/api/reservations/{id}/cancel` | Authenticated | Ownership enforced in service; STAFF+ can cancel any |
-| PATCH | `/api/reservations/{id}/extend` | STAFF+ | Conflict-checked for the extension window |
-| GET | `/api/reservations/admin/all` | ADMIN | Paginated (default 50/page) |
-| GET | `/api/reservations/admin/equipment/{id}` | STAFF+ | All reservations for a piece of equipment |
+| POST | `/api/v1/reservations` | Authenticated | Conflict-checked; MAINTENANCE/RETIRED equipment blocked |
+| GET | `/api/v1/reservations/me` | Authenticated | User's own reservations, ordered by startTime desc |
+| GET | `/api/v1/reservations/me/{id}` | Authenticated | Own reservation; STAFF+ can view any |
+| PATCH | `/api/v1/reservations/{id}/cancel` | Authenticated | Ownership enforced in service; STAFF+ can cancel any |
+| PATCH | `/api/v1/reservations/{id}/extend` | STAFF+ | Conflict-checked for the extension window |
+| GET | `/api/v1/reservations/admin/all` | ADMIN | Paginated (default 50/page) |
+| GET | `/api/v1/reservations/admin/equipment/{id}` | STAFF+ | All reservations for a piece of equipment |
 
 ---
 
@@ -226,7 +226,7 @@ ADMIN → STAFF → INSTRUCTOR   (ADMIN implies STAFF and INSTRUCTOR; STAFF impl
 - **`UserService.softDelete(User)`** — lower-level variant used internally; has `@CacheEvict`.
 - **`UserStateService`** — caches `ACTIVE|DELETED|NOT_FOUND` per email for 30s. Evicted on delete or restore so `JwtAuthFilter` sees the new state on the very next request.
 - **`OAuth2SuccessHandler`** — if `resolve()` returns `Deleted`, redirects to `/account-closed` with no JWT issued.
-- **Self-delete** (`DELETE /api/users/{id}` where actor == target): controller clears the `access_token` HttpOnly cookie in the response, invalidating the session client-side.
+- **Self-delete** (`DELETE /api/v1/users/{id}` where actor == target): controller clears the `access_token` HttpOnly cookie in the response, invalidating the session client-side.
 
 ---
 
@@ -268,7 +268,7 @@ All 55 tests pass.
 - **`application.properties` contains plaintext secrets** — Auth0 client secret and JWT signing key are committed in plain text. These must move to environment variables or a secrets manager before any shared deployment.
 - **JWT `sub` vs Auth0 subject mismatch** — `JwtService.generateToken` sets `sub = user.getId().toString()` (the DB primary key), not the Auth0 subject. `UserPrincipal.auth0Subject` is therefore populated with the DB ID string, not the actual Auth0 stable identifier. If Auth0 subject is ever needed for identity verification post-JWT, a new `auth0Subject` claim must be added to the token.
 - **No token revocation** — JWTs are stateless and valid until expiry (1h). Soft-delete is mitigated by the `UserStateService` cache check, but a deleted user's token remains cryptographically valid for up to 30 seconds (cache TTL) after deletion. There is no blocklist or short-circuit for immediate revocation.
-- **Cookie `SameSite=Lax`** — protects against CSRF on cross-site navigations but does not protect against same-site CSRF. Acceptable since the token exchange (`/api/auth/token`) reads the cookie and returns a Bearer token, which the frontend must then include explicitly — effectively a double-submit pattern.
+- **Cookie `SameSite=Lax`** — protects against CSRF on cross-site navigations but does not protect against same-site CSRF. Acceptable since the token exchange (`/api/v1/auth/token`) reads the cookie and returns a Bearer token, which the frontend must then include explicitly — effectively a double-submit pattern.
 - **No refresh token** — the 1h JWT is the only credential. After expiry, the user must go through the full OAuth flow again.
 
 ### Design notes

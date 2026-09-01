@@ -18,7 +18,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 @Controller
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 public class TokenController {
 
     @Autowired

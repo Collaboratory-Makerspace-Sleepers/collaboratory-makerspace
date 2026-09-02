@@ -16,7 +16,14 @@ import java.util.Set;
 @Setter
 @SQLDelete(sql = "UPDATE users SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL") // Adds WHERE deleted_at IS NULL to all SELECT statements
-@Table(name = "users")
+@Table(
+    name = "users",
+    indexes = {
+        @Index(name = "idx_users_auth0_subject",  columnList = "auth0_subject"),
+        @Index(name = "idx_users_account_status", columnList = "account_status"),
+        @Index(name = "idx_users_deleted_at",     columnList = "deleted_at")
+    }
+)
 public class User {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) @Column(name = "id")
@@ -27,6 +34,7 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
+    @Column(name = "email_digest", length = 64)
     private String emailDigest;
 
     /** Auth0 stable subject identifier (e.g. google-oauth2|123…). Null until the account is claimed. */
@@ -47,7 +55,7 @@ public class User {
     @Column(name = "role")
     private Set<Role> roles = new HashSet<>();
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(name = "deleted_at")

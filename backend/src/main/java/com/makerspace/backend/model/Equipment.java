@@ -10,7 +10,13 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @Setter
-@Table(name = "equipment")
+@Table(
+    name = "equipment",
+    indexes = {
+        @Index(name = "idx_equipment_status",   columnList = "status"),
+        @Index(name = "idx_equipment_category", columnList = "category")
+    }
+)
 public class Equipment {
 
     @Id
@@ -24,12 +30,14 @@ public class Equipment {
 
     private String category;
 
+    @Column(name = "image_url")
     private String imageUrl;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
     private EquipmentStatus status = EquipmentStatus.AVAILABLE;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
 }

@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Verifies @SQLDelete, @SQLRestriction, and native query behaviour.
  */
 @DataJpaTest
-@ActiveProfiles("test")
 class UserRepositoryTest {
 
     @Autowired

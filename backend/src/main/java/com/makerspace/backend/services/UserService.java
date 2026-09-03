@@ -2,7 +2,7 @@ package com.makerspace.backend.services;
 
 import com.makerspace.backend.config.security.OAuthProfile;
 import com.makerspace.backend.model.AccountStatus;
-import com.makerspace.backend.model.Role;
+import com.makerspace.backend.model.AppRole;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.model.UserProfile;
 import com.makerspace.backend.model.UserResolution;
@@ -60,7 +60,7 @@ public class UserService {
     }
 
     public long countActiveAdmins() {
-        return userRepository.countByRole(Role.ADMIN);
+        return userRepository.countByRoleCode("ADMIN");
     }
 
     // -------------------------------------------------------------------------
@@ -131,18 +131,16 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    /**
-     * Replaces the authority role set for a user. Only authority roles
-     * (ADMIN, STAFF, INSTRUCTOR) should be passed; customer-type values
-     * must not be stored here.
-     */
     @Transactional
-    public User updateRoles(Long id, Set<Role> newRoles) {
+    public User updateRoles(Long id, Set<AppRole> newRoles) {
         User user = findById(id);
-        Set<Role> oldRoles = user.getRoles();
+        Set<AppRole> oldRoles = user.getRoles();
         user.setRoles(newRoles);
         User saved = userRepository.save(user);
-        log.info("Role change: user {} (id={}) changed from {} to {}", saved.getEmail(), id, oldRoles, newRoles);
+        log.info("Role change: user {} (id={}) changed from {} to {}",
+                saved.getEmail(), id,
+                oldRoles.stream().map(AppRole::getCode).toList(),
+                newRoles.stream().map(AppRole::getCode).toList());
         return saved;
     }
 
@@ -169,7 +167,8 @@ public class UserService {
     @Transactional
     public void softDeleteUser(Long id, Long actorId) {
         User user = findById(id);
-        if (user.getRoles().contains(Role.ADMIN) && countActiveAdmins() <= 1) {
+        boolean isAdmin = user.getRoles().stream().anyMatch(r -> "ADMIN".equals(r.getCode()));
+        if (isAdmin && countActiveAdmins() <= 1) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot delete the last admin");
         }
         log.info("User {} (id={}) soft-deleted by actor id={}", user.getEmail(), id, actorId);

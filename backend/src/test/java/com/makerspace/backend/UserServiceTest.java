@@ -1,7 +1,7 @@
 package com.makerspace.backend;
 
 import com.makerspace.backend.config.security.OAuthProfile;
-import com.makerspace.backend.model.Role;
+import com.makerspace.backend.model.AppRole;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.model.UserProfile;
 import com.makerspace.backend.repository.UserRepository;
@@ -16,6 +16,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -28,14 +29,18 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
-    @Mock
-    private UserRepository userRepository;
-
-    @Mock
-    private UserStateService userStateService;
+    @Mock private UserRepository userRepository;
+    @Mock private UserStateService userStateService;
 
     @InjectMocks
     private UserService userService;
+
+    private AppRole role(String code) {
+        AppRole r = new AppRole();
+        r.setCode(code);
+        r.setDescription(code + " role");
+        return r;
+    }
 
     private User makeUser(String email) {
         UserProfile profile = new UserProfile();
@@ -50,7 +55,7 @@ class UserServiceTest {
 
     private User makeAdminUser(String email) {
         User user = makeUser(email);
-        user.setRoles(Set.of(Role.ADMIN));
+        user.setRoles(new HashSet<>(Set.of(role("ADMIN"))));
         return user;
     }
 
@@ -87,7 +92,7 @@ class UserServiceTest {
     }
 
     @Test
-    void provision_newUser_hasNoAuthorityRoles() {
+    void provision_newUser_hasNoRoles() {
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
         User result = userService.provision(makeProfile("member@test.com", "Member", "User"));
@@ -95,17 +100,10 @@ class UserServiceTest {
         assertThat(result.getRoles()).isEmpty();
     }
 
-    /**
-     * provision() is intentionally INSERT-only. Callers (e.g. OAuth2SuccessHandler)
-     * are responsible for calling resolve() first and only dispatching to provision()
-     * on a NotFound result. Calling provision() for a deleted email would still hit
-     * the UNIQUE constraint — that path is now guarded at the call site.
-     */
     @Test
     void provision_attemptsToSaveNewUser_whenSoftDeletedEmailIsInvisible() {
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        // No DB check — provision blindly inserts, which blows up at flush time in production
         User result = userService.provision(makeProfile("deleted@test.com", "Returning", "User"));
 
         verify(userRepository).save(any(User.class));
@@ -150,12 +148,13 @@ class UserServiceTest {
     @Test
     void updateRoles_replacesRoleSetAndSaves() {
         User user = makeUser("role@test.com");
+        AppRole staff = role("STAFF");
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        User result = userService.updateRoles(1L, Set.of(Role.STAFF));
+        User result = userService.updateRoles(1L, Set.of(staff));
 
-        assertThat(result.getRoles()).containsExactly(Role.STAFF);
+        assertThat(result.getRoles()).extracting(AppRole::getCode).containsExactly("STAFF");
         verify(userRepository).save(user);
     }
 
@@ -165,9 +164,10 @@ class UserServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        User result = userService.updateRoles(1L, Set.of(Role.STAFF, Role.INSTRUCTOR));
+        User result = userService.updateRoles(1L, Set.of(role("STAFF"), role("INSTRUCTOR")));
 
-        assertThat(result.getRoles()).containsExactlyInAnyOrder(Role.STAFF, Role.INSTRUCTOR);
+        assertThat(result.getRoles()).extracting(AppRole::getCode)
+                .containsExactlyInAnyOrder("STAFF", "INSTRUCTOR");
     }
 
     // --- restore ---
@@ -198,7 +198,7 @@ class UserServiceTest {
 
     @Test
     void countActiveAdmins_delegatesToRepository() {
-        when(userRepository.countByRole(Role.ADMIN)).thenReturn(3L);
+        when(userRepository.countByRoleCode("ADMIN")).thenReturn(3L);
 
         assertThat(userService.countActiveAdmins()).isEqualTo(3L);
     }
@@ -209,7 +209,7 @@ class UserServiceTest {
     void softDeleteUser_blocksLastAdmin() {
         User admin = makeAdminUser("admin@test.com");
         when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
-        when(userRepository.countByRole(Role.ADMIN)).thenReturn(1L);
+        when(userRepository.countByRoleCode("ADMIN")).thenReturn(1L);
 
         assertThatThrownBy(() -> userService.softDeleteUser(1L, 99L))
                 .hasMessageContaining("Cannot delete the last admin");
@@ -219,7 +219,7 @@ class UserServiceTest {
     void softDeleteUser_allowsDeletionWhenMultipleAdmins() {
         User admin = makeAdminUser("admin@test.com");
         when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
-        when(userRepository.countByRole(Role.ADMIN)).thenReturn(2L);
+        when(userRepository.countByRoleCode("ADMIN")).thenReturn(2L);
 
         userService.softDeleteUser(1L, 99L);
 
@@ -237,5 +237,4 @@ class UserServiceTest {
 
         assertThat(result.getContent()).hasSize(1);
     }
-
 }

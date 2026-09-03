@@ -1,6 +1,5 @@
 package com.makerspace.backend.repository;
 
-import com.makerspace.backend.model.Role;
 import com.makerspace.backend.model.User;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -32,6 +31,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.id = :id")
     Optional<User> findByIdForUpdate(@Param("id") Long id);
 
-    @Query("SELECT COUNT(u) FROM User u JOIN u.roles r WHERE r = :role")
-    long countByRole(@Param("role") Role role);
+    @Query("SELECT COUNT(u) FROM User u JOIN u.roles r WHERE r.code = :roleCode")
+    long countByRoleCode(@Param("roleCode") String roleCode);
 }

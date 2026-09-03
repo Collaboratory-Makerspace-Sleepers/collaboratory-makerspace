@@ -59,7 +59,7 @@ public class ReservationController {
     // -------------------------------------------------------------------------
 
     @PatchMapping("/{id}/extend")
-    @PreAuthorize("hasRole('STAFF')")
+    @PreAuthorize("hasAuthority('MANAGE_RESERVATIONS')")
     public ReservationDTO extend(@PathVariable Long id,
                                  @Valid @RequestBody ExtendReservationRequest req) {
         return ReservationDTO.from(reservationService.extend(id, req.newEndTime()));
@@ -70,13 +70,13 @@ public class ReservationController {
     // -------------------------------------------------------------------------
 
     @GetMapping("/admin/all")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('VIEW_ALL_RESERVATIONS')")
     public Page<ReservationDTO> allReservations(@PageableDefault(size = 50) Pageable pageable) {
         return reservationService.findAll(pageable).map(ReservationDTO::from);
     }
 
     @GetMapping("/admin/equipment/{equipmentId}")
-    @PreAuthorize("hasRole('STAFF')")
+    @PreAuthorize("hasAuthority('VIEW_ALL_RESERVATIONS')")
     public List<ReservationDTO> byEquipment(@PathVariable Long equipmentId) {
         return reservationService.findByEquipment(equipmentId)
                 .stream().map(ReservationDTO::from).toList();

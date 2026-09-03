@@ -1,17 +1,19 @@
 package com.makerspace.backend;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.makerspace.backend.config.security.RoleHierarchyConfig;
+import com.makerspace.backend.config.SecurityConfig;
 import com.makerspace.backend.config.security.UserPrincipal;
 import com.makerspace.backend.config.security.UserSecurity;
-import com.makerspace.backend.config.security.UserSecurityConfig;
 import com.makerspace.backend.controller.UserController;
 import com.makerspace.backend.controller.dto.UpdateProfileRequest;
 import com.makerspace.backend.controller.dto.UpdateRoleRequest;
-import com.makerspace.backend.model.Role;
+import com.makerspace.backend.model.AppRole;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.model.UserProfile;
+import com.makerspace.backend.repository.AppRoleRepository;
+import com.makerspace.backend.security.OAuth2SuccessHandler;
 import com.makerspace.backend.services.JwtService;
+import com.makerspace.backend.services.UserPermissionService;
 import com.makerspace.backend.services.UserService;
 import com.makerspace.backend.services.UserStateService;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +35,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -47,16 +50,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * @WebMvcTest for UserController.
  *
- * Authentication is set up via SecurityMockMvcRequestPostProcessors.authentication()
- * with a real UserPrincipal, matching what JwtAuthFilter places on the SecurityContext
- * in production. This ensures isSelf() SpEL checks and currentUserId() behave the same
- * in tests as at runtime.
- *
- * SecurityConfig is imported to bring the RoleHierarchy bean into scope, so that
- * ADMIN → STAFF and ADMIN → INSTRUCTOR hierarchy checks work in tests.
+ * Authentication is built with permission-code authorities (matching what
+ * JwtAuthFilter now places on the SecurityContext after loading from DB/cache).
+ * There is no role hierarchy — access is granted purely by possession of the
+ * relevant permission code.
  */
 @WebMvcTest(UserController.class)
-@Import({UserSecurityConfig.class, UserSecurity.class, RoleHierarchyConfig.class})
+@Import({SecurityConfig.class, UserSecurity.class})
 class UserControllerTest {
 
     @TestConfiguration
@@ -67,11 +67,13 @@ class UserControllerTest {
     @Autowired ObjectMapper objectMapper;
 
     @MockBean UserService userService;
-    @MockBean JwtService jwtService;            // required by JwtAuthFilter
-    @MockBean UserStateService userStateService; // required by JwtAuthFilter
+    @MockBean JwtService jwtService;
+    @MockBean UserStateService userStateService;
+    @MockBean UserPermissionService userPermissionService;
+    @MockBean AppRoleRepository roleRepository;
+    @MockBean OAuth2SuccessHandler oAuth2SuccessHandler; // required by SecurityConfig
 
     private User activeUser;
-    private User adminUser;
 
     private static User makeUser(Long id, String email, String firstName, String lastName) {
         UserProfile profile = new UserProfile();
@@ -87,17 +89,23 @@ class UserControllerTest {
     @BeforeEach
     void setUp() {
         activeUser = makeUser(1L, "member@test.com", "Test", "Member");
-        adminUser  = makeUser(2L, "admin@test.com",  "Test", "Admin");
-        adminUser.setRoles(Set.of(Role.ADMIN));
     }
 
-    /** Builds an Authentication with a UserPrincipal, matching production JwtAuthFilter output. */
-    private static Authentication authFor(long id, String... roles) {
-        List<GrantedAuthority> authorities = Arrays.stream(roles)
-                .map(r -> (GrantedAuthority) new SimpleGrantedAuthority("ROLE_" + r))
+    /**
+     * Builds an Authentication whose authorities are permission codes, exactly
+     * as JwtAuthFilter produces in production.
+     */
+    private static Authentication authWithPermissions(long userId, String... permissions) {
+        List<GrantedAuthority> authorities = Arrays.stream(permissions)
+                .map(p -> (GrantedAuthority) new SimpleGrantedAuthority(p))
                 .toList();
-        var principal = new UserPrincipal(id, String.valueOf(id), "user@test.com", authorities);
+        var principal = new UserPrincipal(userId, String.valueOf(userId), "user@test.com", authorities);
         return new UsernamePasswordAuthenticationToken(principal, null, authorities);
+    }
+
+    /** Authenticated with no permissions (a plain member). */
+    private static Authentication memberAuth(long userId) {
+        return authWithPermissions(userId);
     }
 
     // -------------------------------------------------------------------------
@@ -109,7 +117,7 @@ class UserControllerTest {
         when(userService.findById(1L)).thenReturn(activeUser);
 
         mockMvc.perform(get("/api/v1/users/me")
-                        .with(authentication(authFor(1L, "MEMBER"))))
+                        .with(authentication(memberAuth(1L))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.email").value("member@test.com"));
@@ -133,7 +141,7 @@ class UserControllerTest {
         mockMvc.perform(patch("/api/v1/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateProfileRequest("Jane", "Doe")))
-                        .with(authentication(authFor(1L, "MEMBER"))))
+                        .with(authentication(memberAuth(1L))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.firstName").value("Jane"))
                 .andExpect(jsonPath("$.lastName").value("Doe"));
@@ -144,58 +152,34 @@ class UserControllerTest {
         mockMvc.perform(patch("/api/v1/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateProfileRequest("", "Doe")))
-                        .with(authentication(authFor(1L, "MEMBER"))))
+                        .with(authentication(memberAuth(1L))))
                 .andExpect(status().isBadRequest());
     }
 
     // -------------------------------------------------------------------------
-    // GET /
+    // GET /  (requires MANAGE_USERS)
     // -------------------------------------------------------------------------
 
     @Test
-    void listUsers_asAdmin_returns200WithPage() throws Exception {
+    void listUsers_withManageUsers_returns200() throws Exception {
         var page = new PageImpl<>(List.of(activeUser), PageRequest.of(0, 50), 1);
         when(userService.findAllActive(any())).thenReturn(page);
 
         mockMvc.perform(get("/api/v1/users")
-                        .with(authentication(authFor(2L, "ADMIN"))))
+                        .with(authentication(authWithPermissions(2L, "MANAGE_USERS"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].email").value("member@test.com"));
     }
 
     @Test
-    void listUsers_asMember_returns403() throws Exception {
+    void listUsers_withoutPermission_returns403() throws Exception {
         mockMvc.perform(get("/api/v1/users")
-                        .with(authentication(authFor(1L, "MEMBER"))))
+                        .with(authentication(memberAuth(1L))))
                 .andExpect(status().isForbidden());
     }
 
-    @Test
-    void listUsers_asStaff_returns200() throws Exception {
-        when(userService.findAllActive(any())).thenReturn(new PageImpl<>(List.of()));
-
-        mockMvc.perform(get("/api/v1/users")
-                        .with(authentication(authFor(1L, "STAFF"))))
-                .andExpect(status().isOk());
-    }
-
     // -------------------------------------------------------------------------
-    // Hierarchy acceptance tests — ADMIN implies STAFF (IUM-06/07/08)
-    // -------------------------------------------------------------------------
-
-    @Test
-    void listUsers_adminPassesStaffEndpoint_viaHierarchy() throws Exception {
-        // GET /api/v1/users is guarded by hasRole('STAFF').
-        // ADMIN implies STAFF in the hierarchy, so an ADMIN-only principal must pass.
-        when(userService.findAllActive(any())).thenReturn(new PageImpl<>(List.of()));
-
-        mockMvc.perform(get("/api/v1/users")
-                        .with(authentication(authFor(2L, "ADMIN"))))
-                .andExpect(status().isOk());
-    }
-
-    // -------------------------------------------------------------------------
-    // GET /{id}
+    // GET /{id}  (requires MANAGE_USERS or self)
     // -------------------------------------------------------------------------
 
     @Test
@@ -203,24 +187,24 @@ class UserControllerTest {
         when(userService.findById(1L)).thenReturn(activeUser);
 
         mockMvc.perform(get("/api/v1/users/1")
-                        .with(authentication(authFor(1L, "MEMBER"))))
+                        .with(authentication(memberAuth(1L))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1));
     }
 
     @Test
-    void getUser_otherMember_returns403() throws Exception {
+    void getUser_otherMember_withoutPermission_returns403() throws Exception {
         mockMvc.perform(get("/api/v1/users/99")
-                        .with(authentication(authFor(1L, "MEMBER"))))
+                        .with(authentication(memberAuth(1L))))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    void getUser_asAdmin_returnsAnyUser() throws Exception {
+    void getUser_withManageUsers_returnsAnyUser() throws Exception {
         when(userService.findById(1L)).thenReturn(activeUser);
 
         mockMvc.perform(get("/api/v1/users/1")
-                        .with(authentication(authFor(2L, "ADMIN"))))
+                        .with(authentication(authWithPermissions(2L, "MANAGE_USERS"))))
                 .andExpect(status().isOk());
     }
 
@@ -229,24 +213,31 @@ class UserControllerTest {
         when(userService.findById(99L)).thenThrow(new ResponseStatusException(NOT_FOUND));
 
         mockMvc.perform(get("/api/v1/users/99")
-                        .with(authentication(authFor(2L, "ADMIN"))))
+                        .with(authentication(authWithPermissions(2L, "MANAGE_USERS"))))
                 .andExpect(status().isNotFound());
     }
 
     // -------------------------------------------------------------------------
-    // PATCH /{id}/role
+    // PATCH /{id}/role  (requires MANAGE_ROLES)
     // -------------------------------------------------------------------------
 
     @Test
-    void updateRole_asAdmin_changesRole() throws Exception {
+    void updateRole_withManageRoles_changesRole() throws Exception {
+        AppRole staffRole = new AppRole();
+        staffRole.setCode("STAFF");
+        staffRole.setDescription("Staff");
+
         User promoted = makeUser(1L, "member@test.com", "Test", "Member");
-        promoted.setRoles(Set.of(Role.STAFF));
-        when(userService.updateRoles(1L, Set.of(Role.STAFF))).thenReturn(promoted);
+        promoted.setRoles(new HashSet<>(Set.of(staffRole)));
+
+        when(roleRepository.findAllById(Set.of("STAFF"))).thenReturn(List.of(staffRole));
+        when(userService.updateRoles(eq(1L), any())).thenReturn(promoted);
+        when(userService.findById(1L)).thenReturn(promoted);
 
         mockMvc.perform(patch("/api/v1/users/1/role")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateRoleRequest(Set.of(Role.STAFF))))
-                        .with(authentication(authFor(2L, "ADMIN"))))
+                        .content(objectMapper.writeValueAsString(new UpdateRoleRequest(Set.of("STAFF"))))
+                        .with(authentication(authWithPermissions(2L, "MANAGE_ROLES"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.roles[0]").value("STAFF"));
     }
@@ -255,17 +246,17 @@ class UserControllerTest {
     void updateRole_selfChange_returns400() throws Exception {
         mockMvc.perform(patch("/api/v1/users/2/role")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateRoleRequest(Set.of(Role.STAFF))))
-                        .with(authentication(authFor(2L, "ADMIN"))))
+                        .content(objectMapper.writeValueAsString(new UpdateRoleRequest(Set.of("STAFF"))))
+                        .with(authentication(authWithPermissions(2L, "MANAGE_ROLES"))))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void updateRole_asMember_returns403() throws Exception {
+    void updateRole_withoutPermission_returns403() throws Exception {
         mockMvc.perform(patch("/api/v1/users/2/role")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateRoleRequest(Set.of(Role.STAFF))))
-                        .with(authentication(authFor(1L, "MEMBER"))))
+                        .content(objectMapper.writeValueAsString(new UpdateRoleRequest(Set.of("STAFF"))))
+                        .with(authentication(memberAuth(1L))))
                 .andExpect(status().isForbidden());
     }
 
@@ -276,25 +267,25 @@ class UserControllerTest {
     @Test
     void deleteUser_self_returns204() throws Exception {
         mockMvc.perform(delete("/api/v1/users/1")
-                        .with(authentication(authFor(1L, "MEMBER"))))
+                        .with(authentication(memberAuth(1L))))
                 .andExpect(status().isNoContent());
 
         verify(userService).softDeleteUser(1L, 1L);
     }
 
     @Test
-    void deleteUser_asAdmin_returns204() throws Exception {
+    void deleteUser_withManageUsers_returns204() throws Exception {
         mockMvc.perform(delete("/api/v1/users/1")
-                        .with(authentication(authFor(2L, "ADMIN"))))
+                        .with(authentication(authWithPermissions(2L, "MANAGE_USERS"))))
                 .andExpect(status().isNoContent());
 
         verify(userService).softDeleteUser(1L, 2L);
     }
 
     @Test
-    void deleteUser_otherMember_returns403() throws Exception {
+    void deleteUser_otherMember_withoutPermission_returns403() throws Exception {
         mockMvc.perform(delete("/api/v1/users/99")
-                        .with(authentication(authFor(1L, "MEMBER"))))
+                        .with(authentication(memberAuth(1L))))
                 .andExpect(status().isForbidden());
     }
 
@@ -304,20 +295,20 @@ class UserControllerTest {
                 .when(userService).softDeleteUser(2L, 2L);
 
         mockMvc.perform(delete("/api/v1/users/2")
-                        .with(authentication(authFor(2L, "ADMIN"))))
+                        .with(authentication(authWithPermissions(2L, "MANAGE_USERS"))))
                 .andExpect(status().isBadRequest());
     }
 
     // -------------------------------------------------------------------------
-    // POST /{id}/restore
+    // POST /{id}/restore  (requires MANAGE_USERS)
     // -------------------------------------------------------------------------
 
     @Test
-    void restoreUser_asAdmin_returns200() throws Exception {
+    void restoreUser_withManageUsers_returns200() throws Exception {
         when(userService.restore(1L)).thenReturn(activeUser);
 
         mockMvc.perform(post("/api/v1/users/1/restore")
-                        .with(authentication(authFor(2L, "ADMIN"))))
+                        .with(authentication(authWithPermissions(2L, "MANAGE_USERS"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1));
     }
@@ -327,14 +318,14 @@ class UserControllerTest {
         when(userService.restore(1L)).thenThrow(new ResponseStatusException(BAD_REQUEST, "User is not deleted"));
 
         mockMvc.perform(post("/api/v1/users/1/restore")
-                        .with(authentication(authFor(2L, "ADMIN"))))
+                        .with(authentication(authWithPermissions(2L, "MANAGE_USERS"))))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void restoreUser_asMember_returns403() throws Exception {
+    void restoreUser_withoutPermission_returns403() throws Exception {
         mockMvc.perform(post("/api/v1/users/1/restore")
-                        .with(authentication(authFor(1L, "MEMBER"))))
+                        .with(authentication(memberAuth(1L))))
                 .andExpect(status().isForbidden());
     }
 }

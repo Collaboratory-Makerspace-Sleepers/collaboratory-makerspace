@@ -3,10 +3,11 @@ package com.makerspace.backend.services;
 import com.makerspace.backend.controller.dto.PreRegisterRequest;
 import com.makerspace.backend.controller.dto.PreRegisterResponse;
 import com.makerspace.backend.model.AccountStatus;
+import com.makerspace.backend.model.AppRole;
 import com.makerspace.backend.model.RegistrationInvite;
-import com.makerspace.backend.model.Role;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.model.UserProfile;
+import com.makerspace.backend.repository.AppRoleRepository;
 import com.makerspace.backend.repository.RegistrationInviteRepository;
 import com.makerspace.backend.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -23,15 +25,18 @@ import java.util.stream.Collectors;
 public class AdminRegistrationService {
 
     private final UserRepository userRepository;
+    private final AppRoleRepository roleRepository;
     private final RegistrationInviteRepository inviteRepository;
     private final InviteTokenService inviteTokenService;
     private final EmailService emailService;
 
     public AdminRegistrationService(UserRepository userRepository,
+                                    AppRoleRepository roleRepository,
                                     RegistrationInviteRepository inviteRepository,
                                     InviteTokenService inviteTokenService,
                                     EmailService emailService) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
         this.inviteRepository = inviteRepository;
         this.inviteTokenService = inviteTokenService;
         this.emailService = emailService;
@@ -56,7 +61,7 @@ public class AdminRegistrationService {
         user.setProfile(profile);
         user.setAccountStatus(AccountStatus.PRE_REGISTERED);
         user.setAuth0Subject(null);
-        user.setRoles(requireAuthorityRoles(req.authorityRoles()));
+        user.setRoles(resolveRoles(req.roleCodes()));
         userRepository.save(user);
 
         boolean invited = false;
@@ -97,13 +102,16 @@ public class AdminRegistrationService {
         emailService.sendRegistrationInvite(user.getEmail(), fullName, issued.rawToken());
     }
 
-    private Set<Role> requireAuthorityRoles(Set<Role> roles) {
-        if (roles == null) return Set.of();
-        Set<Role> invalid = roles.stream().filter(r -> !r.isAuthorityRole()).collect(Collectors.toSet());
-        if (!invalid.isEmpty()) {
+    /** Resolves a set of role code strings to AppRole entities, validating each exists. */
+    private Set<AppRole> resolveRoles(Set<String> roleCodes) {
+        if (roleCodes == null || roleCodes.isEmpty()) return new HashSet<>();
+        Set<AppRole> resolved = new HashSet<>(roleRepository.findAllById(roleCodes));
+        Set<String> found = resolved.stream().map(AppRole::getCode).collect(Collectors.toSet());
+        Set<String> missing = roleCodes.stream().filter(c -> !found.contains(c)).collect(Collectors.toSet());
+        if (!missing.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Non-authority roles cannot be granted at registration: " + invalid);
+                    "Unknown role codes: " + missing);
         }
-        return roles;
+        return resolved;
     }
 }

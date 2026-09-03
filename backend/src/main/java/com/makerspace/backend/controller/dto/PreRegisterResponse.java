@@ -1,18 +1,19 @@
 package com.makerspace.backend.controller.dto;
 
 import com.makerspace.backend.model.AccountStatus;
-import com.makerspace.backend.model.Role;
+import com.makerspace.backend.model.AppRole;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.model.UserProfile;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public record PreRegisterResponse(
         Long id,
         String email,
         String fullName,
         AccountStatus status,
-        Set<Role> authorityRoles,
+        Set<String> roles,
         boolean inviteSent
 ) {
     public static PreRegisterResponse from(User user, boolean inviteSent) {
@@ -26,7 +27,7 @@ public record PreRegisterResponse(
                 user.getEmail(),
                 fullName,
                 user.getAccountStatus(),
-                user.getRoles(),
+                user.getRoles().stream().map(AppRole::getCode).collect(Collectors.toSet()),
                 inviteSent
         );
     }

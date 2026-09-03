@@ -1,6 +1,5 @@
 package com.makerspace.backend.services;
 
-import com.makerspace.backend.model.Role;
 import com.makerspace.backend.model.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -36,7 +35,7 @@ public class JwtService {
      */
     public String generateToken(User user, String auth0Subject) {
         List<String> roleNames = user.getRoles().stream()
-                .map(Role::name)
+                .map(r -> r.getCode())
                 .toList();
         return Jwts.builder()
                 .subject(user.getId().toString())

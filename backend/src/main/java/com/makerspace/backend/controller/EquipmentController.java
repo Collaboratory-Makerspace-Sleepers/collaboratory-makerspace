@@ -50,19 +50,19 @@ public class EquipmentController {
     * Admins and staff can create and update
     */
     @PostMapping
-    @PreAuthorize("hasRole('STAFF')")
+    @PreAuthorize("hasAuthority('MANAGE_EQUIPMENT')")
     public Equipment create(@RequestBody Equipment equipment) {
         return equipmentService.create(equipment);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('STAFF')")
+    @PreAuthorize("hasAuthority('MANAGE_EQUIPMENT')")
     public Equipment update(@PathVariable Long id, @RequestBody Equipment equipment) {
         return equipmentService.update(id, equipment);
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('STAFF')")
+    @PreAuthorize("hasAuthority('MANAGE_EQUIPMENT')")
     public Equipment updateStatus(@PathVariable Long id,
                                   @RequestBody Map<String, String> body) {
         EquipmentStatus status = EquipmentStatus.valueOf(body.get("status"));
@@ -73,7 +73,7 @@ public class EquipmentController {
     * Only Admin can delete
     */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('MANAGE_EQUIPMENT')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         equipmentService.delete(id);
         return ResponseEntity.noContent().build();

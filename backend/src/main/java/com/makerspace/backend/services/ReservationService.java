@@ -1,7 +1,12 @@
 package com.makerspace.backend.services;
 
 import com.makerspace.backend.config.security.UserPrincipal;
-import com.makerspace.backend.model.*;
+import com.makerspace.backend.model.Equipment;
+import com.makerspace.backend.model.EquipmentReservation;
+import com.makerspace.backend.model.EquipmentStatus;
+import com.makerspace.backend.model.Permission;
+import com.makerspace.backend.model.ReservationStatus;
+import com.makerspace.backend.model.User;
 import com.makerspace.backend.repository.EquipmentRepository;
 import com.makerspace.backend.repository.ReservationRepository;
 import com.makerspace.backend.repository.UserRepository;
@@ -88,7 +93,7 @@ public class ReservationService {
     @Transactional(readOnly = true)
     public EquipmentReservation findByIdForUser(Long id, UserPrincipal principal) {
         EquipmentReservation reservation = findById(id);
-        if (!isStaffOrAdmin(principal) && !reservation.getUserId().equals(principal.userId())) {
+        if (!hasPermission(principal, Permission.MANAGE_RESERVATIONS) && !reservation.getUserId().equals(principal.userId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
         }
         return reservation;
@@ -124,7 +129,7 @@ public class ReservationService {
     public EquipmentReservation cancel(Long id, UserPrincipal principal) {
         EquipmentReservation reservation = findById(id);
 
-        if (!isStaffOrAdmin(principal) && !reservation.getUserId().equals(principal.userId())) {
+        if (!hasPermission(principal, Permission.MANAGE_RESERVATIONS) && !reservation.getUserId().equals(principal.userId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Cannot cancel another user's reservation");
         }
@@ -157,9 +162,8 @@ public class ReservationService {
         return reservationRepository.findByEquipmentIdOrderByStartTimeDesc(equipmentId);
     }
 
-    private boolean isStaffOrAdmin(UserPrincipal principal) {
-        return principal.authorities().stream().anyMatch(a ->
-                a.equals(UserPrincipal.roleAuthority(Role.STAFF.name())) ||
-                a.equals(UserPrincipal.roleAuthority(Role.ADMIN.name())));
+    private boolean hasPermission(UserPrincipal principal, String permission) {
+        return principal.authorities().stream()
+                .anyMatch(a -> a.getAuthority().equals(permission));
     }
 }

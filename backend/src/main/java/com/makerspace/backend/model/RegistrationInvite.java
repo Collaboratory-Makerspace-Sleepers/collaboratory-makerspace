@@ -11,7 +11,10 @@ import java.time.Instant;
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "registration_invites")
+@Table(
+    name = "registration_invites",
+    indexes = @Index(name = "idx_invites_intended_email", columnList = "intended_email")
+)
 public class RegistrationInvite {
 
     @Id
@@ -38,7 +41,7 @@ public class RegistrationInvite {
     @Column(name = "created_by")
     private Long createdBy;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
     public boolean isUsable(Instant now) {

@@ -6,6 +6,9 @@ import com.makerspace.backend.controller.dto.UpdateProfileRequest;
 import com.makerspace.backend.controller.dto.UpdateRoleRequest;
 import com.makerspace.backend.controller.dto.UserAdminDTO;
 import com.makerspace.backend.controller.dto.UserDTO;
+import com.makerspace.backend.model.AppRole;
+import com.makerspace.backend.repository.AppRoleRepository;
+import com.makerspace.backend.services.UserPermissionService;
 import com.makerspace.backend.services.UserService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
@@ -21,15 +24,18 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 @RestController
 @RequestMapping("/api/v1/users")
 public class UserController {
 
-    @Autowired
-    private UserService userService;
-
-    @Autowired
-    private UserSecurity userSecurity;
+    @Autowired private UserService userService;
+    @Autowired private UserSecurity userSecurity;
+    @Autowired private AppRoleRepository roleRepository;
+    @Autowired private UserPermissionService userPermissionService;
 
     // -------------------------------------------------------------------------
     // /me — current user's own profile
@@ -50,30 +56,34 @@ public class UserController {
     // -------------------------------------------------------------------------
 
     @GetMapping
-    @PreAuthorize("hasRole('STAFF')")
+    @PreAuthorize("hasAuthority('MANAGE_USERS')")
     public Page<UserAdminDTO> listUsers(@PageableDefault(size = 50) Pageable pageable) {
         return userService.findAllActive(pageable).map(UserAdminDTO::from);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('STAFF') or @userSecurity.isSelf(#id, authentication)")
+    @PreAuthorize("hasAuthority('MANAGE_USERS') or @userSecurity.isSelf(#id, authentication)")
     public UserDTO getUser(@PathVariable Long id) {
         return UserDTO.from(userService.findById(id));
     }
 
     @PatchMapping("/{id}/role")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('MANAGE_ROLES')")
     public UserDTO updateRole(@PathVariable Long id,
                               @Valid @RequestBody UpdateRoleRequest req,
                               Authentication auth) {
         if (currentUserId(auth).equals(id)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot change your own role");
         }
-        return UserDTO.from(userService.updateRoles(id, req.roles()));
+        Set<AppRole> roles = resolveRoleCodes(req.roleCodes());
+        UserDTO result = UserDTO.from(userService.updateRoles(id, roles));
+        // Evict so the next request picks up the new permission set within 30s.
+        userPermissionService.evict(result.email());
+        return result;
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @userSecurity.isSelf(#id, authentication)")
+    @PreAuthorize("hasAuthority('MANAGE_USERS') or @userSecurity.isSelf(#id, authentication)")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id,
                                            Authentication auth,
                                            HttpServletResponse response) {
@@ -99,7 +109,7 @@ public class UserController {
     }
 
     @PostMapping("/{id}/restore")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('MANAGE_USERS')")
     public UserDTO restoreUser(@PathVariable Long id) {
         return UserDTO.from(userService.restore(id));
     }
@@ -110,5 +120,17 @@ public class UserController {
 
     private Long currentUserId(Authentication auth) {
         return ((UserPrincipal) auth.getPrincipal()).userId();
+    }
+
+    private Set<AppRole> resolveRoleCodes(Set<String> codes) {
+        if (codes == null || codes.isEmpty()) return new HashSet<>();
+        Set<AppRole> resolved = new HashSet<>(roleRepository.findAllById(codes));
+        Set<String> missing = codes.stream()
+                .filter(c -> resolved.stream().noneMatch(r -> r.getCode().equals(c)))
+                .collect(Collectors.toSet());
+        if (!missing.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown role codes: " + missing);
+        }
+        return resolved;
     }
 }

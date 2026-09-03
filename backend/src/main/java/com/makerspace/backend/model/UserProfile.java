@@ -19,9 +19,13 @@ public class UserProfile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "first_name", length = 100)
     private String firstName;
+
+    @Column(name = "last_name", length = 100)
     private String lastName;
 
+    @Column(name = "photo_url")
     private String photoUrl;
 
     @ElementCollection(fetch = FetchType.LAZY)

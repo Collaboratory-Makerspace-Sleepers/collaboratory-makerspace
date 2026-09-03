@@ -1,6 +1,6 @@
 package com.makerspace.backend;
 
-import com.makerspace.backend.model.Role;
+import com.makerspace.backend.model.AppRole;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.model.UserProfile;
 import com.makerspace.backend.services.JwtService;
@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -30,7 +31,14 @@ class JwtServiceTest {
 
     private static final String TEST_AUTH0_SUBJECT = "google-oauth2|test123";
 
-    private User makeUser(Long id, String email, Set<Role> roles) {
+    private static AppRole role(String code) {
+        AppRole r = new AppRole();
+        r.setCode(code);
+        r.setDescription(code);
+        return r;
+    }
+
+    private User makeUser(Long id, String email, Set<AppRole> roles) {
         UserProfile profile = new UserProfile();
         profile.setFirstName("Test");
         profile.setLastName("User");
@@ -40,20 +48,20 @@ class JwtServiceTest {
         user.setEmail(email);
         user.setAuth0Subject(TEST_AUTH0_SUBJECT);
         user.setProfile(profile);
-        user.setRoles(roles);
+        user.setRoles(new HashSet<>(roles));
         return user;
     }
 
     @Test
     void generatedTokenIsValid() {
-        User user = makeUser(1L, "staff@test.com", Set.of(Role.STAFF));
+        User user = makeUser(1L, "staff@test.com", Set.of(role("STAFF")));
         String token = jwtService.generateToken(user, TEST_AUTH0_SUBJECT);
         assertThat(jwtService.isValid(token)).isTrue();
     }
 
     @Test
     void parsedTokenHasCorrectClaims() {
-        User user = makeUser(42L, "staff@test.com", Set.of(Role.STAFF));
+        User user = makeUser(42L, "staff@test.com", Set.of(role("STAFF")));
         String token = jwtService.generateToken(user, TEST_AUTH0_SUBJECT);
 
         Claims claims = jwtService.parseToken(token);
@@ -64,7 +72,7 @@ class JwtServiceTest {
 
     @Test
     void parsedToken_multipleRoles_containsAllRoles() {
-        User user = makeUser(7L, "admin@test.com", Set.of(Role.ADMIN, Role.INSTRUCTOR));
+        User user = makeUser(7L, "admin@test.com", Set.of(role("ADMIN"), role("INSTRUCTOR")));
         String token = jwtService.generateToken(user, TEST_AUTH0_SUBJECT);
 
         Claims claims = jwtService.parseToken(token);

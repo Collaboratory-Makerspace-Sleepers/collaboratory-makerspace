@@ -9,7 +9,14 @@ import java.time.ZonedDateTime;
 @Entity
 @Getter
 @Setter
-@Table(name = "reservation")
+@Table(
+    name = "reservations",
+    indexes = {
+        @Index(name = "idx_reservations_user",            columnList = "user_id"),
+        @Index(name = "idx_reservations_equipment",       columnList = "equipment_id"),
+        @Index(name = "idx_reservations_active_overlap",  columnList = "equipment_id, start_time, end_time")
+    }
+)
 public class EquipmentReservation {
 
     @Id
@@ -37,7 +44,7 @@ public class EquipmentReservation {
     private ZonedDateTime endTime;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "status", nullable = false)
     private ReservationStatus status = ReservationStatus.ACTIVE;
 
     @Column(name = "cancelled_at")

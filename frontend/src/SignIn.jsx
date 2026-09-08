@@ -22,9 +22,9 @@ export default function SignIn() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
       if (!res.ok) {
-        throw new Error(data.message || "Sign in failed");
+        throw new Error(data?.message || (res.status === 403 ? "Access denied" : "Sign in failed"));
       }
       setToken(data.access_token);
       navigate(from, { replace: true });

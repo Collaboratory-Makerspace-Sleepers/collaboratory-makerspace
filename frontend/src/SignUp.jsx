@@ -28,9 +28,9 @@ export default function SignUp() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ firstName, lastName, email, password }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
       if (!res.ok) {
-        throw new Error(data.message || "Sign up failed");
+        throw new Error(data?.message || (res.status === 403 ? "Access denied" : "Sign up failed"));
       }
       setUser(data);
     } catch (err) {
@@ -99,6 +99,8 @@ export default function SignUp() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={8}
+                maxLength={72}
               />
             </div>
 

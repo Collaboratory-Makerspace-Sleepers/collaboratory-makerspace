@@ -1,17 +1,20 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [user, setUser] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const { setToken } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname ?? '/dashboard';
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
-    setUser(null);
     setLoading(true);
     try {
       const res = await fetch("/api/v1/auth/login", {
@@ -23,7 +26,8 @@ export default function SignIn() {
       if (!res.ok) {
         throw new Error(data.message || "Sign in failed");
       }
-      setUser(data);
+      setToken(data.access_token);
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -38,6 +42,14 @@ export default function SignIn() {
           <p>Sign In</p>
           <p>Welcome Back!</p>
         </div>
+
+        <a
+          href="/oauth2/authorization/google"
+          className="googleBtn"
+          onClick={() => sessionStorage.setItem('redirectAfterLogin', from)}
+        >
+          Sign in with Google
+        </a>
 
         <div className="Or">
           <div className="line"></div>
@@ -69,19 +81,12 @@ export default function SignIn() {
             </div>
           </div>
 
+          {error && <p style={{ color: "red" }}>{error}</p>}
+
           <button type="submit" disabled={loading}>
             {loading ? "Signing in…" : "Sign In"}
           </button>
         </form>
-
-        {error && <p style={{ color: "red" }}>{error}</p>}
-
-        {user && (
-          <div className="authResult">
-            <p style={{ color: "green", fontWeight: "bold" }}>Signed in as {user.firstName} {user.lastName} ({user.email})</p>
-            <pre>{JSON.stringify(user, null, 2)}</pre>
-          </div>
-        )}
 
         <div className="forgot">
           <p>Forgot Password?</p>

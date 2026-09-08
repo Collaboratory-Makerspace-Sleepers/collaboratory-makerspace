@@ -249,9 +249,17 @@ p {
   background-color: grey;
 }
 
+.SignSubmit {
+  display: flex;
+  flex-direction: column;
+  gap: 24px
+}
+
 .SignIn input {
+
+  box-sizing: border-box;
   height: 40px;
-  padding: 0 4px;
+  padding: 0 8px;
   border: 1px solid grey;
   border-radius: 5px;
 }
@@ -268,16 +276,26 @@ p {
   gap: 4px;
 }
 
+.inpt {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .forgot {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+  width: 100%;
 }
 
 .SignUpNames {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
+  gap: 12px;
+}
+
+.SignUpNames .inputColumn {
+  flex: 1;
 }
 
 .checkRow {
@@ -297,6 +315,11 @@ p {
   display: flex;
   justify-content: center;
   align-items: center;
+  padding-top: 16px
+}
+
+.signButton {
+  width: 100%
 }
 
 .authResult {

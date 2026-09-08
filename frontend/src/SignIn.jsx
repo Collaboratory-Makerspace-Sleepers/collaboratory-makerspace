@@ -21,7 +21,10 @@ export default function SignIn() {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        throw new Error(data?.message || (res.status === 403 ? "Access denied" : "Sign in failed"));
+        throw new Error(
+          data?.message ||
+            (res.status === 403 ? "Access denied" : "Sign in failed"),
+        );
       }
       setUser(data);
     } catch (err) {
@@ -38,6 +41,8 @@ export default function SignIn() {
           <p>Sign In</p>
           <p>Welcome Back!</p>
         </div>
+
+        <button className="google">Sign in with Google</button>
 
         <div className="Or">
           <div className="line"></div>
@@ -69,23 +74,29 @@ export default function SignIn() {
             </div>
           </div>
 
-          <button type="submit" disabled={loading}>
-            {loading ? "Signing in…" : "Sign In"}
-          </button>
+          <div className="sign-in">
+            <button type="submit" disabled={loading} className="signButton">
+              {loading ? "Signing in…" : "Sign In"}
+            </button>
+          </div>
         </form>
 
         {error && <p style={{ color: "red" }}>{error}</p>}
 
         {user && (
           <div className="authResult">
-            <p style={{ color: "green", fontWeight: "bold" }}>Signed in as {user.firstName} {user.lastName} ({user.email})</p>
+            <p style={{ color: "green", fontWeight: "bold" }}>
+              Signed in as {user.firstName} {user.lastName} ({user.email})
+            </p>
             <pre>{JSON.stringify(user, null, 2)}</pre>
           </div>
         )}
 
         <div className="forgot">
           <p>Forgot Password?</p>
-          <p>New User? <Link to="/signup">Sign up here</Link></p>
+          <p>
+            New User? <Link to="/signup">Sign up here</Link>
+          </p>
         </div>
       </div>
     </div>

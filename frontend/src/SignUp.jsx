@@ -30,7 +30,10 @@ export default function SignUp() {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        throw new Error(data?.message || (res.status === 403 ? "Access denied" : "Sign up failed"));
+        throw new Error(
+          data?.message ||
+            (res.status === 403 ? "Access denied" : "Sign up failed"),
+        );
       }
       setUser(data);
     } catch (err) {
@@ -55,94 +58,103 @@ export default function SignUp() {
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="SignUpNames">
+          <div className="SignSubmit">
+            <div className="SignUpNames">
+              <div className="inputColumn">
+                <label>First Name</label>
+                <input
+                  type="text"
+                  placeholder="John"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="inputColumn">
+                <label>Last Name</label>
+                <input
+                  type="text"
+                  placeholder="Doe"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                  className="inpt"
+                />
+              </div>
+            </div>
+
             <div className="inputColumn">
-              <label>First Name</label>
+              <label>Email</label>
               <input
-                type="text"
-                placeholder="John"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
 
-            <div className="inputColumn">
-              <label>Last Name</label>
-              <input
-                type="text"
-                placeholder="Doe"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                required
-              />
+            <div className="SignUpNames">
+              <div className="inputColumn">
+                <label>Password</label>
+                <input
+                  type="password"
+                  placeholder="Secret Password!"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  maxLength={72}
+                />
+              </div>
+
+              <div className="inputColumn">
+                <label>Confirm Password</label>
+                <input
+                  type="password"
+                  placeholder="Secret Password!"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="checkRow">
+              <div className="checkBox">
+                <input type="checkbox" />
+                <label>Sign Up for newsletter</label>
+              </div>
+              <div className="checkBox">
+                <input type="checkbox" />
+                <label>Agree to terms & services</label>
+              </div>
             </div>
           </div>
 
-          <div className="inputColumn">
-            <label>Email</label>
-            <input
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+          <div className="sign-in">
+            <button type="submit" disabled={loading}>
+              {loading ? "Signing up…" : "Sign Up"}
+            </button>
           </div>
-
-          <div className="SignUpNames">
-            <div className="inputColumn">
-              <label>Password</label>
-              <input
-                type="password"
-                placeholder="Secret Password!"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={8}
-                maxLength={72}
-              />
-            </div>
-
-            <div className="inputColumn">
-              <label>Confirm Password</label>
-              <input
-                type="password"
-                placeholder="Secret Password!"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="checkRow">
-            <div className="checkBox">
-              <input type="checkbox" />
-              <label>Sign Up for newsletter</label>
-            </div>
-            <div className="checkBox">
-              <input type="checkbox" />
-              <label>Agree to terms & services</label>
-            </div>
-          </div>
-
-          <button type="submit" disabled={loading}>
-            {loading ? "Signing up…" : "Sign Up"}
-          </button>
         </form>
 
         {error && <p style={{ color: "red" }}>{error}</p>}
 
         {user && (
           <div className="authResult">
-            <p style={{ color: "green", fontWeight: "bold" }}>Account created: {user.firstName} {user.lastName} ({user.email})</p>
+            <p style={{ color: "green", fontWeight: "bold" }}>
+              Account created: {user.firstName} {user.lastName} ({user.email})
+            </p>
             <pre>{JSON.stringify(user, null, 2)}</pre>
           </div>
         )}
 
         <div className="sign-in">
-          <p>Already a User? <Link to="/signin">Sign In here</Link></p>
+          <p>
+            Already a User? <Link to="/signin">Sign In here</Link>
+          </p>
         </div>
       </div>
     </div>

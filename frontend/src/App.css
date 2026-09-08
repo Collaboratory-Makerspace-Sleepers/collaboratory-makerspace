@@ -298,3 +298,16 @@ p {
   justify-content: center;
   align-items: center;
 }
+
+.authResult {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px;
+  background: #fafafa;
+}
+
+.authResult pre {
+  margin: 8px 0 0;
+  font-size: 12px;
+  overflow-x: auto;
+}

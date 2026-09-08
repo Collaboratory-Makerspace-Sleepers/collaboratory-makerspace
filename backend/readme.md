@@ -17,18 +17,12 @@ Equipment CRUD
   ---                                                                                                                                                                                                                               
 Blockers to address first
 
-┌───────────────────────────────────────────┬───────────────────────────────────────────────────────────────────────────────────────┐                                                                                             
-│                   Issue                   │                                        Impact                                         │                                                                                             
-├───────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────┤                                                                                             
-│ No test database configured               │ @DataJpaTest / integration tests need H2 or Testcontainers                            │
-├───────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────┤                                                                                             
-│ No application-test.properties            │ Context loads with real Auth0 + Postgres credentials                                  │                                                                                             
-├───────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────┤                                                                                             
-│ OAuth2 SuccessHandler end-to-end          │ Needs mocked OidcUser principal                                                       │                                                                                             
-├───────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────┤                                                                                             
-│ Role authority mismatch in HomeController │ Uses "Administrator" instead of "ROLE_ADMIN" — tests could pass but behavior is wrong │                                                                                           
-└───────────────────────────────────────────┴───────────────────────────────────────────────────────────────────────────────────────┘
-                                                                                                                                                                                                                                  
+| Issue | Impact |
+| ----- | ------ |
+| No test database configured | @DataJpaTest / integration tests need H2 or Testcontainers |
+| No application-test.properties | Context loads with real Auth0 + Postgres credentials |
+| OAuth2 SuccessHandler end-to-end | Needs mocked OidcUser principal |
+| Role authority mismatch in HomeController | Uses "Administrator" instead of "ROLE_ADMIN" — tests could pass but behavior is wrong |                                                                                                                                                                                                                                                                                                                         
 ---                                                                                                                                                                                                                               
 Recommended approach
 

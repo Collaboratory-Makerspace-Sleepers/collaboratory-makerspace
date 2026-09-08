@@ -99,6 +99,8 @@ export default function SignUp() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={8}
+                maxLength={72}
               />
             </div>
 

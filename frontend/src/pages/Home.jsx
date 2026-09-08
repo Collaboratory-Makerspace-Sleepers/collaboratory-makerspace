@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
-import mainImage from "./assets/image.png";
-import "./App.css";
-import Makerspacecarousel from "./Makerspacecarousel";
+import mainImage from "../assets/image.png";
+import "../App.css";
+import Makerspacecarousel from "../components/Makerspacecarousel";
 
 export default function Home() {
   const navigate = useNavigate();

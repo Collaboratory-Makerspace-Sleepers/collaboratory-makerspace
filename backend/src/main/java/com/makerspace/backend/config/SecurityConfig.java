@@ -52,6 +52,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/token").permitAll()
                         .requestMatchers("/api/v1/auth/me").authenticated()
+                        // Apple sends the OAuth2 callback as a POST (response_mode=form_post)
+                        .requestMatchers(POST, "/login/oauth2/code/apple").permitAll()
                         .anyRequest().permitAll()
                 )
                 .oauth2Login(o -> o.successHandler(oAuth2SuccessHandler));

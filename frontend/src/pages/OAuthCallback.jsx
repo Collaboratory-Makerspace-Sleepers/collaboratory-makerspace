@@ -17,7 +17,7 @@ export default function OAuthCallback() {
         navigate('/dashboard')
       })
       .catch(() => navigate('/login?error=true'))
-  }, [])
+  }, [navigate, setToken])
 
   return <p>Signing you in…</p>
 }

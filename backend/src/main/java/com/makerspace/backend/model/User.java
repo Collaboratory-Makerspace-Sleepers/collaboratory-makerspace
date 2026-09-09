@@ -38,6 +38,10 @@ public class User {
     @Column(name = "email_digest", length = 64)
     private String emailDigest;
 
+    /** BCrypt hash for email/password sign-up accounts. Null for OAuth-only users. */
+    @Column(name = "password_hash")
+    private String passwordHash;
+
     /** Auth0 stable subject identifier (e.g. google-oauth2|123…). Null until the account is claimed. */
     @Column(name = "auth0_subject", unique = true)
     private String auth0Subject;

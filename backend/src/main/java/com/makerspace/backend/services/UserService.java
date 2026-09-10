@@ -118,6 +118,26 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    /**
+     * Creates an active account from a bare email address (no OAuth subject).
+     * Used by the email one-time-passcode flow, where the address itself is the
+     * proof of identity. Caller must confirm the email can receive codes first.
+     */
+    @Transactional
+    public User provisionByEmail(String email) {
+        int at = email.indexOf('@');
+        String localPart = at > 0 ? email.substring(0, at) : email;
+
+        UserProfile profile = new UserProfile();
+        profile.setFirstName(localPart);
+
+        User user = new User();
+        user.setEmail(email);
+        user.setAccountStatus(AccountStatus.ACTIVE);
+        user.setProfile(profile);
+        return userRepository.save(user);
+    }
+
     @Transactional
     public User updateProfile(Long id, String firstName, String lastName) {
         User user = findById(id);

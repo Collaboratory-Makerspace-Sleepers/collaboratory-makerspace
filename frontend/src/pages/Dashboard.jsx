@@ -1,41 +1,47 @@
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export default function Dashboard() {
-  const { setToken } = useAuth()
-  const navigate = useNavigate()
+  const { setToken } = useAuth();
+  const navigate = useNavigate();
 
   function handleSignOut() {
-    setToken(null)
-    navigate('/signin', { replace: true })
+    setToken(null);
+    navigate("/signin", { replace: true });
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-white shadow px-8 py-4 flex justify-between items-center">
-        <span className="text-xl font-bold text-gray-800">Collaboratory Makerspace</span>
-        <button
-          onClick={handleSignOut}
-          className="text-sm text-gray-500 hover:text-red-500 transition-colors"
-        >
-          Sign Out
-        </button>
-      </nav>
+    <div className="Dash1">
+      {/* nav bar */}
+      <div className="Dash">
+        <div className="DashNav">
+          <p>Menu</p>
+          <div className="DashNav1">
+            <NavLink to="/dashboard/home">Home</NavLink>
+            <NavLink to="/dashboard/rentequipment">Rent Equipment</NavLink>
+            <NavLink to="/dashboard/bookclasses">Book Classes</NavLink>
+          </div>
+        </div>
 
-      <main className="max-w-5xl mx-auto px-8 py-12">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-        <p className="text-gray-500 mb-10">Welcome back!</p>
-      </main>
-    </div>
-  )
-}
+        <div className="DashNav">
+          <p>General</p>
+          <div className="DashNav1">
+            <NavLink to="/dashboard/account">Account</NavLink>
+            <NavLink to="/dashboard/membership">Membership</NavLink>
+            <button
+              onClick={handleSignOut}
+              className="text-sm text-gray-500 hover:text-red-500 transition-colors"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
 
-function DashboardCard({ title, description, icon }) {
-  return (
-    <div className="bg-white rounded-2xl shadow p-6 flex flex-col gap-2 hover:shadow-md transition-shadow cursor-pointer">
-      <span className="text-3xl">{icon}</span>
-      <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
-      <p className="text-sm text-gray-500">{description}</p>
+      {/* main screen */}
+      <div className="DashMain">
+        <Outlet />
+      </div>
     </div>
-  )
+  );
 }

@@ -94,6 +94,13 @@
             <artifactId>signnow-java-sdk</artifactId>
             <version>3.5.2</version>
         </dependency>
+        <!--
+        <dependency>
+            <groupId>com.signnow</groupId>
+            <artifactId>signnow-java-api-client</artifactId>
+            <version>3.5.2</version>
+        </dependency>
+        -->
         <!-- actuator -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

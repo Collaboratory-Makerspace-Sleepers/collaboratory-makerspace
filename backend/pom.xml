@@ -93,6 +93,11 @@
             <groupId>com.signnow</groupId>
             <artifactId>signnow-java-sdk</artifactId>
             <version>3.5.2</version>
+        <depeendency>
+            <groupId>com.signnow</groupId>
+            <artifactId>signnow-java-api-client</artifactId>
+            <version>3.5.2</version> // may need to change this version
+        </depeendency>
         </dependency>
         <!-- actuator -->
         <dependency>

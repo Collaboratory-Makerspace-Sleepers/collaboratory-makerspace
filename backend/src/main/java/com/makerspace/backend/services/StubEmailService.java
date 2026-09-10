@@ -24,4 +24,9 @@ public class StubEmailService implements EmailService {
         String link = frontendBaseUrl + "/register/confirm?token=" + rawToken;
         log.warn("[STUB] Registration invite for {} <{}> — link: {}", fullName, toEmail, link);
     }
+
+    @Override
+    public void sendOtp(String toEmail, String code) {
+        log.warn("[STUB] OTP for <{}> — code: {}", toEmail, code);
+    }
 }

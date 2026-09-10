@@ -47,10 +47,17 @@ public class SecurityConfig {
     // -------------------------------------------------------------------------
     @Bean @Order(1)
     public SecurityFilterChain authChain(HttpSecurity http) throws Exception {
-        applyShared(http)
+        // OAuth2 login needs a session to store the state/nonce between the
+        // authorization request and the callback — do NOT apply STATELESS here.
+        http
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .securityMatcher("/api/v1/auth/**", "/oauth2/**", "/login/**")
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/token").permitAll()
+                        .requestMatchers(POST, "/api/v1/auth/otp/send").permitAll()
+                        .requestMatchers(POST, "/api/v1/auth/otp/verify").permitAll()
                         .requestMatchers("/api/v1/auth/me").authenticated()
                         // Apple sends the OAuth2 callback as a POST (response_mode=form_post)
                         .requestMatchers(POST, "/login/oauth2/code/apple").permitAll()
@@ -139,7 +146,7 @@ public class SecurityConfig {
     public SecurityFilterChain fallbackChain(HttpSecurity http) throws Exception {
         applyShared(http)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/actuator/health", "/error").permitAll()
                         .anyRequest().authenticated()
                 );
         return http.build();

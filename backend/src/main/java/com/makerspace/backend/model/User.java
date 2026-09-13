@@ -65,6 +65,9 @@ public class User {
                 .collect(Collectors.toSet());
     }
 
+    @Column(name = "stripe_customer_id", nullable = true)
+    private String stripeCustomerId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 

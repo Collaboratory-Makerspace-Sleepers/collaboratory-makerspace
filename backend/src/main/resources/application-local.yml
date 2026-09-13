@@ -3,10 +3,25 @@
 # postgres is on 5433 outside docker to avoid conflicts
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/collab_app
+    url: jdbc:postgresql://localhost:5433/collab_app
     username: app_admin
     password: admin123
     driver-class-name: org.postgresql.Driver
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: local-google-client
+            client-secret: local-google-secret
+            scope: openid,profile,email
+          microsoft:
+            client-id: local-microsoft-client
+            client-secret: local-microsoft-secret
+          apple:
+            client-id: local-apple-client
+            client-secret: local-apple-secret
 
   jpa:
     hibernate:
@@ -17,3 +32,8 @@ spring:
 
 server:
   port: 8080
+
+app:
+  jwt:
+    secret: local-development-secret-key-change-for-real-use
+    expiration: 3600000

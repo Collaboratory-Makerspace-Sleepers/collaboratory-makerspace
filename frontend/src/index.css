@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -65,4 +67,14 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+h2.section-title,
+.WhiteDiv1 h2,
+p.section-title {
+  font-size: 40px !important;
+  font-weight: 700 !important;
+  color: #000000 !important;
+  line-height: 1.1 !important;
+  letter-spacing: -0.6px !important;
 }

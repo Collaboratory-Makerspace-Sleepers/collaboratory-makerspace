@@ -10,27 +10,29 @@ export default function Home() {
     <div className="bigdiv">
       <div className="secondDiv">
         <div className="NavBar">
-          <p>The Collaboratory</p>
+          <p className="logo">The Collaboratory</p>
 
           <div className="links">
-            <Link to="/">Home</Link>
-            <a>Pricing</a>
-            <button onClick={() => navigate("/signup")}>Sign Up</button>
-            <button onClick={() => navigate("/signin")}>Sign in</button>
+            <Link to="/" className="nav-link active">Home</Link>
+            <a className="nav-link">Pricing</a>
+            <button className="nav-btn" onClick={() => navigate("/signup")}>Sign Up</button>
+            <button className="nav-btn" onClick={() => navigate("/signin")}>Sign In</button>
           </div>
         </div>
 
         <div className="Colla">
-          <p>The Collaboratory</p>
-
-          <p>
+          <h1 className="hero-title">The Collaboratory</h1>
+          <p className="hero-description">
             The collaboratory is a makerspace that offers state-of-the-art
             equipment, class bookings, and private studios
           </p>
-
           <div className="CollaRow">
-            <button onClick={() => navigate("/signup")}>Try for free today</button>
-            <button onClick={() => navigate("/signin")}>Sign in</button>
+            <button className="btn-primary" onClick={() => navigate("/signup")}>
+              <span>↗</span> Try for free today
+            </button>
+            <button className="btn-secondary" onClick={() => navigate("/signin")}>
+              <span>↗</span> Sign In
+            </button>
           </div>
         </div>
 
@@ -40,16 +42,17 @@ export default function Home() {
 
         <div className="WhiteDiv">
           <div className="WhiteDiv1">
-            <p>Rent Equipment, Book Classes</p>
-
-            <div className="WhiteDivRow">
+            <div className="WhiteDivTextGroup">
+              <h2 className="section-title">Rent Equipment, Book Classes</h2>
               <p className="WhiteDivText">
-                The collaboratory is a makerspace where you can rent top-notch
-                euqipment at budget-friendly prices, along with options for
-                class bookings and private studios.
+                The collaboratory is a makerspace where you can rent
+                top-notch equipment at budget-friendly prices, along
+                with options for class bookings and private studios.
               </p>
-              <button>Start your project today</button>
             </div>
+            <button className="btn-primary">
+              <span>↗</span> Start your project today
+            </button>
           </div>
 
           <Makerspacecarousel />
@@ -61,13 +64,13 @@ export default function Home() {
             <div className="Square2"></div>
           </div>
           <div className="MiddleDiv">
-            <p>Private Studios</p>
+            <p className="section-title">Private Studios</p>
             <p className="MiddeText">
               The collaboratory is a vibrant makerspace where you can easily
-              book classes to learn and create using top-notic equipment and
+              book classes to learn and create using top-notch equipment and
               private studios.
             </p>
-            <button>View Membership Options</button>
+            <button className="btn-primary">View Membership Options</button>
           </div>
           <div className="SquareRow">
             <div className="Square3"></div>
@@ -78,28 +81,34 @@ export default function Home() {
         <div className="FootDiv">
           <div className="FootDiv12">
             <div className="FootDiv2">
-              <p>The Collaboratory</p>
-              <p>
+              <h2 className="footer-logo">The Collaboratory</h2>
+              <p className="footer-description">
                 The collaboratory is a makerspace that offers state-of-the-art
-                equipment, class bookings, and private studios.
+                equipment, class bookings, and private studios
               </p>
             </div>
 
             <div className="FootDivGrid">
+              {/* Column 1 */}
               <Link to="/">Home</Link>
-              <Link to="/signin">Sign in</Link>
-              <a>Youtube</a>
-              <a>About</a>
+              <a href="#about">About</a>
+              <a href="#pricing">Pricing</a>
+
+              {/* Column 2 */}
+              <Link to="/signin">Sign In</Link>
               <Link to="/signup">Sign Up</Link>
-              <a>Facebook</a>
-              <a>Pricing</a>
-              <a>Contact</a>
-              <a>Instagram</a>
+              <a href="#contact">Contact</a>
+
+              {/* Column 3 */}
+              <a href="#youtube">Youtube</a>
+              <a href="#facebook">Facebook</a>
+              <a href="#instagram">Instagram</a>
             </div>
           </div>
+
           <div className="FootDiv3">
             <p>All Rights Reserved, 2026</p>
-            <a>Back to Top</a>
+            <a href="#top">Back to Top</a>
           </div>
         </div>
       </div>

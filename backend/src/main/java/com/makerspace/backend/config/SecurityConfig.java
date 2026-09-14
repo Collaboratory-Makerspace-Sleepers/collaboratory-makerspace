@@ -1,5 +1,6 @@
 package com.makerspace.backend.config;
 
+import com.makerspace.backend.config.security.InternalAuthFilter;
 import com.makerspace.backend.model.Permission;
 import com.makerspace.backend.security.JwtAuthFilter;
 import com.makerspace.backend.security.OAuth2SuccessHandler;
@@ -33,6 +34,7 @@ import static org.springframework.http.HttpMethod.*;
 public class SecurityConfig {
 
     @Autowired private JwtAuthFilter jwtAuthFilter;
+    @Autowired private InternalAuthFilter internalAuthFilter;
     @Autowired private OAuth2SuccessHandler oAuth2SuccessHandler;
 
     private HttpSecurity applyShared(HttpSecurity http) throws Exception {
@@ -127,9 +129,28 @@ public class SecurityConfig {
     }
 
     // -------------------------------------------------------------------------
-    // Order 5 — Roles / permissions admin API
+    // Order 5 — Internal Lambda API
+    // InternalAuthFilter must run before JwtAuthFilter.
+    // Authentication principal is NOT a UserPrincipal — UserSecurity fails closed.
     // -------------------------------------------------------------------------
     @Bean @Order(5)
+    public SecurityFilterChain internalChain(HttpSecurity http) throws Exception {
+        applyShared(http)
+                .securityMatcher("/api/internal/**")
+                .addFilterBefore(internalAuthFilter, JwtAuthFilter.class)
+                .anonymous(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().hasAuthority("SCOPE_INTERNAL")
+                )
+                .exceptionHandling(e -> e.authenticationEntryPoint(
+                        (req, res, ex) -> res.sendError(HttpServletResponse.SC_UNAUTHORIZED)));
+        return http.build();
+    }
+
+    // -------------------------------------------------------------------------
+    // Order 6 — Roles / permissions admin API
+    // -------------------------------------------------------------------------
+    @Bean @Order(6)
     public SecurityFilterChain roleAdminChain(HttpSecurity http) throws Exception {
         applyShared(http)
                 .securityMatcher("/api/v1/admin/roles/**", "/api/v1/admin/permissions/**")

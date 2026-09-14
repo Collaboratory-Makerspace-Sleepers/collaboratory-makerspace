@@ -202,6 +202,27 @@ export default function DashboardHome() {
 
         <Makerspacecarousel/>
       </div>
+
+      <div className="DashHomeD3">
+        <div className="DashD1">
+          <p>Recommended Tasks</p>
+
+          <div className="DashD2">
+            <div className="DashD3">
+              <p>Intro the laser Cutting</p>
+              <button>Complete</button>
+            </div>
+            <div className="DashD3">
+              <p>Intro the laser Cutting</p>
+              <button>Complete</button>
+            </div>
+            <div className="DashD3">
+              <p>Intro the laser Cutting</p>
+              <button>Complete</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

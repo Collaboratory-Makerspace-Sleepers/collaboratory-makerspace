@@ -614,3 +614,29 @@ p {
   width: 100%;
   min-width: 0;
 }
+
+.DashHomeD3 {
+  padding: 20px;
+  border: 1px solid grey;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.DashD1 {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.DashD2 {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.DashD3 {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}

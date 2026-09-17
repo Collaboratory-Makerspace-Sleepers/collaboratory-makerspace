@@ -5,10 +5,9 @@ p {
 
 /* Home page */
 .bigdiv {
-  padding-top: 32px;
-  padding-right: 64px;
-  padding-bottom: 32px;
-  padding-left: 64px;
+  width: 100%;
+  padding: 32px clamp(16px, 4vw, 64px);
+  box-sizing: border-box;
 }
 
 .secondDiv {
@@ -24,41 +23,41 @@ p {
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .links {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
 
-  gap: 32px;
+  gap: clamp(12px, 2.5vw, 32px);
 
   margin-left: auto;
 
   width: auto;
-  height: 37px;
 }
 
 .Colla {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  width: 444px;
+  width: min(444px, 100%);
 }
 
 .CollaRow {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   gap: 16px;
 }
 
 .OrangeDiv {
   background-color: #ff530e;
   width: 100%;
-  padding-top: 64px;
-  padding-bottom: 64px;
-  padding-left: 128px;
-  padding-right: 128px;
+  padding: clamp(32px, 6vw, 64px) clamp(16px, 6vw, 128px);
   border-radius: 12px;
   box-sizing: border-box;
 }
@@ -74,7 +73,7 @@ p {
   display: flex;
   flex-direction: column;
 
-  gap: 48px;
+  gap: clamp(24px, 4vw, 48px);
 }
 
 .WhiteDiv1 {
@@ -92,18 +91,21 @@ p {
 .WhiteDivRow {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   justify-content: space-between;
+  align-items: center;
+  gap: 16px;
 }
 
 .WhiteDivText {
-  width: 444px;
+  width: min(444px, 100%);
 }
 
 .PrivateDiv {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 48px;
+  gap: clamp(16px, 4vw, 48px);
 }
 
 .SquareRow {
@@ -113,38 +115,30 @@ p {
   width: 100%;
 }
 
-.Square1 {
-  width: 280px;
-  height: 280px;
+.Square1,
+.Square2,
+.Square3,
+.Square4,
+.Square {
+  width: clamp(120px, 38vw, 280px);
+  height: clamp(120px, 38vw, 280px);
   background-color: black;
-  margin-left: 100px;
 }
 
-.Square2 {
-  width: 280px;
-  height: 280px;
-  background-color: black;
-  margin-top: 50px;
+.Square1 {
+  margin-left: clamp(0px, 7vw, 100px);
+}
+
+.Square2,
+.Square4 {
+  margin-top: clamp(24px, 5vw, 50px);
 }
 
 .Square3 {
-  width: 280px;
-  height: 280px;
-  background-color: black;
-  margin-right: 100px;
-}
-
-.Square4 {
-  width: 280px;
-  height: 280px;
-  background-color: black;
-  margin-top: 50px;
+  margin-right: clamp(0px, 7vw, 100px);
 }
 
 .Square {
-  width: 280px;
-  height: 280px;
-  background-color: black;
   margin-left: 20px;
 }
 
@@ -158,30 +152,33 @@ p {
   gap: 24px;
   align-items: center;
   text-align: center;
-  width: 350px;
+  width: min(350px, 80%);
 }
 
 .FootDiv {
   display: flex;
   flex-direction: column;
   width: 100%;
-  gap: 90px;
-  padding-top: 100px;
+  gap: clamp(40px, 6vw, 90px);
+  padding-top: clamp(48px, 8vw, 100px);
 }
 
 .FootDiv12 {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
   width: 100%;
+  gap: 32px;
 }
 
 .FootDiv2 {
   display: flex;
   flex-direction: column;
-  width: 40%;
+  width: min(40%, 320px);
   gap: 16px;
+  flex: 1 1 260px;
 }
 
 .FootDivGrid {
@@ -205,18 +202,20 @@ p {
   align-items: center;
   width: 100%;
   min-height: 100vh;
+  padding: 32px clamp(16px, 4vw, 64px);
   box-sizing: border-box;
 }
 
 .SignIn {
   border: 1px solid black;
   border-radius: 4px;
-  padding: 10px;
+  padding: clamp(16px, 3vw, 24px);
   display: flex;
   flex-direction: column;
   justify-content: center;
-  width: 465px;
+  width: min(465px, 100%);
   gap: 24px;
+  box-sizing: border-box;
 }
 
 .SignInText {
@@ -343,6 +342,7 @@ p {
 .SignUpNames {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
@@ -404,6 +404,8 @@ p {
   padding-left: 16px;
   padding-right: 16px;
   background: #d7d5d5;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .DashNav {
@@ -451,7 +453,8 @@ p {
 .DashMain {
   flex: 1;
   min-width: 0;
-  padding: 24px;
+  padding: clamp(12px, 3vw, 24px);
+  box-sizing: border-box;
 }
 
 /* Dashboard home user */
@@ -527,8 +530,13 @@ p {
   border-radius: 4px;
   width: 24px;
   height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   line-height: 1;
   cursor: pointer;
+  color: black;
 }
 
 .CalendarNavBtn:hover {
@@ -559,6 +567,7 @@ p {
   aspect-ratio: 1 / 1;
   cursor: pointer;
   font-size: 13px;
+  color: black;
 }
 
 .CalendarDay:hover {
@@ -639,4 +648,137 @@ p {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* pricing */
+.PricingColla {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.CollaR {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.CollaD {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.CollaR1 {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 24px;
+  width: 100%;
+}
+
+.collar2 {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.colla4 {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.collar3 {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.colla6 {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgb(234, 234, 234);
+  gap: 24px;
+}
+
+.colla5 {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .DashHomeD1 {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
+  .Dash1 {
+    flex-direction: column;
+  }
+
+  .Dash {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    min-height: 0;
+    padding: 12px;
+  }
+
+  .DashNav {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .DashNav1 {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .FootDivGrid {
+    gap: 10px 24px;
+  }
+}
+
+/* Phone */
+@media (max-width: 640px) {
+  .DashHomeGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .NavBar {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .links {
+    justify-content: center;
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .FootDivGrid {
+    grid-template-columns: repeat(2, auto);
+  }
+
+  .DashNav1 a {
+    height: 36px;
+  }
 }

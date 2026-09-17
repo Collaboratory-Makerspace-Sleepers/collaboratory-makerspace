@@ -8,7 +8,7 @@ export default function SignUp() {
       <div className="SignIn">
         <div className="SignInText">
           <p>Sign Up</p>
-          <p>Welcome to the collaboratory!</p>
+          <p>Welcome to the Collaboratory!</p>
         </div>
 
         <OAuthButtons />

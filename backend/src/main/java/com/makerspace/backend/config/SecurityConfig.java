@@ -14,8 +14,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -37,11 +35,6 @@ public class SecurityConfig {
     @Autowired private JwtAuthFilter jwtAuthFilter;
     @Autowired private OAuth2SuccessHandler oAuth2SuccessHandler;
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
     private HttpSecurity applyShared(HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -54,11 +47,20 @@ public class SecurityConfig {
     // -------------------------------------------------------------------------
     @Bean @Order(1)
     public SecurityFilterChain authChain(HttpSecurity http) throws Exception {
-        applyShared(http)
+        // OAuth2 login needs a session to store the state/nonce between the
+        // authorization request and the callback — do NOT apply STATELESS here.
+        http
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .securityMatcher("/api/v1/auth/**", "/oauth2/**", "/login/**")
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/token").permitAll()
+                        .requestMatchers(POST, "/api/v1/auth/otp/send").permitAll()
+                        .requestMatchers(POST, "/api/v1/auth/otp/verify").permitAll()
                         .requestMatchers("/api/v1/auth/me").authenticated()
+                        // Apple sends the OAuth2 callback as a POST (response_mode=form_post)
+                        .requestMatchers(POST, "/login/oauth2/code/apple").permitAll()
                         .anyRequest().permitAll()
                 )
                 .oauth2Login(o -> o.successHandler(oAuth2SuccessHandler));
@@ -144,8 +146,7 @@ public class SecurityConfig {
     public SecurityFilterChain fallbackChain(HttpSecurity http) throws Exception {
         applyShared(http)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health").permitAll()
-                        .requestMatchers("/error").permitAll()
+                        .requestMatchers("/actuator/health", "/error").permitAll()
                         .anyRequest().authenticated()
                 );
         return http.build();

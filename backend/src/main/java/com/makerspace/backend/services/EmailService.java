@@ -9,7 +9,8 @@ public interface EmailService {
     void sendRegistrationInvite(String toEmail, String fullName, String rawToken);
 
     /**
-     * Sends a one-time passcode for email/OTP login.
+     * Sends a one-time passcode to the given email address.
+     * The code is short-lived (10 minutes) and single-use.
      */
-    void sendOtpCode(String toEmail, String code);
+    void sendOtp(String toEmail, String code);
 }

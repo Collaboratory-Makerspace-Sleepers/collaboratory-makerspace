@@ -9,13 +9,17 @@ public record OAuthProfile(
         String subject  // OAuth provider's stable user ID (the "sub" claim)
 ) {
     public static OAuthProfile from(OidcUser oidcUser) {
+        // Apple does not return given_name/family_name on repeat logins — fall back gracefully
         String firstName = oidcUser.getGivenName() != null
                 ? oidcUser.getGivenName()
                 : oidcUser.getEmail();
+        String lastName = oidcUser.getFamilyName() != null
+                ? oidcUser.getFamilyName()
+                : "";
         return new OAuthProfile(
                 oidcUser.getEmail(),
                 firstName,
-                oidcUser.getFamilyName(),
+                lastName,
                 oidcUser.getSubject()
         );
     }

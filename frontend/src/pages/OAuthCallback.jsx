@@ -14,12 +14,10 @@ export default function OAuthCallback() {
       })
       .then(({ access_token }) => {
         setToken(access_token)
-        const redirect = sessionStorage.getItem('redirectAfterLogin') ?? '/dashboard'
-        sessionStorage.removeItem('redirectAfterLogin')
-        navigate(redirect, { replace: true })
+        navigate('/dashboard')
       })
-      .catch(() => navigate('/signin?error=true'))
-  }, [])
+      .catch(() => navigate('/login?error=true'))
+  }, [navigate, setToken])
 
   return <p>Signing you in…</p>
 }

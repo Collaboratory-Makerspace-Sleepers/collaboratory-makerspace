@@ -471,7 +471,7 @@ p {
   gap: 16px;
 }
 
-.Dash3 {
+.Dash3, .Dash9{
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -490,6 +490,30 @@ p {
   flex-direction: row;
   align-items: center;
   gap: 24px;
+}
+
+.Dash6{
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.Dash7 {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.Dash8 {
+  display: flex;
+  flex-direction: row;
+  gap: 16px
+}
+
+.Dash10{
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
 }
 
 /* pricing */

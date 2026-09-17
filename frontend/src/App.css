@@ -471,7 +471,8 @@ p {
   gap: 16px;
 }
 
-.Dash3, .Dash9{
+.Dash3,
+.Dash9 {
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -492,7 +493,16 @@ p {
   gap: 24px;
 }
 
-.Dash6{
+.SearchInput {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.Dash6 {
   display: flex;
   flex-direction: column;
   gap: 32px;
@@ -507,10 +517,55 @@ p {
 .Dash8 {
   display: flex;
   flex-direction: row;
-  gap: 16px
+  gap: 16px;
 }
 
-.Dash10{
+.Dash10 {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+/* Rent user dashboard */
+.RentGrid {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 10px 10px;
+}
+
+.Rent1 {
+  border: 1px solid gray;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.Rent1 img {
+  border-radius: 10px 10px 0 0;
+  display: block;
+  width: 100%;
+}
+
+.Rent2 {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 16px;
+}
+
+.Rent3 {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.Rent4 {
+  border: 1px solid gray;
+  border-radius: 16px;
+  padding: 5px 10px;
+  width: fit-content;
+}
+
+.Rent5 {
   display: flex;
   flex-direction: row;
   justify-content: space-between;

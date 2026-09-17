@@ -31,7 +31,66 @@ export default function DashboardHome() {
             <button>Classes</button>
           </div>
         </div>
-        <Makerspacecarousel/>
+        <div className="RentGrid">
+        <div className="Rent1">
+          <div>
+            <img src="https://picsum.photos/seed/laser-a/480/360" />
+          </div>
+
+          <div className="Rent2">
+            <div className="Rent3">
+              <div className="Rent4">
+                <p>2/6 Available</p>
+              </div>
+              <p>LAserMachine</p>
+            </div>
+
+            <div className="Rent5">
+              <p>$7/hr</p>
+              <button>Reserve</button>
+            </div>
+          </div>
+        </div>
+        <div className="Rent1">
+          <div>
+            <img src="https://picsum.photos/seed/laser-a/480/360" />
+          </div>
+
+          <div className="Rent2">
+            <div className="Rent3">
+              <div className="Rent4">
+                <p>2/6 Available</p>
+              </div>
+              <p>LAserMachine</p>
+            </div>
+
+            <div className="Rent5">
+              <p>$7/hr</p>
+              <button>Reserve</button>
+            </div>
+          </div>
+        </div>
+        <div className="Rent1">
+          <div>
+            <img src="https://picsum.photos/seed/laser-a/480/360" />
+          </div>
+
+          <div className="Rent2">
+            <div className="Rent3">
+              <div className="Rent4">
+                <p>2/6 Available</p>
+              </div>
+              <p>LAserMachine</p>
+            </div>
+
+            <div className="Rent5">
+              <p>$7/hr</p>
+              <button>Reserve</button>
+            </div>
+          </div>
+        </div>
+       
+      </div>
       </div>
 
       <div className="Dash9">

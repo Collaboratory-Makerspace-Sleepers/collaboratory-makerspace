@@ -1,4 +1,9 @@
+import { useNavigate } from "react-router-dom";
+import equipment from "../../data/equipment";
+
 export default function RentEquipment() {
+  const navigate = useNavigate();
+
   return (
     <div className="DashHome1">
       <div className="Dash2">
@@ -20,123 +25,36 @@ export default function RentEquipment() {
         </div>
       </div>
 
-      {/* Search field */}
-      <input type="text" placeholder="Search" className="SearchInput" />
+      <div className="RentEquipmentSection">
+        {/* Search field */}
+        <input type="text" placeholder="Search" className="SearchInput" />
 
-      <div className="RentGrid">
-        <div className="Rent1">
-          <div>
-            <img src="https://picsum.photos/seed/laser-a/480/360" />
-          </div>
-
-          <div className="Rent2">
-            <div className="Rent3">
-              <div className="Rent4">
-                <p>2/6 Available</p>
+        <div className="RentGrid">
+          {equipment.map((item) => (
+            <div className="Rent1" key={item.id}>
+              <div>
+                <img src={item.image} />
               </div>
-              <p>LAserMachine</p>
-            </div>
 
-            <div className="Rent5">
-              <p>$7/hr</p>
-              <button>Reserve</button>
-            </div>
-          </div>
-        </div>
-        <div className="Rent1">
-          <div>
-            <img src="https://picsum.photos/seed/laser-a/480/360" />
-          </div>
+              <div className="Rent2">
+                <div className="Rent3">
+                  <div className="Rent4">
+                    <p>
+                      {item.available}/{item.total} Available
+                    </p>
+                  </div>
+                  <p>{item.name}</p>
+                </div>
 
-          <div className="Rent2">
-            <div className="Rent3">
-              <div className="Rent4">
-                <p>2/6 Available</p>
+                <div className="Rent5">
+                  <p>{item.price}</p>
+                  <button onClick={() => navigate(`/dashboard/rentequipment/${item.id}`)}>
+                    Reserve
+                  </button>
+                </div>
               </div>
-              <p>LAserMachine</p>
             </div>
-
-            <div className="Rent5">
-              <p>$7/hr</p>
-              <button>Reserve</button>
-            </div>
-          </div>
-        </div>
-        <div className="Rent1">
-          <div>
-            <img src="https://picsum.photos/seed/laser-a/480/360" />
-          </div>
-
-          <div className="Rent2">
-            <div className="Rent3">
-              <div className="Rent4">
-                <p>2/6 Available</p>
-              </div>
-              <p>LAserMachine</p>
-            </div>
-
-            <div className="Rent5">
-              <p>$7/hr</p>
-              <button>Reserve</button>
-            </div>
-          </div>
-        </div>
-        <div className="Rent1">
-          <div>
-            <img src="https://picsum.photos/seed/laser-a/480/360" />
-          </div>
-
-          <div className="Rent2">
-            <div className="Rent3">
-              <div className="Rent4">
-                <p>2/6 Available</p>
-              </div>
-              <p>LAserMachine</p>
-            </div>
-
-            <div className="Rent5">
-              <p>$7/hr</p>
-              <button>Reserve</button>
-            </div>
-          </div>
-        </div>
-        <div className="Rent1">
-          <div>
-            <img src="https://picsum.photos/seed/laser-a/480/360" />
-          </div>
-
-          <div className="Rent2">
-            <div className="Rent3">
-              <div className="Rent4">
-                <p>2/6 Available</p>
-              </div>
-              <p>LAserMachine</p>
-            </div>
-
-            <div className="Rent5">
-              <p>$7/hr</p>
-              <button>Reserve</button>
-            </div>
-          </div>
-        </div>
-        <div className="Rent1">
-          <div>
-            <img src="https://picsum.photos/seed/laser-a/480/360" />
-          </div>
-
-          <div className="Rent2">
-            <div className="Rent3">
-              <div className="Rent4">
-                <p>2/6 Available</p>
-              </div>
-              <p>LAserMachine</p>
-            </div>
-
-            <div className="Rent5">
-              <p>$7/hr</p>
-              <button>Reserve</button>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>

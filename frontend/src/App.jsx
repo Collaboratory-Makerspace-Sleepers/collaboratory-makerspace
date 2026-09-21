@@ -7,6 +7,7 @@ import OAuthCallback from "./pages/OAuthCallback";
 import Dashboard from "./pages/Dashboard";
 import DashboardHome from "./components/dashboard/DashboardHome";
 import RentEquipment from "./components/dashboard/RentEquipment";
+import ReserveEquipment from "./components/dashboard/ReserveEquipment";
 import BookClasses from "./components/dashboard/BookClasses";
 import Account from "./components/dashboard/Account";
 import Membership from "./components/dashboard/Membership";
@@ -24,6 +25,7 @@ function App() {
         <Route index element={<Navigate to="home" replace />} />
         <Route path="home" element={<DashboardHome />} />
         <Route path="rentequipment" element={<RentEquipment />} />
+        <Route path="rentequipment/:id" element={<ReserveEquipment />} />
         <Route path="bookclasses" element={<BookClasses />} />
         <Route path="account" element={<Account />} />
         <Route path="membership" element={<Membership />} />

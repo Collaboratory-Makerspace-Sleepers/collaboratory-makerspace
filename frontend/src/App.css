@@ -527,6 +527,15 @@ p {
 }
 
 /* Rent user dashboard */
+.RentEquipmentSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+
+  border-radius: 14px;
+}
+
 .RentGrid {
   display: grid;
   grid-template-columns: repeat(3, auto);
@@ -569,6 +578,125 @@ p {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+}
+
+/* Reserve equipment screen */
+.ReserveHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background-color: rgb(232, 232, 232);
+  border-radius: 14px;
+}
+
+.CalendarWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid gray;
+  border-radius: 14px;
+  width: 480px;
+  font-size: 13px;
+  align-self: center;
+
+}
+
+.CalendarHeader {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.CalendarArrows {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+}
+
+.CalendarWeekdays,
+.CalendarDays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  text-align: center;
+}
+
+.CalendarDay {
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 10px 0;
+  font-size: 12px;
+  background: none;
+  color: #1a1a1a;
+  cursor: pointer;
+}
+
+.CalendarDay:hover {
+  border-color: #cbd5e1;
+  background-color: #f8fafc;
+}
+
+.CalendarDaySelected {
+  background-color: #1a1a1a;
+  color: #ffffff;
+}
+
+.CalendarDayEmpty {
+  padding: 4px 0;
+}
+
+.AvailableTimesWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.AvailableTimesGrid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.TimeSlotButton {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: none;
+  color: #1a1a1a;
+  cursor: pointer;
+}
+
+.TimeSlotButton:hover {
+  border-color: #cbd5e1;
+  background-color: #f8fafc;
+}
+
+.ReserveSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid gray;
+  border-radius: 14px;
+}
+
+.ReserveSummaryTop {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ReserveSummaryBottom {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
 }
 
 /* pricing */
@@ -636,6 +764,75 @@ p {
   flex-direction: column;
   gap: 8px;
   flex: 1;
+}
+
+/* dashboard user account */
+.AccountDiv {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.AccountD1 {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.AccountD2 {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.AccountD3 {
+  padding: 16px;
+  border: 1px solid gray;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.AccountD4 {
+  padding: 16px;
+  border: 1px solid gray;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.AccountD5 {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.AccountFormRow {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+}
+
+.AccountFormField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.AccountFormField input {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  box-sizing: border-box;
 }
 
 /* Tablet */

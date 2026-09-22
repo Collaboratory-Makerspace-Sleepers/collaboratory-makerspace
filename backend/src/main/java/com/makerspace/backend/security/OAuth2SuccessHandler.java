@@ -53,18 +53,18 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         switch (resolution) {
             case UserResolution.Active active ->
-                    issueTokenAndRedirect(active.user(), profile.subject(), response);
+                    issueTokenAndRedirect(request, active.user(), profile.subject(), response);
 
             case UserResolution.Pending pending -> {
                 try {
                     if (requireExplicitClaim) {
                         // Issue a restricted ROLE_PENDING token; account activates on /claim.
-                        issueTokenAndRedirect(pending.user(), profile.subject(), response);
+                        issueTokenAndRedirect(request, pending.user(), profile.subject(), response);
                     } else {
                         // Auto-claim: link the Auth0 subject and flip the account to ACTIVE.
                         User activated = userStateService.autoClaimByEmail(
                                 pending.user().getId(), profile.subject());
-                        issueTokenAndRedirect(activated, profile.subject(), response);
+                        issueTokenAndRedirect(request, activated, profile.subject(), response);
                     }
                 } catch (Exception e) {
                     response.sendRedirect(frontendUrl + "/login?error=server");
@@ -76,7 +76,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                 // To require admin-initiated accounts instead, replace with a redirect to an error page.
                 try {
                     User provisioned = userService.provision(notFound.profile());
-                    issueTokenAndRedirect(provisioned, profile.subject(), response);
+                    issueTokenAndRedirect(request, provisioned, profile.subject(), response);
                 } catch (Exception e) {
                     response.sendRedirect(frontendUrl + "/login?error=server");
                 }
@@ -87,13 +87,14 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         }
     }
 
-    private void issueTokenAndRedirect(User user, String auth0Subject, HttpServletResponse response)
+    private void issueTokenAndRedirect(HttpServletRequest request, User user, String auth0Subject,
+                                   HttpServletResponse response)
             throws IOException {
         String token = jwtService.generateToken(user, auth0Subject);
 
         Cookie cookie = new Cookie("access_token", token);
         cookie.setHttpOnly(true);
-        cookie.setSecure(true);
+        cookie.setSecure(request.isSecure());
         cookie.setPath("/");
         cookie.setMaxAge(60 * 60);
         cookie.setAttribute("SameSite", "Lax");

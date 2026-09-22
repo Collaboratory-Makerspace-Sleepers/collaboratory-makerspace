@@ -1,11 +1,39 @@
+import { useEffect, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
+import {
+  useDashboard,
+  displayName,
+  firstName,
+  todaySentence,
+  reservationSentence,
+} from "../../hooks/useDashboard";
+
 export default function Account() {
+  const { authFetch } = useAuth();
+  const { user, reservations, loading, error } = useDashboard();
+  const [plan, setPlan] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    authFetch("/api/v1/users/me/membership")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        setPlan(data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [authFetch]);
+
   return (
     <div className="AccountDiv">
       <div className="AccountD1">
         <p>Account Information</p>
         <p>
-          Welcome back. Today is May 12th 2026. You have one upcoming
-          reservation at 10:15 today.
+          Welcome back, {loading ? "..." : firstName(user) || "there"}. {todaySentence()}{" "}
+          {!loading && !error && reservationSentence(reservations)}
         </p>
       </div>
 
@@ -14,9 +42,9 @@ export default function Account() {
           <p>Profile Information</p>
 
           <div className="AccountD4">
-            <p>K</p>
-            <p>Kolbe Yang</p>
-            <p>Makerspace Member</p>
+            <p>{(user?.firstName || user?.email || "?").slice(0, 1).toUpperCase()}</p>
+            <p>{loading ? "…" : displayName(user) || "Your name"}</p>
+            <p>Makerspace Member · {plan ? `${plan.planName} plan` : "…"}</p>
           </div>
 
           <div className="AccountD5">
@@ -28,40 +56,20 @@ export default function Account() {
           <div className="AccountFormRow">
             <div className="AccountFormField">
               <label>First Name</label>
-              <input type="text" placeholder="First Name" />
+              <input type="text" placeholder="First Name" defaultValue={user?.firstName || ""} />
             </div>
             <div className="AccountFormField">
               <label>Last Name</label>
-              <input type="text" placeholder="Last Name" />
+              <input type="text" placeholder="Last Name" defaultValue={user?.lastName || ""} />
             </div>
           </div>
 
           <div className="AccountFormField">
             <label>Email</label>
-            <input type="text" placeholder="John" />
+            <input type="text" placeholder="you@example.com" defaultValue={user?.email || ""} />
           </div>
 
           <button>Update Information</button>
-        </div>
-        <div className="AccountD3">
-          <p>Account Security</p>
-
-          <div className="AccountFormField">
-            <label>Current Password</label>
-            <input type="text" placeholder="John" />
-          </div>
-
-          <div className="AccountFormField">
-            <label>New Password</label>
-            <input type="text" placeholder="John" />
-          </div>
-
-          <div className="AccountFormField">
-            <label>Confirm New Password</label>
-            <input type="text" placeholder="John" />
-          </div>
-
-          <button>Update Password</button>
         </div>
       </div>
     </div>

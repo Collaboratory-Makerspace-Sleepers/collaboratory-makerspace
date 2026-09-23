@@ -10,6 +10,7 @@ import com.makerspace.backend.model.User;
 import com.makerspace.backend.repository.StripeEventLogRepository;
 import com.makerspace.backend.repository.UserRepository;
 import com.makerspace.backend.services.MembershipService;
+import com.makerspace.backend.services.StripeEventLogWriter;
 import com.makerspace.backend.services.StripeEventService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
@@ -34,6 +34,7 @@ import static org.mockito.Mockito.*;
 class StripeEventServiceTest {
 
     @Mock private StripeEventLogRepository eventLogRepository;
+    @Mock private StripeEventLogWriter eventLogWriter;
     @Mock private MembershipService membershipService;
     @Mock private UserRepository userRepository;
 
@@ -46,6 +47,8 @@ class StripeEventServiceTest {
     void setUp() {
         ReflectionTestUtils.setField(stripeEventService, "objectMapper", objectMapper);
         ReflectionTestUtils.setField(stripeEventService, "gracePeriodDays", 7);
+        // Default: event is new (not duplicate). Tests that check duplicate behaviour override this.
+        lenient().when(eventLogWriter.tryInsert(any(), any(), any(), anyBoolean(), any())).thenReturn(true);
     }
 
     // --- helpers ---
@@ -97,8 +100,7 @@ class StripeEventServiceTest {
 
     @Test
     void handle_returnsDuplicate_whenEventAlreadySeen() {
-        doThrow(DataIntegrityViolationException.class)
-                .when(eventLogRepository).insertReceived(anyString(), anyString(), anyString(), anyBoolean(), anyString());
+        when(eventLogWriter.tryInsert(any(), any(), any(), anyBoolean(), any())).thenReturn(false);
 
         EventOutcome outcome = stripeEventService.handle(
                 command("evt_dup", "customer.subscription.updated",

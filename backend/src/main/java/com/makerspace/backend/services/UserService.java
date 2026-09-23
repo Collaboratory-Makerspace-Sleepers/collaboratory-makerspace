@@ -135,6 +135,14 @@ public class UserService {
     public User updateRoles(Long id, Set<AppRole> newRoles) {
         User user = findById(id);
         Set<AppRole> oldRoles = user.getRoles();
+
+        boolean wasAdmin = user.getRoles().stream().anyMatch(r -> "ADMIN".equals(r.getCode()));
+        boolean staysAdmin = newRoles.stream().anyMatch(r -> "ADMIN".equals(r.getCode()));
+
+        if (wasAdmin && !staysAdmin && countActiveAdmins() <= 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot demote the last admin");
+        }
+
         user.setRoles(newRoles);
         User saved = userRepository.save(user);
         log.info("Role change: user {} (id={}) changed from {} to {}",

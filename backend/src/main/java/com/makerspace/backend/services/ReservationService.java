@@ -29,10 +29,17 @@ public class ReservationService {
     @Autowired private ReservationRepository reservationRepository;
     @Autowired private EquipmentRepository equipmentRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private MembershipService membershipService;
 
     @Transactional
     public EquipmentReservation create(Long userId, Long equipmentId,
                                        ZonedDateTime startTime, ZonedDateTime endTime) {
+
+        if (!membershipService.hasActiveMembership(userId)) {
+            throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED,
+                    "An active membership is required to reserve equipment");
+        }
+
         if (!endTime.isAfter(startTime)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End time must be after start time");
         }

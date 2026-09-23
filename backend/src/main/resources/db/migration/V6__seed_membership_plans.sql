@@ -11,7 +11,7 @@ INSERT INTO membership_plan
     (code, display_name, stripe_price_id, stripe_product_id,
      billing_interval, amount_cents, currency, grants_role, active)
 VALUES
-    ('MONTHLY',  'Monthly Membership',  'price_PLACEHOLDER_MONTHLY',  'prod_PLACEHOLDER_MONTHLY',  'MONTH', 5000,  'usd', 'MEMBER',  TRUE),
-    ('ANNUAL',   'Annual Membership',   'price_PLACEHOLDER_ANNUAL',   'prod_PLACEHOLDER_ANNUAL',   'YEAR',  50000, 'usd', 'MEMBER',  TRUE),
-    ('STUDENT',  'Student Membership',  'price_PLACEHOLDER_STUDENT',  'prod_PLACEHOLDER_STUDENT',  'MONTH', 2500,  'usd', 'STUDENT', TRUE),
-    ('DAY_PASS', 'Day Pass',            'price_PLACEHOLDER_DAY_PASS', 'prod_PLACEHOLDER_DAY_PASS', NULL,    1500,  'usd', 'MEMBER',  TRUE);
+    ('MONTHLY',  'Monthly Membership',  'price_1UFR2yCqDStEDHd0lYLARzM0',  'prod_PLACEHOLDER_MONTHLY',  'MONTH', 5000,  'usd', 'MEMBER',  TRUE),
+    ('ANNUAL',   'Annual Membership',   'price_1UFR3rCqDStEDHd07ibzyUuc',   'prod_PLACEHOLDER_ANNUAL',   'YEAR',  50000, 'usd', 'MEMBER',  TRUE),
+    ('STUDENT',  'Student Membership',  'price_1UFR4WCqDStEDHd0IdnVRAhS',  'prod_PLACEHOLDER_STUDENT',  'MONTH', 2500,  'usd', 'STUDENT', TRUE),
+    ('DAY_PASS', 'Day Pass',            'price_1UFRCdCqDStEDHd0fdwittRg', 'prod_PLACEHOLDER_DAY_PASS', NULL,    1500,  'usd', 'MEMBER',  TRUE);

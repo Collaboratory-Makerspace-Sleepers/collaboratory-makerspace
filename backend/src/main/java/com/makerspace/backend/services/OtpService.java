@@ -31,7 +31,7 @@ public class OtpService {
      * Rate-limited: throws 429 if called again within 60 seconds.
      */
     public void sendCode(String email) {
-        if (Boolean.TRUE.equals(redis.hasKey(cooldownKey(email)))) {
+        if (redis.hasKey(cooldownKey(email))) {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
                     "Please wait before requesting another code.");
         }

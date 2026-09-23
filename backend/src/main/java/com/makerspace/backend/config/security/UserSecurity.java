@@ -22,7 +22,7 @@ public class UserSecurity {
         if (id == null) {
             return false;
         }
-        Long authenticatedId = extractUserId(auth);
+        Long authenticatedId = getUserId(auth);
         return authenticatedId != null && authenticatedId.equals(id);
     }
 
@@ -33,20 +33,25 @@ public class UserSecurity {
      * or parsing the principal themselves.
      */
     public Long getUserId(Authentication auth) {
-        return extractUserId(auth);
+        UserPrincipal up = getPrincipal(auth);
+        return up != null ? up.userId() : null;
     }
 
-    private Long extractUserId(Authentication auth) {
+    /**
+     * Extracts the typed UserPrincipal from the SecurityContext.
+     * Returns null if authentication is absent or the principal is the wrong type.
+     * Wrong type means the JWT filter is misconfigured, an unauthenticated request
+     * slipped past the filter chain, or a test is setting up the SecurityContext
+     * incorrectly — logged loudly and fails closed.
+     */
+    public UserPrincipal getPrincipal(Authentication auth) {
         if (auth == null) {
             return null;
         }
         Object principal = auth.getPrincipal();
-        if (principal instanceof UserPrincipal userPrincipal) {
-            return userPrincipal.userId();
+        if (principal instanceof UserPrincipal up) {
+            return up;
         }
-        // Wrong principal type means the JWT filter is misconfigured, an
-        // unauthenticated request slipped past the filter chain, or a test is
-        // setting up the SecurityContext incorrectly. Log loudly and fail closed.
         log.warn("Authentication principal is not a UserPrincipal: type={}",
                 principal == null ? "null" : principal.getClass().getName());
         return null;

@@ -11,6 +11,7 @@ import com.makerspace.backend.repository.AppRoleRepository;
 import com.makerspace.backend.repository.RegistrationInviteRepository;
 import com.makerspace.backend.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,23 +25,11 @@ import java.util.stream.Collectors;
 @Service
 public class AdminRegistrationService {
 
-    private final UserRepository userRepository;
-    private final AppRoleRepository roleRepository;
-    private final RegistrationInviteRepository inviteRepository;
-    private final InviteTokenService inviteTokenService;
-    private final EmailService emailService;
-
-    public AdminRegistrationService(UserRepository userRepository,
-                                    AppRoleRepository roleRepository,
-                                    RegistrationInviteRepository inviteRepository,
-                                    InviteTokenService inviteTokenService,
-                                    EmailService emailService) {
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-        this.inviteRepository = inviteRepository;
-        this.inviteTokenService = inviteTokenService;
-        this.emailService = emailService;
-    }
+    @Autowired private UserRepository userRepository;
+    @Autowired private AppRoleRepository roleRepository;
+    @Autowired private RegistrationInviteRepository inviteRepository;
+    @Autowired private InviteTokenService inviteTokenService;
+    @Autowired private EmailService emailService;
 
     @Transactional
     public PreRegisterResponse preRegister(PreRegisterRequest req, Long adminUserId) {

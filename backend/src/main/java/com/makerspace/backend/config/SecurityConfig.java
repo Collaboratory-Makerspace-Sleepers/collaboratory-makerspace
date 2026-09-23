@@ -89,9 +89,22 @@ public class SecurityConfig {
     }
 
     // -------------------------------------------------------------------------
-    // Order 3 — Reservations
+    // Order 3 — Billing
     // -------------------------------------------------------------------------
     @Bean @Order(3)
+    public SecurityFilterChain billingChain(HttpSecurity http) throws Exception {
+        applyShared(http)
+                .securityMatcher("/api/v1/billing/**")
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().authenticated()
+                );
+        return http.build();
+    }
+
+    // -------------------------------------------------------------------------
+    // Order 4 — Reservations
+    // -------------------------------------------------------------------------
+    @Bean @Order(4)
     public SecurityFilterChain reservationChain(HttpSecurity http) throws Exception {
         applyShared(http)
                 .securityMatcher("/api/v1/reservations/**")
@@ -111,9 +124,9 @@ public class SecurityConfig {
     }
 
     // -------------------------------------------------------------------------
-    // Order 4 — Users
+    // Order 5 — Users
     // -------------------------------------------------------------------------
-    @Bean @Order(4)
+    @Bean @Order(5)
     public SecurityFilterChain userChain(HttpSecurity http) throws Exception {
         applyShared(http)
                 .securityMatcher("/api/v1/users/**")
@@ -129,11 +142,11 @@ public class SecurityConfig {
     }
 
     // -------------------------------------------------------------------------
-    // Order 5 — Internal Lambda API
+    // Order 6 — Internal Lambda API
     // InternalAuthFilter must run before JwtAuthFilter.
     // Authentication principal is NOT a UserPrincipal — UserSecurity fails closed.
     // -------------------------------------------------------------------------
-    @Bean @Order(5)
+    @Bean @Order(6)
     public SecurityFilterChain internalChain(HttpSecurity http) throws Exception {
         applyShared(http)
                 .securityMatcher("/api/internal/**")
@@ -148,14 +161,24 @@ public class SecurityConfig {
     }
 
     // -------------------------------------------------------------------------
-    // Order 6 — Roles / permissions admin API
+    // Order 7 — Roles / permissions admin API
     // -------------------------------------------------------------------------
-    @Bean @Order(6)
+    @Bean @Order(7)
     public SecurityFilterChain roleAdminChain(HttpSecurity http) throws Exception {
         applyShared(http)
                 .securityMatcher("/api/v1/admin/roles/**", "/api/v1/admin/permissions/**")
                 .authorizeHttpRequests(auth -> auth
                         .anyRequest().hasAuthority(Permission.MANAGE_ROLES)
+                );
+        return http.build();
+    }
+
+    @Bean @Order(8)
+    public SecurityFilterChain devWebhookChain(HttpSecurity http) throws Exception {
+        applyShared(http)
+                .securityMatcher("/api/dev/**")
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().permitAll()
                 );
         return http.build();
     }

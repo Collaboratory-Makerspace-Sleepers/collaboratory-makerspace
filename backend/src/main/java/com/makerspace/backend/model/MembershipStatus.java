@@ -17,5 +17,8 @@ public enum MembershipStatus {
     PAUSED;
 
     public static final Set<MembershipStatus> BOOKING_STATUSES =
-            EnumSet.of(MembershipStatus.ACTIVE, MembershipStatus.TRIALING, MembershipStatus.PAST_DUE);
+            EnumSet.of(ACTIVE, TRIALING, PAST_DUE);
+
+    public static final Set<MembershipStatus> INDEX_STATUSES =
+            EnumSet.of(ACTIVE, TRIALING, PAST_DUE, GRACE);
 }

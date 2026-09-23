@@ -7,6 +7,7 @@ import com.makerspace.backend.model.Permission;
 import com.makerspace.backend.repository.PermissionRepository;
 import com.makerspace.backend.services.RoleService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -26,13 +27,8 @@ import java.util.Set;
 @PreAuthorize("hasAuthority('" + Permission.MANAGE_ROLES + "')")
 public class RoleController {
 
-    private final RoleService roleService;
-    private final PermissionRepository permissionRepository;
-
-    public RoleController(RoleService roleService, PermissionRepository permissionRepository) {
-        this.roleService = roleService;
-        this.permissionRepository = permissionRepository;
-    }
+    @Autowired private RoleService roleService;
+    @Autowired private PermissionRepository permissionRepository;
 
     // -------------------------------------------------------------------------
     // Permissions catalog (read-only)

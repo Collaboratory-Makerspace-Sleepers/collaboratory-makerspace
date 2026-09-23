@@ -7,6 +7,7 @@ import com.makerspace.backend.model.MembershipStatus;
 import com.makerspace.backend.repository.MembershipPlanRepository;
 import com.makerspace.backend.repository.MembershipRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -21,17 +22,11 @@ import java.util.Optional;
 @Service
 public class MembershipService {
 
-    private final MembershipRepository membershipRepository;
-    private final MembershipPlanRepository membershipPlanRepository;
+    @Autowired private MembershipRepository membershipRepository;
+    @Autowired private MembershipPlanRepository membershipPlanRepository;
 
     @Value("${app.billing.past-due-retains-access:true}")
     private boolean pastDueRetainsAccess;
-
-    public MembershipService(MembershipRepository membershipRepository,
-                             MembershipPlanRepository membershipPlanRepository) {
-        this.membershipRepository = membershipRepository;
-        this.membershipPlanRepository = membershipPlanRepository;
-    }
 
     public boolean hasActiveMembership(Long userId) {
         return membershipRepository.findByUserId(userId)
@@ -61,7 +56,7 @@ public class MembershipService {
         // Find the live membership under a write lock, or fall back to matching by sub ID,
         // or create a new row.
         Membership membership = membershipRepository
-                .findLiveByUserIdForUpdate(snapshot.user().getId(), MembershipStatus.BOOKING_STATUSES)
+                .findLiveByUserIdForUpdate(snapshot.user().getId(), MembershipStatus.INDEX_STATUSES)
                 .orElseGet(() -> membershipRepository
                         .findByStripeSubscriptionId(snapshot.subscriptionId())
                         .orElseGet(Membership::new));

@@ -11,6 +11,7 @@ import com.makerspace.backend.repository.EquipmentRepository;
 import com.makerspace.backend.repository.ReservationRepository;
 import com.makerspace.backend.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -25,17 +26,9 @@ import java.util.List;
 @Service
 public class ReservationService {
 
-    private final ReservationRepository reservationRepository;
-    private final EquipmentRepository equipmentRepository;
-    private final UserRepository userRepository;
-
-    public ReservationService(ReservationRepository reservationRepository,
-                              EquipmentRepository equipmentRepository,
-                              UserRepository userRepository) {
-        this.reservationRepository = reservationRepository;
-        this.equipmentRepository = equipmentRepository;
-        this.userRepository = userRepository;
-    }
+    @Autowired private ReservationRepository reservationRepository;
+    @Autowired private EquipmentRepository equipmentRepository;
+    @Autowired private UserRepository userRepository;
 
     @Transactional
     public EquipmentReservation create(Long userId, Long equipmentId,

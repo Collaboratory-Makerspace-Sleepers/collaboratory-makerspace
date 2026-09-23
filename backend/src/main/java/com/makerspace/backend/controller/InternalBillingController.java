@@ -7,6 +7,7 @@ import com.makerspace.backend.model.EventOutcome;
 import com.makerspace.backend.repository.StripeEventLogRepository;
 import com.makerspace.backend.services.MembershipService;
 import com.makerspace.backend.services.StripeEventService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,17 +27,9 @@ import java.time.ZonedDateTime;
 @RequestMapping("/api/internal/billing")
 public class InternalBillingController {
 
-    private final StripeEventService stripeEventService;
-    private final MembershipService membershipService;
-    private final StripeEventLogRepository eventLogRepository;
-
-    public InternalBillingController(StripeEventService stripeEventService,
-                                     MembershipService membershipService,
-                                     StripeEventLogRepository eventLogRepository) {
-        this.stripeEventService = stripeEventService;
-        this.membershipService = membershipService;
-        this.eventLogRepository = eventLogRepository;
-    }
+    @Autowired private StripeEventService stripeEventService;
+    @Autowired private MembershipService membershipService;
+    @Autowired private StripeEventLogRepository eventLogRepository;
 
     /**
      * Ingest a Stripe event forwarded by the Lambda consumer.

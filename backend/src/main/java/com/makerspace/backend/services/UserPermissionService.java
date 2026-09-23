@@ -1,6 +1,7 @@
 package com.makerspace.backend.services;
 
 import com.makerspace.backend.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -27,11 +28,7 @@ import java.util.stream.Collectors;
 @Service
 public class UserPermissionService {
 
-    private final UserRepository userRepository;
-
-    public UserPermissionService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    @Autowired private UserRepository userRepository;
 
     @Cacheable(value = "userPermissions", key = "#email")
     @Transactional(readOnly = true)

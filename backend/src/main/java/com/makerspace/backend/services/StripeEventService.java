@@ -10,6 +10,7 @@ import com.makerspace.backend.model.User;
 import com.makerspace.backend.repository.StripeEventLogRepository;
 import com.makerspace.backend.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -25,23 +26,14 @@ import java.time.ZonedDateTime;
 @Service
 public class StripeEventService {
 
-    private final StripeEventLogRepository eventLogRepository;
-    private final MembershipService membershipService;
-    private final UserRepository userRepository;
-    private final ObjectMapper objectMapper;
+    @Autowired private StripeEventLogRepository eventLogRepository;
+    @Autowired private MembershipService membershipService;
+    @Autowired private UserRepository userRepository;
+    @Autowired private ObjectMapper objectMapper;
+    @Autowired private StripeEventLogWriter eventLogWriter;
 
     @Value("${app.billing.grace-period-days:7}")
     private int gracePeriodDays;
-
-    public StripeEventService(StripeEventLogRepository eventLogRepository,
-                              MembershipService membershipService,
-                              UserRepository userRepository,
-                              ObjectMapper objectMapper) {
-        this.eventLogRepository = eventLogRepository;
-        this.membershipService = membershipService;
-        this.userRepository = userRepository;
-        this.objectMapper = objectMapper;
-    }
 
     /**
      * Entry point for all inbound Stripe events. Insert-first idempotency guard:
@@ -51,10 +43,8 @@ public class StripeEventService {
      */
     @Transactional
     public EventOutcome handle(StripeEventCommand cmd) {
-        try {
-            eventLogRepository.insertReceived(
-                    cmd.eventId(), cmd.type(), cmd.apiVersion(), cmd.livemode(), cmd.source());
-        } catch (DataIntegrityViolationException e) {
+        if (!eventLogWriter.tryInsert(cmd.eventId(), cmd.type(), cmd.apiVersion(),
+                cmd.livemode(), cmd.source())) {
             log.debug("Duplicate Stripe event {}", cmd.eventId());
             return EventOutcome.DUPLICATE;
         }
@@ -119,12 +109,13 @@ public class StripeEventService {
 
         MembershipStatus status = mapStripeStatus(stripeStatus, isDeleted);
 
-        ZonedDateTime periodStart    = epochToUtc(sub.path("current_period_start").asLong());
-        ZonedDateTime periodEnd      = epochToUtc(sub.path("current_period_end").asLong());
+        JsonNode firstItem = sub.path("items").path("data").path(0);
+        ZonedDateTime periodStart    = epochToUtc(firstItem.path("current_period_start").asLong());
+        ZonedDateTime periodEnd      = epochToUtc(firstItem.path("current_period_end").asLong());
         boolean cancelAtPeriodEnd    = sub.path("cancel_at_period_end").asBoolean(false);
         ZonedDateTime canceledAt     = sub.path("canceled_at").isNull() ? null
                                        : epochToUtc(sub.path("canceled_at").asLong());
-        ZonedDateTime updatedAt      = epochToUtc(sub.path("updated").asLong());
+        ZonedDateTime updatedAt      = epochToUtc(sub.path("billing_mode").path("updated_at").asLong());
 
         SubscriptionSnapshot snapshot = new SubscriptionSnapshot(
                 user, subscriptionId, stripePriceId, status,

@@ -3,6 +3,7 @@ package com.makerspace.backend.services;
 import com.makerspace.backend.model.AccountStatus;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
@@ -17,11 +18,7 @@ public class UserStateService {
 
     public enum State { ACTIVE, PENDING, DELETED, NOT_FOUND }
 
-    private final UserRepository userRepository;
-
-    public UserStateService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    @Autowired private UserRepository userRepository;
 
     /**
      * Returns the current state for the given email.

@@ -566,23 +566,41 @@ Pre-registers a user. Creates a `RegistrationInvite`, generates a secure claim t
 
 ### POST `/api/v1/registrations/claim`
 
-Claims a registration invite. The user submits the token from their email along with a password. Transitions the account from `PRE_REGISTERED` to `ACTIVE`.
+Claims a registration invite. The caller must already be authenticated (via OAuth2 or OTP) as the invited email address — the backend verifies the authenticated identity matches the pre-registered record before activating. No password is involved; the system is fully passwordless.
+
+After a successful claim the client should re-authenticate (repeat the OAuth2 or OTP flow) to get a JWT with full roles — the `ROLE_PENDING` token does not automatically upgrade.
 
 **Auth:** Authenticated (including `ROLE_PENDING` accounts)
 
 **Request:**
 ```json
 {
-  "token": "tok_xyzABC123...",
-  "password": "SecureP@ssw0rd!"
+  "token": "tok_xyzABC123..."
 }
 ```
 
-**Response 200:** Empty body (success).
+**Response 200:**
+```json
+{
+  "id": 42,
+  "email": "newmember@example.com",
+  "firstName": "Taylor",
+  "lastName": "Brown",
+  "roles": ["MEMBER"]
+}
+```
 
 **Response 400 — invalid or expired token:**
 ```json
-{ "status": 400, "error": "Invalid or expired token" }
+{ "status": 400, "error": "Invalid invite token" }
+```
+
+**Response 409 — email mismatch (signed in as wrong account):**
+```json
+{
+  "status": 409,
+  "error": "You signed in as other@example.com but were invited as newmember@example.com. Please contact staff to correct the record."
+}
 ```
 
 ---

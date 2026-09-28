@@ -4,6 +4,7 @@ import com.makerspace.backend.model.AppRole;
 import com.makerspace.backend.repository.AppRoleRepository;
 import com.makerspace.backend.repository.PermissionRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,17 +19,9 @@ import java.util.stream.Collectors;
 @Service
 public class RoleService {
 
-    private final AppRoleRepository roleRepository;
-    private final PermissionRepository permissionRepository;
-    private final UserPermissionService userPermissionService;
-
-    public RoleService(AppRoleRepository roleRepository,
-                       PermissionRepository permissionRepository,
-                       UserPermissionService userPermissionService) {
-        this.roleRepository = roleRepository;
-        this.permissionRepository = permissionRepository;
-        this.userPermissionService = userPermissionService;
-    }
+    @Autowired private AppRoleRepository roleRepository;
+    @Autowired private PermissionRepository permissionRepository;
+    @Autowired private UserPermissionService userPermissionService;
 
     public List<AppRole> listAll() {
         return roleRepository.findAll();

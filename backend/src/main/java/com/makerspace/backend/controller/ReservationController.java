@@ -1,11 +1,13 @@
 package com.makerspace.backend.controller;
 
 import com.makerspace.backend.config.security.UserPrincipal;
+import com.makerspace.backend.config.security.UserSecurity;
 import com.makerspace.backend.controller.dto.CreateReservationRequest;
 import com.makerspace.backend.controller.dto.ExtendReservationRequest;
 import com.makerspace.backend.controller.dto.ReservationDTO;
 import com.makerspace.backend.services.ReservationService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -20,11 +22,8 @@ import java.util.List;
 @RequestMapping("/api/v1/reservations")
 public class ReservationController {
 
-    private final ReservationService reservationService;
-
-    public ReservationController(ReservationService reservationService) {
-        this.reservationService = reservationService;
-    }
+    @Autowired private ReservationService reservationService;
+    @Autowired private UserSecurity userSecurity;
 
     // -------------------------------------------------------------------------
     // User-facing
@@ -33,25 +32,25 @@ public class ReservationController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ReservationDTO create(@Valid @RequestBody CreateReservationRequest req, Authentication auth) {
-        Long userId = principal(auth).userId();
+        Long userId = userSecurity.getUserId(auth);
         return ReservationDTO.from(
                 reservationService.create(userId, req.equipmentId(), req.startTime(), req.endTime()));
     }
 
     @GetMapping("/me")
     public List<ReservationDTO> myReservations(Authentication auth) {
-        return reservationService.findByUser(principal(auth).userId())
+        return reservationService.findByUser(userSecurity.getUserId(auth))
                 .stream().map(ReservationDTO::from).toList();
     }
 
     @GetMapping("/me/{id}")
     public ReservationDTO myReservation(@PathVariable Long id, Authentication auth) {
-        return ReservationDTO.from(reservationService.findByIdForUser(id, principal(auth)));
+        return ReservationDTO.from(reservationService.findByIdForUser(id, userSecurity.getPrincipal(auth)));
     }
 
     @PatchMapping("/{id}/cancel")
     public ReservationDTO cancel(@PathVariable Long id, Authentication auth) {
-        return ReservationDTO.from(reservationService.cancel(id, principal(auth)));
+        return ReservationDTO.from(reservationService.cancel(id, userSecurity.getPrincipal(auth)));
     }
 
     // -------------------------------------------------------------------------
@@ -84,7 +83,4 @@ public class ReservationController {
 
     // -------------------------------------------------------------------------
 
-    private UserPrincipal principal(Authentication auth) {
-        return (UserPrincipal) auth.getPrincipal();
-    }
 }

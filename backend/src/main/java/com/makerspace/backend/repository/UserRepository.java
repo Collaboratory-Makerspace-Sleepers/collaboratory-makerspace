@@ -17,6 +17,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByAuth0Subject(String auth0Subject);
 
+    Optional<User> findByStripeCustomerId(String stripeCustomerId);
+
     @Query(value = "SELECT * FROM users WHERE email = :email", nativeQuery = true)
     Optional<User> findByEmailIncludingDeleted(@Param("email") String email);
 

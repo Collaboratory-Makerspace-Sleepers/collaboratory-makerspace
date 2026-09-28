@@ -222,6 +222,11 @@ export default function SignUp() {
             Already a user? <Link to="/signin">Sign in here</Link>
           </p>
         </div>
+        <EmailOtpForm />
+
+        <div className="sign-in">
+          <p>Already a User? <Link to="/signin">Sign In here</Link></p>
+        </div>
       </div>
     </div>
   );

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashSet;
 import java.util.List;
@@ -224,6 +225,56 @@ class UserServiceTest {
         userService.softDeleteUser(1L, 99L);
 
         verify(userRepository).delete(admin);
+    }
+
+    // --- updateRoles last-admin guard ---
+
+    @Test
+    void updateRoles_throws400_whenDemotingOnlyAdmin() {
+        User user = makeAdminUser("admin@test.com");
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.countByRoleCode("ADMIN")).thenReturn(1L);
+
+        assertThatThrownBy(() -> userService.updateRoles(1L, Set.of(role("MEMBER"))))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Cannot demote the last admin");
+    }
+
+    @Test
+    void updateRoles_succeeds_whenSecondAdminExists() {
+        User user = makeAdminUser("admin@test.com");
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.countByRoleCode("ADMIN")).thenReturn(2L);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        User result = userService.updateRoles(1L, Set.of(role("MEMBER")));
+
+        assertThat(result).isNotNull();
+    }
+
+    @Test
+    void updateRoles_succeeds_whenNonAdminRolesChanged() {
+        User user = makeUser("member@test.com");
+        user.setRoles(new HashSet<>(Set.of(role("MEMBER"))));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        User result = userService.updateRoles(1L, Set.of(role("INSTRUCTOR")));
+
+        assertThat(result).isNotNull();
+        verify(userRepository, never()).countByRoleCode(any());
+    }
+
+    @Test
+    void updateRoles_succeeds_whenLastAdminKeepsAdminRole() {
+        User user = makeAdminUser("admin@test.com");
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        User result = userService.updateRoles(1L, Set.of(role("ADMIN"), role("INSTRUCTOR")));
+
+        assertThat(result).isNotNull();
+        verify(userRepository, never()).countByRoleCode(any());
     }
 
     // --- findAllActive (paginated) ---

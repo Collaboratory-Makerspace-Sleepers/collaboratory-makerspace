@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import OAuthButtons from "../components/OAuthButtons";
+import EmailOtpForm from "../components/EmailOtpForm";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");

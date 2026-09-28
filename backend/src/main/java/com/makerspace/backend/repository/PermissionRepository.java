@@ -3,6 +3,7 @@ package com.makerspace.backend.repository;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -24,10 +25,8 @@ public class PermissionRepository {
     }
 
     public Set<String> findAllCodes() {
-        return jdbc.sql("SELECT code FROM permissions")
+        return new HashSet<>(jdbc.sql("SELECT code FROM permissions")
                 .query(String.class)
-                .set()
-                .stream()
-                .collect(Collectors.toSet());
+                .set());
     }
 }

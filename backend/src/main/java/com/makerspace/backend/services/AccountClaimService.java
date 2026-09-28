@@ -8,6 +8,7 @@ import com.makerspace.backend.model.User;
 import com.makerspace.backend.repository.RegistrationInviteRepository;
 import com.makerspace.backend.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,20 +20,10 @@ import java.time.Instant;
 @Service
 public class AccountClaimService {
 
-    private final UserRepository userRepository;
-    private final RegistrationInviteRepository inviteRepository;
-    private final InviteTokenService inviteTokenService;
-    private final UserStateService userStateService;
-
-    public AccountClaimService(UserRepository userRepository,
-                               RegistrationInviteRepository inviteRepository,
-                               InviteTokenService inviteTokenService,
-                               UserStateService userStateService) {
-        this.userRepository = userRepository;
-        this.inviteRepository = inviteRepository;
-        this.inviteTokenService = inviteTokenService;
-        this.userStateService = userStateService;
-    }
+    @Autowired private UserRepository userRepository;
+    @Autowired private RegistrationInviteRepository inviteRepository;
+    @Autowired private InviteTokenService inviteTokenService;
+    @Autowired private UserStateService userStateService;
 
     /**
      * Consumes an invite token and links the authenticated identity to the pre-registered account.

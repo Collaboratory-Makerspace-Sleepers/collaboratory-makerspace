@@ -32,8 +32,15 @@ public class OtpService {
      * and dispatches it via email.
      */
     public void sendCode(String email) {
-        String code = String.format("%0" + CODE_LENGTH + "d", random.nextInt(1_000_000));
-        codes.put(email, code);
+        if (redis.hasKey(cooldownKey(email))) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "Please wait before requesting another code.");
+        }
+
+        String code = String.format("%06d", random.nextInt(1_000_000));
+        redis.opsForValue().set(codeKey(email), code, OTP_TTL_MINUTES, TimeUnit.MINUTES);
+        redis.opsForValue().set(cooldownKey(email), "1", RESEND_COOLDOWN_SECONDS, TimeUnit.SECONDS);
+
         emailService.sendOtp(email, code);
     }
 

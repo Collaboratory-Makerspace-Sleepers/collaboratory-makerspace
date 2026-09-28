@@ -42,6 +42,8 @@ public class InternalBillingController {
         return switch (outcome) {
             case PROCESSED, SKIPPED -> ResponseEntity.ok().build();
             case DUPLICATE -> ResponseEntity.status(HttpStatus.CONFLICT).build();
+            // FAILED means processing threw — respond 500 so SQS retries the message.
+            case FAILED -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         };
     }
 

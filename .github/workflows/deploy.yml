@@ -38,6 +38,7 @@ jobs:
     
     - name: Build with Maven
       run: mvn clean package
+      working-directory: ./backend
 
     # Configures AWS credentials via OIDC
     # IAM role created for GitHub OIDC
@@ -57,7 +58,7 @@ jobs:
 
     - name: Upload JAR to S3
       run: |
-        aws s3 cp target/backend.jar s3://collaboratory-makerspace-backend-artifacts/backend.jar
+        aws s3 cp backend/target/backend.jar s3://collaboratory-makerspace-backend-artifacts/backend.jar
    # get the ec2 vals 
     - name: Discover EC2 info
       id: ec2Info
@@ -116,6 +117,10 @@ jobs:
     - name: SSH into EC2 and restart backend
       run: |
         ssh -o StrictHostKeyChecking=no -i id_rsa ec2-user@${{ steps.ec2Info.outputs.EC2_HOST }} << 'EOF'
+          echo "Ensuring /app directory exists"
+          sudo mkdir -p /app
+          sudo chown ec2-user:ec2-user /app
+          
           echo "Stopping old backend process"
           sudo pkill -f "backend.jar" || true
 

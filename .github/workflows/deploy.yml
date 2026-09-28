@@ -1,0 +1,127 @@
+name: Deploy Backend to EC2
+
+
+# Trigger: Run on pushes to main branch
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    
+    # GitHub permissions:
+    # - id-token: write allows OIDC token for AWS
+    # - contents: read allows checkout of repo
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+    
+    # checkout repository code
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+   
+    # install Java 21 (Corretto)
+    - name: Set up JDK 21
+      uses: actions/setup-java@v3
+      with:
+        java-version: '21'
+        distribution: 'corretto'
+
+   
+    # Builds Spring Boot backend with Maven
+    # Produces target/backend.jar
+    
+    - name: Build with Maven
+      run: mvn clean package
+
+    # Configures AWS credentials via OIDC
+    # IAM role created for GitHub OIDC
+    # aws-region: Region where S3 bucket + EC2 live (us-east-2)
+    # used oicd to avoid long lived aws credentials 
+   
+    - name: Configure AWS credentials (OIDC)
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::810995308688:role/Github-OICD
+        aws-region: us-east-2
+
+   
+    #  Upload built JAR to S3 artifact bucket
+    # Bucket: collaboratory-makerspace-backend-artifacts
+    # Object key:backend.jar
+
+    - name: Upload JAR to S3
+      run: |
+        aws s3 cp target/backend.jar s3://collaboratory-makerspace-backend-artifacts/backend.jar
+   # get the ec2 vals 
+    - name: Discover EC2 info
+      id: ec2Info
+      run: |
+            INSTANCE_ID=$(aws ec2 describe-instances 
+                --filters "Name=tag:Name,Values=collaboratory-makerspace-backend" 
+                --query "Reservations[0].Instances[0].InstanceId" 
+                --output text)
+
+            AVAIL_ZONE=$(aws ec2 describe-instances 
+                --instance-id $INSTANCE_ID 
+                --query "Reservations[0].Instances[0].Placement.AvailabilityZone" 
+                --output text)
+
+            HOST=$(aws ec2 describe-instances 
+                --instance-id $INSTANCE_ID 
+                --query "Reservations[0].Instances[0].PublicDnsName" 
+                --output text)
+
+            echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_OUTPUT
+            echo "AVAILABILITY_ZONE=$AVAIL_ZONE" >> $GITHUB_OUTPUT
+            echo "EC2_HOST=$HOST" >> $GITHUB_OUTPUT
+
+    # Generate an ephemeral SSH keypair on the runner
+    # id_rsa private key (used only for this job)
+    # id_rsa.pub public key (sent to EC2 via EC2 Instance Connect)
+   
+    - name: Generate SSH key
+      run: |
+        ssh-keygen -t rsa -b 4096 -f id_rsa -N ""
+
+    # Send SSH public key to EC2 using EC2 Instance Connect
+    #
+    # Requires:
+    #EC2_INSTANCE_ID from EC2 
+    #EC2_AVAILABILITY_ZONE
+    # This step authorizes the public key temporarily
+    # for user ec2-user on that instance.
+   
+    - name: Authorize SSH key via EC2 Instance Connect
+      run: |
+        aws ec2-instance-connect send-ssh-public-key \
+          --instance-id ${{ steps.ec2Info.outputs.INSTANCE_ID }} \
+          --availability-zone ${{ steps.ec2Info.outputs.AVAILABILITY_ZONE }} \
+          --instance-os-user ec2-user \
+          --ssh-public-key file://id_rsa.pub
+
+    # Step 8: SSH into EC2 and restart backend
+    # Required secret:
+    #   EC2_HOST public IPv4 or public DNS of EC2 instance
+    #
+    # Actions:
+    #   - stop old backend.jar process
+    #   - download new backend.jar from S3
+    #   - start backend in background, logging to /app/app.log
+    - name: SSH into EC2 and restart backend
+      run: |
+        ssh -o StrictHostKeyChecking=no -i id_rsa ec2-user@${{ steps.ec2Info.outputs.EC2_HOST }} << 'EOF'
+          echo "Stopping old backend process"
+          sudo pkill -f "backend.jar" || true
+
+          echo "Downloading new backend.jar from S3."
+          aws s3 cp s3://collaboratory-makerspace-backend-artifacts/backend.jar /app/backend.jar
+
+          echo "Restarting backend service."
+          nohup java -jar /app/backend.jar > /app/app.log 2>&1 &
+        EOF

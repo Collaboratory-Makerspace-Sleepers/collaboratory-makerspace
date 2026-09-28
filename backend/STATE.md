@@ -120,7 +120,7 @@ com.makerspace.backend
 │   ├── JwtAuthFilter.java              Per-request JWT validation; loads effective permissions from UserPermissionService (cached); sets UserPrincipal on SecurityContext; PENDING → ROLE_PENDING only; DELETED → 403; NOT_FOUND → 401
 │   └── OAuth2SuccessHandler.java       OAuth2 success → provision user → set JWT cookie → redirect; Deleted → /account-closed
 └── services/
-    ├── AccountClaimService.java        claim(token, password) → activates PRE_REGISTERED user; validates token, sets credentials, transitions AccountStatus
+    ├── AccountClaimService.java        claim(principal, rawToken) → activates PRE_REGISTERED user; verifies token hash, gates on email match between principal and invite record, links auth0Subject, transitions AccountStatus to ACTIVE
     ├── AdminRegistrationService.java   preRegister(req, adminId) → creates RegistrationInvite, sends email; existsById guard
     ├── BillingService.java             createCheckoutSession (lazy Stripe Customer creation with pessimistic lock + idempotency key), createPortalSession, getSubscription, getPayments
     ├── EmailService.java               Interface: sendInvite(email, token), sendOtp(email, code)

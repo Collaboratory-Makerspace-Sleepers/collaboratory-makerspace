@@ -1,0 +1,5 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://makerspace-db.cx0ik0cea7ks.us-east-2.rds.amazonaws.com:5432/collab_app
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}

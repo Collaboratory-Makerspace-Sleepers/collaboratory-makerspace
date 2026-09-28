@@ -1,42 +1,336 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+p {
+  padding: 0;
+  margin: 0;
+}
+
+/* Home page */
+.bigdiv {
+  padding-top: 32px;
+  padding-right: 64px;
+  padding-bottom: 32px;
+  padding-left: 64px;
+}
+
+.secondDiv {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.NavBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.links {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+
+  gap: 32px;
+
+  margin-left: auto;
+
+  width: auto;
+  height: 37px;
+}
+
+.Colla {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 444px;
+}
+
+.CollaRow {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+}
+
+.OrangeDiv {
+  background-color: #ff530e;
+  width: 100%;
+  padding-top: 64px;
+  padding-bottom: 64px;
+  padding-left: 128px;
+  padding-right: 128px;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.OrangeDiv img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
+}
+
+.WhiteDiv {
+  display: flex;
+  flex-direction: column;
+
+  gap: 48px;
+}
+
+.WhiteDiv1 {
+  display: flex;
+  flex-direction: column;
+
+  padding: 0px;
+  gap: 16px;
+
+  flex: none;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+.WhiteDivRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.WhiteDivText {
+  width: 444px;
+}
+
+.PrivateDiv {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.SquareRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.Square1 {
+  width: 280px;
+  height: 280px;
+  background-color: black;
+  margin-left: 100px;
+}
+
+.Square2 {
+  width: 280px;
+  height: 280px;
+  background-color: black;
+  margin-top: 50px;
+}
+
+.Square3 {
+  width: 280px;
+  height: 280px;
+  background-color: black;
+  margin-right: 100px;
+}
+
+.Square4 {
+  width: 280px;
+  height: 280px;
+  background-color: black;
+  margin-top: 50px;
+}
+
+.Square {
+  width: 280px;
+  height: 280px;
+  background-color: black;
+  margin-left: 20px;
+}
+
+.MiddleDiv {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: center;
   text-align: center;
+  width: 350px;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.FootDiv {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 90px;
+  padding-top: 100px;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.FootDiv12 {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.FootDiv2 {
+  display: flex;
+  flex-direction: column;
+  width: 40%;
+  gap: 16px;
 }
 
-.card {
-  padding: 2em;
+.FootDivGrid {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 10px 40px;
+  text-align: left;
 }
 
-.read-the-docs {
-  color: #888;
+.FootDiv3 {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+/* Sign In */
+.bigdiv2 {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.SignIn {
+  border: 1px solid black;
+  border-radius: 4px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 465px;
+  gap: 24px;
+}
+
+.SignInText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.google {
+  border: 1px solid black;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+.Or {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.line {
+  flex: 1;
+  height: 1px;
+  background-color: grey;
+}
+
+.SignSubmit {
+  display: flex;
+  flex-direction: column;
+  gap: 24px
+}
+
+.SignIn input {
+
+  box-sizing: border-box;
+  height: 40px;
+  padding: 0 8px;
+  border: 1px solid grey;
+  border-radius: 5px;
+}
+
+.inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.inputColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inpt {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.forgot {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.SignUpNames {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+}
+
+.SignUpNames .inputColumn {
+  flex: 1;
+}
+
+.checkRow {
+  display: flex;
+  flex-direction: column;
+ 
+}
+
+.checkBox {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  align-items: center;
+}
+
+.sign-in {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 16px
+}
+
+.signButton {
+  width: 100%
+}
+
+.authResult {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px;
+  background: #fafafa;
+}
+
+.authResult pre {
+  margin: 8px 0 0;
+  font-size: 12px;
+  overflow-x: auto;
 }

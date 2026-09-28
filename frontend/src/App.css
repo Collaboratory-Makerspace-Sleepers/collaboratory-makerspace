@@ -1,13 +1,39 @@
+/* ========================================
+   GLOBAL STYLES
+======================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  display: block;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
 p {
   padding: 0;
   margin: 0;
 }
 
-/* Home page */
+
+/* ========================================
+   HOME LAYOUT
+======================================== */
+
 .bigdiv {
-  width: 100%;
-  padding: 32px clamp(16px, 4vw, 64px);
-  box-sizing: border-box;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 32px 64px;
 }
 
 .secondDiv {
@@ -18,13 +44,24 @@ p {
   gap: 24px;
 }
 
+
+/* ========================================
+   NAVIGATION BAR
+======================================== */
+
 .NavBar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  flex-wrap: wrap;
-  gap: 16px;
+  padding: 16px 0;
+}
+
+.NavBar .logo {
+  font-weight: 600;
+  font-size: 16px;
+  color: #1a1a1a;
+  margin: 0;
 }
 
 .links {
@@ -32,74 +69,169 @@ p {
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
-
-  gap: clamp(12px, 2.5vw, 32px);
-
+  gap: 24px;
   margin-left: auto;
-
-  width: auto;
 }
+
+.nav-link {
+  text-decoration: none;
+  color: #1a1a1a;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: #ff530e;
+  font-weight: 600;
+}
+
+.nav-btn {
+  background-color: #ffffff;
+  color: #555555;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-btn:hover {
+  border-color: #cbd5e1;
+  color: #1a1a1a;
+  background-color: #f8fafc;
+}
+
+
+/* ========================================
+   HERO SECTION
+======================================== */
 
 .Colla {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  width: min(444px, 100%);
+  width: 100%;
+  max-width: 520px;
+  gap: 12px;
+  margin-top: 32px;
+  margin-bottom: 32px;
+}
+
+.hero-subtext {
+  font-size: 11px;
+  font-weight: 500;
+  color: #1a1a1a;
+  letter-spacing: -0.2px;
+  margin: 0;
+}
+
+.hero-title {
+  font-size: 40px;
+  font-weight: 700;
+  color: #000000;
+  letter-spacing: -0.8px;
+  line-height: 1.1;
+  margin: 8px 0 4px 0;
+}
+
+.hero-description {
+  font-size: 13px;
+  line-height: 1.45;
+  color: #4a4a4a;
+  margin: 0 0 8px 0;
 }
 
 .CollaRow {
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
-  gap: 16px;
+  gap: 12px;
+  align-items: center;
 }
+
+
+/* ========================================
+   ORANGE IMAGE BANNER
+======================================== */
 
 .OrangeDiv {
   background-color: #ff530e;
   width: 100%;
-  padding: clamp(32px, 6vw, 64px) clamp(16px, 6vw, 128px);
-  border-radius: 12px;
+  padding: 48px;
+  border-radius: 16px;
   box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .OrangeDiv img {
   max-width: 100%;
   height: auto;
-  display: block;
   border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
 }
+
+
+/* ========================================
+   EQUIPMENT / CAROUSEL SECTION
+======================================== */
 
 .WhiteDiv {
   display: flex;
   flex-direction: column;
-
-  gap: clamp(24px, 4vw, 48px);
+  gap: 48px;
 }
 
 .WhiteDiv1 {
   display: flex;
-  flex-direction: column;
-
-  padding: 0px;
-  gap: 16px;
-
-  flex: none;
-  align-self: stretch;
-  flex-grow: 0;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-end;
+  width: 100%;
+  margin-top: 48px;
+  margin-bottom: 24px;
 }
 
-.WhiteDivRow {
+.WhiteDivTextGroup {
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 650px;
+}
+
+.WhiteDiv1 h2.section-title {
+  font-size: 36px;
+  font-weight: 700;
+  color: #000000;
+  margin: 0;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.section-title {
+  font-size: 38px;
+  font-weight: 700;
+  color: #000000;
+  margin: 0;
+  letter-spacing: -0.6px;
+  line-height: 1.1;
 }
 
 .WhiteDivText {
-  width: min(444px, 100%);
+  font-size: 13px;
+  line-height: 1.5;
+  color: #4a4a4a;
+  margin: 0;
 }
+
+
+/* ========================================
+   PRIVATE STUDIO SECTION
+======================================== */
 
 .PrivateDiv {
   position: relative;
@@ -120,22 +252,25 @@ p {
 .Square3,
 .Square4,
 .Square {
-  width: clamp(120px, 38vw, 280px);
-  height: clamp(120px, 38vw, 280px);
+  width: 280px;
+  height: 280px;
   background-color: black;
 }
 
 .Square1 {
-  margin-left: clamp(0px, 7vw, 100px);
+  margin-left: 100px;
 }
 
-.Square2,
-.Square4 {
-  margin-top: clamp(24px, 5vw, 50px);
+.Square2 {
+  margin-top: 50px;
 }
 
 .Square3 {
-  margin-right: clamp(0px, 7vw, 100px);
+  margin-right: 100px;
+}
+
+.Square4 {
+  margin-top: 50px;
 }
 
 .Square {
@@ -147,20 +282,35 @@ p {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+
   display: flex;
   flex-direction: column;
   gap: 24px;
+
   align-items: center;
   text-align: center;
-  width: min(350px, 80%);
+
+  width: 350px;
 }
+
+.MiddeText {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #4a4a4a;
+}
+
+
+/* ========================================
+   FOOTER SECTION
+======================================== */
 
 .FootDiv {
   display: flex;
   flex-direction: column;
   width: 100%;
-  gap: clamp(40px, 6vw, 90px);
-  padding-top: clamp(48px, 8vw, 100px);
+  gap: 64px;
+  padding-top: 80px;
+  padding-bottom: 24px;
 }
 
 .FootDiv12 {
@@ -173,50 +323,146 @@ p {
   gap: 32px;
 }
 
+
+/* Left Column */
+
 .FootDiv2 {
   display: flex;
   flex-direction: column;
-  width: min(40%, 320px);
+  max-width: 340px;
   gap: 16px;
   flex: 1 1 260px;
 }
 
+.footer-logo {
+  font-size: 36px;
+  font-weight: 700;
+  color: #000000;
+  margin: 0;
+  letter-spacing: -0.6px;
+}
+
+.footer-description {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #333333;
+  margin: 0;
+}
+
+
+/* Right Link Grid */
+
 .FootDivGrid {
   display: grid;
-  grid-template-columns: repeat(3, auto);
-  gap: 10px 40px;
-  text-align: left;
+  grid-template-rows: repeat(3, auto);
+  grid-auto-flow: column;
+  gap: 20px 48px;
 }
+
+.FootDivGrid a {
+  color: #1a1a1a;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.FootDivGrid a:hover {
+  color: #ff530e;
+}
+
+
+/* Bottom Row */
 
 .FootDiv3 {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+  align-items: center;
+  width: 100%;
 }
 
-/* Sign In */
+.FootDiv3 p,
+.FootDiv3 a {
+  font-size: 12px;
+  color: #333333;
+  text-decoration: none;
+  font-weight: 400;
+}
+
+.FootDiv3 a:hover {
+  color: #ff530e;
+}
+
+
+/* ========================================
+   AUTH / SIGN-IN & SIGN-UP SECTION
+======================================== */
+
 .bigdiv2 {
+  position: relative;
+
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+
   width: 100%;
   min-height: 100vh;
-  padding: 32px clamp(16px, 4vw, 64px);
+
+  padding: 32px 24px;
+
   box-sizing: border-box;
+
+  background-color: #f7f7f7;
 }
 
+
+/* Top left Link */
+
+.auth-nav {
+  position: absolute;
+  top: 16px;
+  left: 12px;
+
+  font-size: 12px;
+  color: #1683d8;
+
+  text-decoration: none;
+}
+
+.auth-nav:hover {
+  text-decoration: underline;
+}
+
+
+/* ========================================
+   SIGN IN / SIGN UP CARD
+======================================== */
+
 .SignIn {
-  border: 1px solid black;
-  border-radius: 4px;
-  padding: clamp(16px, 3vw, 24px);
+  border: 1px solid #e1e1e1;
+  border-radius: 12px;
+
+  padding: 36px 32px;
+
   display: flex;
   flex-direction: column;
   justify-content: center;
-  width: min(465px, 100%);
-  gap: 24px;
-  box-sizing: border-box;
+
+  width: 100%;
+  max-width: 520px; /* Expands wider on desktop screens */
+
+  gap: 16px;
+
+  background-color: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 }
+
+
+/* ========================================
+   CARD HEADER TEXT
+======================================== */
 
 .SignInText {
   display: flex;
@@ -224,714 +470,271 @@ p {
   gap: 4px;
 }
 
-.oauth-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  cursor: pointer;
+.signin-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #111111;
 }
 
-.oauth-btn {
-  border: 1px solid black;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 14px 16px;
-  cursor: pointer;
-  text-decoration: none;
-  color: black;
-  font-size: 15px;
-  font-weight: 500;
-  transition: background-color 0.15s;
+.signin-subtitle {
+  font-size: 13px;
+  color: #666666;
 }
 
-.oauth-btn:hover {
-  background-color: #f5f5f5;
+
+/* ========================================
+   GOOGLE BUTTON
 }
 
-.otp-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.google:hover {
+  background-color: #fafafa;
+  border-color: #d1d1d1;
 }
 
-.otp-form input[type="text"],
-.otp-form input[type="email"] {
-  box-sizing: border-box;
-  height: 40px;
-  padding: 0 8px;
-  border: 1px solid grey;
-  border-radius: 5px;
-}
 
-.otp-hint {
-  color: #555;
-  font-size: 14px;
-}
-
-.otp-message {
-  color: #1a7f37;
-  font-size: 14px;
-}
-
-.otp-back {
-  background: none;
-  border: none;
-  padding: 0;
-  color: #ff530e;
-  cursor: pointer;
-  font-size: 14px;
-  text-decoration: underline;
-  align-self: center;
-}
+/* ========================================
+   OR DIVIDER
+======================================== */
 
 .Or {
   display: flex;
   flex-direction: row;
+
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+
+  gap: 10px;
+
+  width: 100%;
+
+  color: #888888;
+
+  font-size: 12px;
 }
 
 .line {
   flex: 1;
+
   height: 1px;
-  background-color: grey;
+
+  background-color: #e5e5e5;
 }
 
-.SignSubmit {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
 
-.SignIn input {
-  box-sizing: border-box;
-  height: 40px;
-  padding: 0 8px;
-  border: 1px solid grey;
-  border-radius: 5px;
+/* ========================================
+   FORM & INPUT GRID
 }
 
 .inputs {
   display: flex;
   flex-direction: column;
+
   gap: 16px;
+
+  width: 100%;
+}
+
+/* 2-Column Grid for Desktop */
+.inputRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
 }
 
 .inputColumn {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+
+  gap: 6px;
+
+  width: 100%;
 }
 
-.inpt {
-  width: 100%;
-  box-sizing: border-box;
+.inputColumn label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #444444;
 }
+
+
+/* ========================================
+   FORM INPUTS
+======================================== */
+
+.SignIn input[type="text"],
+.SignIn input[type="email"],
+.SignIn input[type="password"] {
+  box-sizing: border-box;
+
+  width: 100%;
+  height: 42px;
+
+  padding: 0 12px;
+
+  border: 1px solid #e1e1e1;
+  border-radius: 6px;
+
+  background-color: #ffffff;
+
+  color: #333333;
+
+  font-size: 13px;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.SignIn input[type="text"]:focus,
+.SignIn input[type="email"]:focus,
+.SignIn input[type="password"]:focus {
+  border-color: #ff530e;
+
+  box-shadow: 0 0 0 2px rgba(255, 83, 14, 0.12);
+}
+
+.SignIn input::placeholder {
+  color: #cccccc;
+}
+
+
+/* ========================================
+   FORGOT PASSWORD / FOOTER LINK
+======================================== */
 
 .forgot {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
-  width: 100%;
-}
 
-.SignUpNames {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.SignUpNames .inputColumn {
-  flex: 1;
-}
-
-.checkRow {
-  display: flex;
-  flex-direction: column;
-}
-
-.checkBox {
-  display: flex;
-  flex-direction: row;
-  gap: 6px;
+  justify-content: center;
   align-items: center;
+
+  width: 100%;
+
+  gap: 8px;
+  margin-top: 4px;
 }
+
+.forgot p {
+  font-size: 12px;
+  color: #888888;
+}
+
+.forgot a {
+  font-size: 12px;
+  color: #ff530e;
+
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.forgot a:hover {
+  color: #e0460a;
+}
+
+
+/* ========================================
+   SIGN IN / SUBMIT BUTTON
+======================================== */
 
 .sign-in {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-top: 16px;
+
+  width: 100%;
+
+  padding-top: 8px;
 }
 
 .signButton {
   width: 100%;
+  height: 42px;
+
+  border: none;
+  border-radius: 6px;
+
+  background-color: #ff530e;
+
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition: background-color 0.2s ease;
+}
+
+.signButton:hover {
+  background-color: #e0460a;
+}
+
+.signButton:disabled {
+  background-color: #ff9a78;
+  cursor: not-allowed;
+}
+
+
+/* ========================================
+   AUTH ERROR
+}
+
+
+/* ========================================
+   CHECKBOX STYLES
+======================================== */
+
+.checkboxGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #4a4a4a;
   cursor: pointer;
 }
+
+.checkboxLabel input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid #cccccc;
+  cursor: pointer;
+  accent-color: #ff530e;
+}
+
+
+/* ========================================
+   AUTH RESULT
+======================================== */
 
 .authResult {
   border: 1px solid #ddd;
   border-radius: 4px;
+
   padding: 8px;
+
   background: #fafafa;
 }
 
 .authResult pre {
   margin: 8px 0 0;
+
   font-size: 12px;
+
   overflow-x: auto;
 }
 
-/* Dashboard Home User page */
-.Dash1 {
-  display: flex;
-  flex-direction: row;
-}
 
-.Dash {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-  width: 200px;
-  min-height: 100vh;
-  padding-top: 20px;
-  padding-bottom: 20px;
-  padding-left: 16px;
-  padding-right: 16px;
-  background: #d7d5d5;
-  flex-shrink: 0;
-  box-sizing: border-box;
-}
-
-.DashNav {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.DashNav {
-  width: 100%;
-}
-
-.DashNav1 {
-  width: 100%;
-}
-
-.DashNav1 a {
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: 40px;
-  padding: 0 12px;
-  border-radius: 12px;
-  color: inherit;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.DashNav1 a.active {
-  background: white;
-}
-
-.DashNav a.active {
-  background: #ffffff;
-}
-
-.DashNav1 {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  width: 100%;
-}
-
-.DashMain {
-  flex: 1;
-  min-width: 0;
-  padding: clamp(12px, 3vw, 24px);
-  box-sizing: border-box;
-}
-
-/* Dashboard home user */
-.DashHome1 {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 54px;
-}
-
-.Dash2 {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.Dash3,
-.Dash9 {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 16px;
-  border: 1px solid gray;
-}
-
-.Dash4 {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-}
-
-.Dash5 {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 24px;
-}
-
-.SearchInput {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 14px;
-  box-sizing: border-box;
-}
-
-.Dash6 {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
-
-.Dash7 {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.Dash8 {
-  display: flex;
-  flex-direction: row;
-  gap: 16px;
-}
-
-.Dash10 {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-}
-
-/* Rent user dashboard */
-.RentEquipmentSection {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 16px;
-
-  border-radius: 14px;
-}
-
-.RentGrid {
-  display: grid;
-  grid-template-columns: repeat(3, auto);
-  gap: 10px 10px;
-}
-
-.Rent1 {
-  border: 1px solid gray;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.Rent1 img {
-  border-radius: 10px 10px 0 0;
-  display: block;
-  width: 100%;
-}
-
-.Rent2 {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-  padding: 16px;
-}
-
-.Rent3 {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.Rent4 {
-  border: 1px solid gray;
-  border-radius: 16px;
-  padding: 5px 10px;
-  width: fit-content;
-}
-
-.Rent5 {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-}
-
-/* Reserve equipment screen */
-.ReserveHeader {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  background-color: rgb(232, 232, 232);
-  border-radius: 14px;
-}
-
-.CalendarWrap {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  border: 1px solid gray;
-  border-radius: 14px;
-  width: 480px;
-  font-size: 13px;
-  align-self: center;
-
-}
-
-.CalendarHeader {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.CalendarArrows {
-  display: flex;
-  flex-direction: row;
-  gap: 8px;
-}
-
-.CalendarWeekdays,
-.CalendarDays {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-  text-align: center;
-}
-
-.CalendarDay {
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  padding: 10px 0;
-  font-size: 12px;
-  background: none;
-  color: #1a1a1a;
-  cursor: pointer;
-}
-
-.CalendarDay:hover {
-  border-color: #cbd5e1;
-  background-color: #f8fafc;
-}
-
-.CalendarDaySelected {
-  background-color: #1a1a1a;
-  color: #ffffff;
-}
-
-.CalendarDayDisabled {
-  color: #cbd5e1;
-  cursor: not-allowed;
-}
-
-.CalendarDayDisabled:hover {
-  border-color: #e2e8f0;
-  background: none;
-}
-
-.CalendarDayEmpty {
-  padding: 4px 0;
-}
-
-.AvailableTimesWrap {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.AvailableTimesGrid {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.TimeSlotButton {
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 8px 12px;
-  background: none;
-  color: #1a1a1a;
-  cursor: pointer;
-}
-
-.TimeSlotButton:hover {
-  border-color: #cbd5e1;
-  background-color: #f8fafc;
-}
-
-.TimeSlotSelected {
-  background-color: #1a1a1a;
-  color: #ffffff;
-  border-color: #1a1a1a;
-}
-
-.TimeSlotButton:disabled,
-.ReserveSummaryBottom button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.confirmation-banner {
-  padding: 16px;
-  border: 1px solid #22c55e;
-  border-radius: 12px;
-  background-color: #f0fdf4;
-}
-
-.error-text {
-  color: #dc2626;
-}
-
-.Dash5-sub {
-  color: #64748b;
-}
-
-.ReserveSummary {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-  border: 1px solid gray;
-  border-radius: 14px;
-}
-
-.ReserveSummaryTop {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.ReserveSummaryBottom {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* pricing */
-.PricingColla {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: 100%;
-}
-
-.CollaR {
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-start;
-  gap: 8px;
-}
-
-.CollaD {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
-
-.CollaR1 {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  gap: 24px;
-  width: 100%;
-}
-
-.collar2 {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
-  box-sizing: border-box;
-}
-
-.colla4 {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.collar3 {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.colla6 {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
-  box-sizing: border-box;
-  padding: 12px;
-  border-radius: 12px;
-  background: rgb(234, 234, 234);
-  gap: 24px;
-}
-
-.colla5 {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
-}
-
-/* dashboard user account */
-.AccountDiv {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 32px;
-}
-
-.AccountD1 {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.AccountD2 {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.AccountD3 {
-  padding: 16px;
-  border: 1px solid gray;
-  border-radius: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  width: 100%;
-}
-
-.AccountD4 {
-  padding: 16px;
-  border: 1px solid gray;
-  border-radius: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.AccountD5 {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: flex-start;
-}
-
-.AccountFormRow {
-  display: flex;
-  flex-direction: row;
-  gap: 16px;
-}
-
-.AccountFormField {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
-}
-
-.AccountFormField input {
-  padding: 10px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 14px;
-  box-sizing: border-box;
-}
-
-/* Tablet */
-@media (max-width: 1024px) {
-  .DashHomeD1 {
-    flex-direction: column;
-  }
-}
-
-@media (max-width: 768px) {
-  .Dash1 {
-    flex-direction: column;
-  }
-
-  .Dash {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 16px;
-    width: 100%;
-    min-height: 0;
-    padding: 12px;
-  }
-
-  .DashNav {
-    flex-direction: row;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-
-  .DashNav1 {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-
-  .FootDivGrid {
-    gap: 10px 24px;
-  }
-}
-
-/* Phone */
-@media (max-width: 640px) {
-  .DashHomeGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .NavBar {
-    justify-content: center;
-    text-align: center;
-  }
-
-  .links {
-    justify-content: center;
-    margin-left: 0;
-    width: 100%;
-  }
-
-  .FootDivGrid {
-    grid-template-columns: repeat(2, auto);
-  }
-
-  .DashNav1 a {
-    height: 36px;
-  }
-}
+/* ========================================
+   BUTTON COMPONENTS

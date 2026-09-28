@@ -8,6 +8,21 @@ spring:
     password: admin123
     driver-class-name: org.postgresql.Driver
 
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: local-google-client
+            client-secret: local-google-secret
+            scope: openid,profile,email
+          microsoft:
+            client-id: local-microsoft-client
+            client-secret: local-microsoft-secret
+          apple:
+            client-id: local-apple-client
+            client-secret: local-apple-secret
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -17,3 +32,8 @@ spring:
 
 server:
   port: 8080
+
+app:
+  jwt:
+    secret: local-development-secret-key-change-for-real-use
+    expiration: 3600000

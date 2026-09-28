@@ -1,6 +1,5 @@
 package com.makerspace.backend.controller;
 
-import com.makerspace.backend.config.security.UserPrincipal;
 import com.makerspace.backend.config.security.UserSecurity;
 import com.makerspace.backend.controller.dto.UpdateProfileRequest;
 import com.makerspace.backend.controller.dto.UpdateRoleRequest;
@@ -43,12 +42,12 @@ public class UserController {
 
     @GetMapping("/me")
     public UserDTO getMe(Authentication auth) {
-        return UserDTO.from(userService.findById(currentUserId(auth)));
+        return UserDTO.from(userService.findById(userSecurity.getUserId(auth)));
     }
 
     @PatchMapping("/me")
     public UserDTO updateMe(@Valid @RequestBody UpdateProfileRequest req, Authentication auth) {
-        return UserDTO.from(userService.updateProfile(currentUserId(auth), req.firstName(), req.lastName()));
+        return UserDTO.from(userService.updateProfile(userSecurity.getUserId(auth), req.firstName(), req.lastName()));
     }
 
     // -------------------------------------------------------------------------
@@ -72,7 +71,7 @@ public class UserController {
     public UserDTO updateRole(@PathVariable Long id,
                               @Valid @RequestBody UpdateRoleRequest req,
                               Authentication auth) {
-        if (currentUserId(auth).equals(id)) {
+        if (userSecurity.getUserId(auth).equals(id)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot change your own role");
         }
         Set<AppRole> roles = resolveRoleCodes(req.roleCodes());
@@ -117,10 +116,6 @@ public class UserController {
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
-
-    private Long currentUserId(Authentication auth) {
-        return ((UserPrincipal) auth.getPrincipal()).userId();
-    }
 
     private Set<AppRole> resolveRoleCodes(Set<String> codes) {
         if (codes == null || codes.isEmpty()) return new HashSet<>();

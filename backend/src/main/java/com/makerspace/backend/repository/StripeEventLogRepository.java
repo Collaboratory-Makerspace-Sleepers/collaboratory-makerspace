@@ -45,4 +45,21 @@ public interface StripeEventLogRepository extends JpaRepository<StripeEventLog, 
     @Query(value = "UPDATE stripe_event_log SET status = 'SKIPPED', processed_at = now() WHERE event_id = :eventId",
             nativeQuery = true)
     void markSkipped(@Param("eventId") String eventId);
+
+    @Modifying
+    @Query(value = "UPDATE stripe_event_log SET status = 'FAILED', processed_at = now() WHERE event_id = :eventId",
+            nativeQuery = true)
+    void markFailed(@Param("eventId") String eventId);
+
+    /**
+     * Resets a previously FAILED event back to RECEIVED so that a new delivery attempt
+     * can reprocess it. Returns the number of rows updated (1 = was FAILED and reset, 0 = not FAILED).
+     */
+    @Modifying
+    @Query(value = """
+            UPDATE stripe_event_log
+               SET status = 'RECEIVED', attempt_count = attempt_count + 1, received_at = now()
+             WHERE event_id = :eventId AND status = 'FAILED'
+            """, nativeQuery = true)
+    int resetIfFailed(@Param("eventId") String eventId);
 }

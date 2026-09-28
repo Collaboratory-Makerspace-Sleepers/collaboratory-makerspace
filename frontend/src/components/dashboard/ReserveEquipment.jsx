@@ -21,9 +21,6 @@ export default function ReserveEquipment() {
   const [item, setItem] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [confirmation, setConfirmation] = useState(null);
-  const [submitError, setSubmitError] = useState(null);
 
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
@@ -96,56 +93,28 @@ export default function ReserveEquipment() {
     return isTodaySelected() && SLOT_HOURS[time] <= today.getHours();
   }
 
-  async function handleReserve() {
+  function handleReserve() {
     if (!selectedDate || !selectedSlot) return;
     const hour = SLOT_HOURS[selectedSlot];
     const start = new Date(
       selectedDate.getFullYear(),
       selectedDate.getMonth(),
       selectedDate.getDate(),
-      hour,
-      0,
-      0
+      hour, 0, 0
     );
     const end = new Date(start.getTime() + 60 * 60 * 1000);
-
-    setSubmitting(true);
-    setSubmitError(null);
-    setConfirmation(null);
-    try {
-      const res = await authFetch("/api/v1/reservations", {
-        method: "POST",
-        body: JSON.stringify({
-          equipmentId: Number(id),
-          startTime: start.toISOString(),
-          endTime: end.toISOString(),
+    navigate(`/dashboard/rentequipment/${id}/checkout`, {
+      state: {
+        equipmentId: Number(id),
+        equipmentName: item.name,
+        startTime: start.toISOString(),
+        endTime: end.toISOString(),
+        displayDate: selectedDate.toLocaleDateString(undefined, {
+          weekday: "long", month: "long", day: "numeric", year: "numeric",
         }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(
-          body.message ||
-            (body.status === 400
-              ? "That date/time is no longer available. Please pick a future time."
-              : "Unable to complete your reservation.")
-        );
-      }
-      await res.json();
-      setConfirmation({
-        name: item.name,
-        date: selectedDate.toLocaleDateString(undefined, {
-          weekday: "long",
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        }),
-        time: selectedSlot,
-      });
-    } catch (err) {
-      setSubmitError(err.message || "Something went wrong.");
-    } finally {
-      setSubmitting(false);
-    }
+        displayTime: selectedSlot,
+      },
+    });
   }
 
   if (loadError) {
@@ -173,20 +142,6 @@ export default function ReserveEquipment() {
         <p>Select a date</p>
       </div>
 
-      {confirmation && (
-        <div className="Dash4 confirmation-banner">
-          <p>
-            Confirmed! Your reservation for {confirmation.name} is booked for{" "}
-            {confirmation.date} at {confirmation.time}. It now shows under your
-            upcoming reservations.
-          </p>
-          <div className="Dash5">
-            <button onClick={() => navigate("/dashboard/home")}>View my reservations</button>
-          </div>
-        </div>
-      )}
-
-      {submitError && <p className="error-text">{submitError}</p>}
 
       <div className="CalendarWrap">
         <div className="CalendarHeader">
@@ -253,6 +208,7 @@ export default function ReserveEquipment() {
                 onClick={() => {
                   setSelectedSlot(time);
                   setConfirmation(null);
+                  setNeedsMembership(false);
                 }}
               >
                 {time}
@@ -272,10 +228,10 @@ export default function ReserveEquipment() {
         <div className="ReserveSummaryBottom">
           <p>{item.name}</p>
           <button
-            disabled={!selectedDate || !selectedSlot || submitting}
+            disabled={!selectedDate || !selectedSlot}
             onClick={handleReserve}
           >
-            {submitting ? "Booking…" : "Reserve"}
+            Reserve
           </button>
         </div>
       </div>

@@ -52,7 +52,7 @@ public class DevStripeWebhookController {
         }
 
         EventOutcome outcome = stripeEventService.handle(stripeEventCommand);
-        if (outcome.equals(EventOutcome.DUPLICATE)){
+        if (outcome == EventOutcome.DUPLICATE) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Duplicate Stripe Event");
         }
     }

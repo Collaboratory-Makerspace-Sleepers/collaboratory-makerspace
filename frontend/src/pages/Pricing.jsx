@@ -1,8 +1,30 @@
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import "../App.css";
+
+function formatPrice(amountCents, billingInterval) {
+  const dollars = (amountCents / 100).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+  });
+  if (!billingInterval) return dollars;
+  return `${dollars}/${billingInterval}`;
+}
 
 export default function Pricing() {
   const navigate = useNavigate();
+  const [plans, setPlans] = useState([]);
+  const [plansError, setPlansError] = useState("");
+
+  useEffect(() => {
+    fetch("/api/v1/billing/plans")
+      .then((res) => {
+        if (!res.ok) throw new Error("Could not load plans");
+        return res.json();
+      })
+      .then(setPlans)
+      .catch(() => setPlansError("Could not load pricing. Please try again later."));
+  }, []);
 
   return (
     <div className="bigdiv">
@@ -31,76 +53,21 @@ export default function Pricing() {
             </div>
 
             <div className="CollaR1">
-              <div className="colla6">
-                <div className="collar2">
-                  <div className="collar3">
-                    <p>Current Plan</p>
+              {plansError && <p>{plansError}</p>}
+              {plans.map((plan) => (
+                <div className="colla6" key={plan.code}>
+                  <div className="collar2">
+                    <div className="collar3">
+                      <p>Membership</p>
+                    </div>
+                    <div className="colla4">
+                      <p>{plan.displayName}</p>
+                      <p>{formatPrice(plan.amountCents, plan.billingInterval)}</p>
+                    </div>
                   </div>
-
-                  <div className="colla4">
-                    <p>Guest</p>
-                    <p>$0/Month</p>
-                  </div>
+                  <button onClick={() => navigate("/signin")}>Get started</button>
                 </div>
-                <div className="colla5">
-                  <p>Ability to rent equipment</p>
-                  <p>Ability to book classes</p>
-                  <p>Access to events and discounts</p>
-                  <p>Rent Equipment for free</p>
-                  <p>Book classes for free</p>
-                  <p>Access to common space</p>
-                  <p>Private studio space</p>
-                </div>
-
-                <button>Current Plan</button>
-              </div>
-              <div className="colla6">
-                <div className="collar2">
-                  <div className="collar3">
-                    <p>Current Plan</p>
-                  </div>
-
-                  <div className="colla4">
-                    <p>Guest</p>
-                    <p>$0/Month</p>
-                  </div>
-                </div>
-                <div className="colla5">
-                  <p>Ability to rent equipment</p>
-                  <p>Ability to book classes</p>
-                  <p>Access to events and discounts</p>
-                  <p>Rent Equipment for free</p>
-                  <p>Book classes for free</p>
-                  <p>Access to common space</p>
-                  <p>Private studio space</p>
-                </div>
-
-                <button>Current Plan</button>
-              </div>
-
-              <div className="colla6">
-                <div className="collar2">
-                  <div className="collar3">
-                    <p>Current Plan</p>
-                  </div>
-
-                  <div className="colla4">
-                    <p>Guest</p>
-                    <p>$0/Month</p>
-                  </div>
-                </div>
-                <div className="colla5">
-                  <p>Ability to rent equipment</p>
-                  <p>Ability to book classes</p>
-                  <p>Access to events and discounts</p>
-                  <p>Rent Equipment for free</p>
-                  <p>Book classes for free</p>
-                  <p>Access to common space</p>
-                  <p>Private studio space</p>
-                </div>
-
-                <button>Current Plan</button>
-              </div>
+              ))}
             </div>
           </div>
         </div>

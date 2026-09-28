@@ -1,5 +1,7 @@
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Makerspacecarousel from "../Makerspacecarousel";
+import { useAuth } from "../../context/AuthContext";
 import {
   useDashboard,
   firstName,
@@ -10,7 +12,23 @@ import {
 } from "../../hooks/useDashboard";
 
 export default function DashboardHome() {
+  const { authFetch } = useAuth();
   const { user, reservations, loading, error } = useDashboard();
+  const navigate = useNavigate();
+
+  const [equipment, setEquipment] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    authFetch("/api/v1/equipment")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (cancelled) return;
+        setEquipment(data.filter((e) => e.category !== "CLASS").slice(0, 3));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [authFetch]);
 
   const upcoming = upcomingReservations(reservations);
 
@@ -44,92 +62,39 @@ export default function DashboardHome() {
           ))}
       </div>
 
-      <div className="Dash6">
-        <div className="Dash7">
-          <p>Recommended</p>
-          <div className="Dash8">
-            <button>Equipment</button>
-            <button>Classes</button>
+      {equipment.length > 0 && (
+        <div className="Dash6">
+          <div className="Dash7">
+            <p>Recommended Equipment</p>
           </div>
-        </div>
-        <div className="RentGrid">
-          <div className="Rent1">
-            <div>
-              <img src="https://picsum.photos/seed/laser-a/480/360" />
-            </div>
-
-            <div className="Rent2">
-              <div className="Rent3">
-                <div className="Rent4">
-                  <p>2/6 Available</p>
+          <div className="RentGrid">
+            {equipment.map((item) => (
+              <div className="Rent1" key={item.id}>
+                <div>
+                  <img
+                    src={item.imageUrl || `https://picsum.photos/seed/${item.id}/480/360`}
+                    alt={item.name}
+                  />
                 </div>
-                <p>LAserMachine</p>
-              </div>
-
-              <div className="Rent5">
-                <p>$7/hr</p>
-                <button>Reserve</button>
-              </div>
-            </div>
-          </div>
-          <div className="Rent1">
-            <div>
-              <img src="https://picsum.photos/seed/laser-a/480/360" />
-            </div>
-
-            <div className="Rent2">
-              <div className="Rent3">
-                <div className="Rent4">
-                  <p>2/6 Available</p>
+                <div className="Rent2">
+                  <div className="Rent3">
+                    <div className="Rent4">
+                      <p>{item.status === "AVAILABLE" ? "Available" : item.status}</p>
+                    </div>
+                    <p>{item.name}</p>
+                  </div>
+                  <div className="Rent5">
+                    <p>$7/hr</p>
+                    <button onClick={() => navigate(`/dashboard/rentequipment/${item.id}`)}>
+                      Reserve
+                    </button>
+                  </div>
                 </div>
-                <p>LAserMachine</p>
               </div>
-
-              <div className="Rent5">
-                <p>$7/hr</p>
-                <button>Reserve</button>
-              </div>
-            </div>
-          </div>
-          <div className="Rent1">
-            <div>
-              <img src="https://picsum.photos/seed/laser-a/480/360" />
-            </div>
-
-            <div className="Rent2">
-              <div className="Rent3">
-                <div className="Rent4">
-                  <p>2/6 Available</p>
-                </div>
-                <p>LAserMachine</p>
-              </div>
-
-              <div className="Rent5">
-                <p>$7/hr</p>
-                <button>Reserve</button>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
-      </div>
-
-      <div className="Dash9">
-        <div>
-          <p>Recommended Tasks</p>
-        </div>
-        <div className="Dash10">
-          <p>Intro the laser cutting</p>
-          <button>Complete</button>
-        </div>
-        <div className="Dash10">
-          <p>Intro the laser cutting</p>
-          <button>Complete</button>
-        </div>
-        <div className="Dash10">
-          <p>Intro the laser cutting</p>
-          <button>Complete</button>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

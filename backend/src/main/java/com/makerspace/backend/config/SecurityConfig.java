@@ -96,6 +96,7 @@ public class SecurityConfig {
         applyShared(http)
                 .securityMatcher("/api/v1/billing/**")
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(GET, "/api/v1/billing/plans").permitAll()
                         .anyRequest().authenticated()
                 );
         return http.build();

@@ -4,6 +4,7 @@ import com.makerspace.backend.config.security.UserPrincipal;
 import com.makerspace.backend.config.security.UserSecurity;
 import com.makerspace.backend.controller.dto.CreateReservationRequest;
 import com.makerspace.backend.controller.dto.ExtendReservationRequest;
+import com.makerspace.backend.controller.dto.RescheduleReservationRequest;
 import com.makerspace.backend.controller.dto.ReservationDTO;
 import com.makerspace.backend.services.ReservationService;
 import jakarta.validation.Valid;
@@ -51,6 +52,14 @@ public class ReservationController {
     @PatchMapping("/{id}/cancel")
     public ReservationDTO cancel(@PathVariable Long id, Authentication auth) {
         return ReservationDTO.from(reservationService.cancel(id, userSecurity.getPrincipal(auth)));
+    }
+
+    @PatchMapping("/{id}/reschedule")
+    public ReservationDTO reschedule(@PathVariable Long id,
+                                     @Valid @RequestBody RescheduleReservationRequest req,
+                                     Authentication auth) {
+        return ReservationDTO.from(
+                reservationService.reschedule(id, req.startTime(), req.endTime(), userSecurity.getPrincipal(auth)));
     }
 
     // -------------------------------------------------------------------------

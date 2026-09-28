@@ -9,6 +9,11 @@ import com.makerspace.backend.model.MembershipStatus;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.repository.StripeEventLogRepository;
 import com.makerspace.backend.repository.UserRepository;
+import com.stripe.StripeClient;
+import com.stripe.exception.StripeException;
+import com.stripe.model.SetupIntent;
+import com.stripe.model.Subscription;
+import com.stripe.param.CustomerUpdateParams;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +36,8 @@ public class StripeEventService {
     @Autowired private UserRepository userRepository;
     @Autowired private ObjectMapper objectMapper;
     @Autowired private StripeEventLogWriter eventLogWriter;
+    @Autowired private EmailService emailService;
+    @Autowired private StripeClient stripeClient;
 
     @Value("${app.billing.grace-period-days:7}")
     private int gracePeriodDays;
@@ -49,7 +56,17 @@ public class StripeEventService {
             return EventOutcome.DUPLICATE;
         }
 
-        EventOutcome outcome = dispatch(cmd);
+        EventOutcome outcome;
+        try {
+            outcome = dispatch(cmd);
+        } catch (Exception e) {
+            // Mark the event as FAILED in its own committed transaction so Stripe retries
+            // are allowed to reprocess it (tryInsert will reset FAILED → RECEIVED).
+            eventLogWriter.markFailed(cmd.eventId());
+            log.error("Stripe event {} type {} failed processing, marked FAILED for retry: {}",
+                    cmd.eventId(), cmd.type(), e.getMessage(), e);
+            throw e;
+        }
 
         if (outcome == EventOutcome.SKIPPED) {
             eventLogRepository.markSkipped(cmd.eventId());
@@ -68,13 +85,18 @@ public class StripeEventService {
                 handleSubscription(cmd);
                 yield EventOutcome.PROCESSED;
             }
-            // Invoice and checkout handlers are implemented in Phase 2 alongside
-            // BillingService and PaymentRecord creation.
-            case "invoice.paid",
-                 "invoice.payment_failed",
+            case "invoice.paid" -> {
+                handleInvoicePaid(cmd);
+                yield EventOutcome.PROCESSED;
+            }
+            case "checkout.session.completed" -> {
+                handleCheckoutSessionCompleted(cmd);
+                yield EventOutcome.PROCESSED;
+            }
+            // Remaining handlers pending Phase 2
+            case "invoice.payment_failed",
                  "invoice.payment_action_required",
                  "invoice.upcoming",
-                 "checkout.session.completed",
                  "checkout.session.async_payment_succeeded",
                  "checkout.session.async_payment_failed",
                  "charge.refunded",
@@ -109,13 +131,21 @@ public class StripeEventService {
 
         MembershipStatus status = mapStripeStatus(stripeStatus, isDeleted);
 
+        // current_period_start/end are at the subscription root in most Stripe API versions;
+        // newer versions (2024-09-30+) place them on subscription items instead.
         JsonNode firstItem = sub.path("items").path("data").path(0);
-        ZonedDateTime periodStart    = epochToUtc(firstItem.path("current_period_start").asLong());
-        ZonedDateTime periodEnd      = epochToUtc(firstItem.path("current_period_end").asLong());
+        long periodStartEpoch = sub.path("current_period_start").asLong(0);
+        if (periodStartEpoch == 0) periodStartEpoch = firstItem.path("current_period_start").asLong(0);
+        long periodEndEpoch = sub.path("current_period_end").asLong(0);
+        if (periodEndEpoch == 0) periodEndEpoch = firstItem.path("current_period_end").asLong(0);
+
+        ZonedDateTime periodStart    = periodStartEpoch > 0 ? epochToUtc(periodStartEpoch) : null;
+        ZonedDateTime periodEnd      = periodEndEpoch   > 0 ? epochToUtc(periodEndEpoch)   : null;
         boolean cancelAtPeriodEnd    = sub.path("cancel_at_period_end").asBoolean(false);
         ZonedDateTime canceledAt     = sub.path("canceled_at").isNull() ? null
                                        : epochToUtc(sub.path("canceled_at").asLong());
-        ZonedDateTime updatedAt      = epochToUtc(sub.path("billing_mode").path("updated_at").asLong());
+        // Use subscription's own `created` timestamp as an ordering signal for stale-event guard.
+        ZonedDateTime updatedAt      = epochToUtc(sub.path("created").asLong());
 
         SubscriptionSnapshot snapshot = new SubscriptionSnapshot(
                 user, subscriptionId, stripePriceId, status,
@@ -156,6 +186,109 @@ public class StripeEventService {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                     "Malformed event payload for event " + cmd.eventId());
         }
+    }
+
+    private void handleInvoicePaid(StripeEventCommand cmd) {
+        JsonNode invoice = parseObject(cmd);
+        String stripeCustomerId = invoice.path("customer").asText();
+
+        User user = userRepository.findByStripeCustomerId(stripeCustomerId).orElse(null);
+        if (user == null) {
+            log.warn("No user found for Stripe customer {} in invoice.paid event {}", stripeCustomerId, cmd.eventId());
+            return;
+        }
+
+        int amountPaid = invoice.path("amount_paid").asInt(0);
+        String currency = invoice.path("currency").asText("usd");
+        String description = invoice.path("lines").path("data").path(0)
+                .path("description").asText("Membership payment");
+
+        String fullName = user.getProfile() != null
+                ? user.getProfile().getFirstName() + " " + user.getProfile().getLastName()
+                : user.getEmail();
+
+        try {
+            emailService.sendPaymentReceipt(user.getEmail(), fullName, description, amountPaid, currency);
+        } catch (Exception e) {
+            log.warn("Failed to send payment receipt for invoice event {}: {}", cmd.eventId(), e.getMessage());
+        }
+    }
+
+    private void handleCheckoutSessionCompleted(StripeEventCommand cmd) {
+        JsonNode session = parseObject(cmd);
+        String mode = session.path("mode").asText();
+        String stripeCustomerId = session.path("customer").asText();
+
+        User user = userRepository.findByStripeCustomerId(stripeCustomerId).orElse(null);
+        if (user == null) {
+            log.warn("No user found for Stripe customer {} in checkout.session.completed event {}",
+                    stripeCustomerId, cmd.eventId());
+            return;
+        }
+
+        String fullName = user.getProfile() != null
+                ? user.getProfile().getFirstName() + " " + user.getProfile().getLastName()
+                : user.getEmail();
+
+        switch (mode) {
+            case "payment" -> {
+                int amountTotal = session.path("amount_total").asInt(0);
+                String currency = session.path("currency").asText("usd");
+                try {
+                    emailService.sendPaymentReceipt(user.getEmail(), fullName, "One-time payment", amountTotal, currency);
+                } catch (Exception e) {
+                    log.warn("Failed to send payment receipt for checkout event {}: {}", cmd.eventId(), e.getMessage());
+                }
+            }
+            case "setup" -> {
+                String setupIntentId = session.path("setup_intent").asText(null);
+                if (setupIntentId != null) {
+                    promoteSetupIntentPm(stripeCustomerId, setupIntentId, cmd.eventId());
+                }
+            }
+            case "subscription" -> {
+                String subscriptionId = session.path("subscription").asText(null);
+                if (subscriptionId != null) {
+                    promoteSubscriptionPm(stripeCustomerId, subscriptionId, cmd.eventId());
+                }
+            }
+            default -> log.warn("Unrecognised checkout mode '{}' in event {}", mode, cmd.eventId());
+        }
+    }
+
+    private void promoteSetupIntentPm(String customerId, String setupIntentId, String eventId) {
+        try {
+            SetupIntent si = stripeClient.v1().setupIntents().retrieve(setupIntentId);
+            String pmId = si.getPaymentMethod();
+            if (pmId != null) {
+                setCustomerDefaultPm(customerId, pmId);
+                log.info("Promoted PM {} to default for customer {} via setup session event {}", pmId, customerId, eventId);
+            }
+        } catch (StripeException e) {
+            log.warn("Failed to promote PM from setup intent {} event {}: {}", setupIntentId, eventId, e.getMessage());
+        }
+    }
+
+    private void promoteSubscriptionPm(String customerId, String subscriptionId, String eventId) {
+        try {
+            Subscription sub = stripeClient.v1().subscriptions().retrieve(subscriptionId);
+            String pmId = sub.getDefaultPaymentMethod();
+            if (pmId != null) {
+                setCustomerDefaultPm(customerId, pmId);
+                log.info("Promoted PM {} to default for customer {} via subscription checkout event {}", pmId, customerId, eventId);
+            }
+        } catch (StripeException e) {
+            log.warn("Failed to promote PM from subscription {} event {}: {}", subscriptionId, eventId, e.getMessage());
+        }
+    }
+
+    private void setCustomerDefaultPm(String customerId, String pmId) throws StripeException {
+        CustomerUpdateParams params = CustomerUpdateParams.builder()
+                .setInvoiceSettings(CustomerUpdateParams.InvoiceSettings.builder()
+                        .setDefaultPaymentMethod(pmId)
+                        .build())
+                .build();
+        stripeClient.v1().customers().update(customerId, params);
     }
 
     private ZonedDateTime epochToUtc(long epochSeconds) {

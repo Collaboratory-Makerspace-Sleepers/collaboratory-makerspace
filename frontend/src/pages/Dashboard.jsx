@@ -20,6 +20,7 @@ export default function Dashboard() {
             <NavLink to="/dashboard/home">Home</NavLink>
             <NavLink to="/dashboard/rentequipment">Rent Equipment</NavLink>
             <NavLink to="/dashboard/bookclasses">Book Classes</NavLink>
+            <NavLink to="/dashboard/reservations">My Reservations</NavLink>
           </div>
         </div>
 
@@ -28,6 +29,7 @@ export default function Dashboard() {
           <div className="DashNav1">
             <NavLink to="/dashboard/account">Account</NavLink>
             <NavLink to="/dashboard/membership">Membership</NavLink>
+            <NavLink to="/dashboard/payment-methods">Payment Methods</NavLink>
             <button
               onClick={handleSignOut}
               className="text-sm text-gray-500 hover:text-red-500 transition-colors"

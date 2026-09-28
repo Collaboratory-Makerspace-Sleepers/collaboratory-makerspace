@@ -483,10 +483,35 @@ p {
 
 
 /* ========================================
-   GOOGLE BUTTON
+   OAUTH BUTTONS
+======================================== */
+
+.oauth-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
 }
 
-.google:hover {
+.oauth-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 42px;
+  padding: 0 16px;
+  border: 1px solid #e1e1e1;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #333333;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.oauth-btn:hover {
   background-color: #fafafa;
   border-color: #d1d1d1;
 }
@@ -523,7 +548,7 @@ p {
 
 /* ========================================
    FORM & INPUT GRID
-}
+======================================== */
 
 .inputs {
   display: flex;
@@ -680,7 +705,45 @@ p {
 
 
 /* ========================================
-   AUTH ERROR
+   AUTH ERROR / OTP FORM
+======================================== */
+
+.otp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.otp-message {
+  font-size: 12px;
+  color: #444444;
+}
+
+.otp-back {
+  background: none;
+  border: none;
+  color: #ff530e;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.otp-back:hover {
+  color: #e0460a;
+}
+
+.error-text {
+  font-size: 12px;
+  color: #e53e3e;
+  margin: 0;
+}
+
+.confirmation-banner {
+  background-color: #f0fdf4;
+  border-color: #86efac;
 }
 
 
@@ -737,4 +800,802 @@ p {
 
 
 /* ========================================
-   BUTTON COMPONENTS
+   DASHBOARD LAYOUT
+======================================== */
+
+.Dash1 {
+  display: flex;
+  flex-direction: row;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.Dash {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 220px;
+  min-height: 100vh;
+  padding: 32px 20px;
+  border-right: 1px solid #e5e5e5;
+  background-color: #ffffff;
+  flex-shrink: 0;
+}
+
+.DashNav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.DashNav > p {
+  font-size: 11px;
+  font-weight: 600;
+  color: #999999;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.DashNav1 {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.DashNav1 a {
+  font-size: 13px;
+  font-weight: 500;
+  color: #444444;
+  padding: 7px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.DashNav1 a:hover,
+.DashNav1 a.active {
+  background-color: #fff4f0;
+  color: #ff530e;
+}
+
+.DashNav1 button {
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: #444444;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.DashNav1 button:hover {
+  background-color: #fff4f0;
+  color: #e53e3e;
+  border-color: transparent;
+}
+
+.DashMain {
+  flex: 1;
+  padding: 32px;
+  background-color: #f9f9f9;
+  overflow-y: auto;
+}
+
+
+/* ========================================
+   DASHBOARD HOME
+======================================== */
+
+.DashHome1 {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 900px;
+}
+
+.Dash2 {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.Dash2 p:first-child {
+  font-size: 22px;
+  font-weight: 600;
+  color: #111111;
+  margin: 0;
+}
+
+.Dash2 p:last-child {
+  font-size: 13px;
+  color: #666666;
+  margin: 0;
+}
+
+.Dash3 {
+  background-color: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.Dash3 > p:first-child {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111111;
+  margin: 0;
+}
+
+.Dash4 {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background-color: #fafafa;
+}
+
+.Dash4 p {
+  margin: 0;
+  font-size: 13px;
+  color: #333333;
+}
+
+.Dash5-sub {
+  font-size: 12px;
+  color: #888888;
+}
+
+.Dash5 {
+  display: flex;
+  gap: 8px;
+}
+
+.Dash5 button {
+  font-size: 12px;
+  padding: 6px 12px;
+  height: auto;
+}
+
+.Dash6 {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.Dash7 > p {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111111;
+  margin: 0;
+}
+
+
+/* ========================================
+   EQUIPMENT GRID
+======================================== */
+
+.RentGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.Rent1 {
+  background-color: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.Rent1 > div:first-child img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+}
+
+.Rent2 {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+}
+
+.Rent3 {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.Rent3 > p {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111111;
+  margin: 0;
+}
+
+.Rent4 {
+  display: inline-flex;
+  align-items: center;
+  background-color: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 4px;
+  padding: 2px 8px;
+  width: fit-content;
+}
+
+.Rent4 p {
+  font-size: 11px;
+  font-weight: 500;
+  color: #16a34a;
+  margin: 0;
+}
+
+.Rent5 {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.Rent5 > p {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111111;
+  margin: 0;
+}
+
+.Rent5 button {
+  font-size: 12px;
+  padding: 6px 14px;
+  height: auto;
+  background-color: #ff530e;
+  color: #ffffff;
+  border: none;
+}
+
+.Rent5 button:hover {
+  background-color: #e0460a;
+  border-color: transparent;
+}
+
+
+/* ========================================
+   ACCOUNT PAGE
+======================================== */
+
+.AccountDiv {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 700px;
+}
+
+.AccountD1 {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.AccountD1 p:first-child {
+  font-size: 22px;
+  font-weight: 600;
+  color: #111111;
+  margin: 0;
+}
+
+.AccountD1 p:last-child {
+  font-size: 13px;
+  color: #666666;
+  margin: 0;
+}
+
+.AccountD2 {
+  background-color: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 24px;
+}
+
+.AccountD3 {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.AccountD3 > p:first-child {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111111;
+  margin: 0;
+}
+
+.AccountD4 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 0;
+}
+
+.AccountD4 p:first-child {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #ff530e;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.AccountD4 p:nth-child(2) {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111111;
+  margin: 0;
+}
+
+.AccountD4 p:last-child {
+  font-size: 12px;
+  color: #888888;
+  margin: 0;
+}
+
+.AccountD5 {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.AccountD5 p {
+  font-size: 12px;
+  color: #888888;
+  margin: 0;
+}
+
+.AccountD5 button {
+  font-size: 12px;
+  padding: 6px 14px;
+  height: auto;
+}
+
+.AccountFormRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.AccountFormField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.AccountFormField label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #444444;
+}
+
+.AccountD3 form input[type="text"] {
+  box-sizing: border-box;
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #e1e1e1;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #333333;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.AccountD3 form input[type="text"]:focus {
+  border-color: #ff530e;
+  box-shadow: 0 0 0 2px rgba(255, 83, 14, 0.12);
+}
+
+.AccountD3 form input:disabled {
+  background-color: #f5f5f5;
+  color: #aaaaaa;
+  cursor: not-allowed;
+}
+
+.AccountD3 form > button[type="submit"] {
+  margin-top: 4px;
+  background-color: #ff530e;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  height: 42px;
+  padding: 0 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.AccountD3 form > button[type="submit"]:hover {
+  background-color: #e0460a;
+  border-color: transparent;
+}
+
+.AccountD3 form > button[type="submit"]:disabled {
+  background-color: #ff9a78;
+  cursor: not-allowed;
+}
+
+
+/* ========================================
+   MEMBERSHIP / PRICING CARDS
+======================================== */
+
+.CollaR1 {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.colla6 {
+  background-color: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.collar2 {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.collar3 {
+  display: inline-flex;
+}
+
+.collar3 p {
+  font-size: 11px;
+  font-weight: 600;
+  color: #888888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.colla4 {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.colla4 p:first-child {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111111;
+  margin: 0;
+}
+
+.colla4 p:last-child {
+  font-size: 13px;
+  color: #666666;
+  margin: 0;
+}
+
+.colla5 {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.colla5 p {
+  font-size: 12px;
+  color: #444444;
+  margin: 0;
+  padding-left: 12px;
+  position: relative;
+}
+
+.colla5 p::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #ff530e;
+}
+
+.colla6 > button {
+  width: 100%;
+  height: 38px;
+  border-radius: 6px;
+  background-color: #ff530e;
+  color: #ffffff;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.colla6 > button:hover:not(:disabled) {
+  background-color: #e0460a;
+  border-color: transparent;
+}
+
+.colla6 > button:disabled {
+  background-color: #e5e5e5;
+  color: #999999;
+  cursor: not-allowed;
+}
+
+
+/* ========================================
+   RESERVE EQUIPMENT / CALENDAR
+======================================== */
+
+.ReserveHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ReserveHeader > button {
+  align-self: flex-start;
+  background: none;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  color: #444444;
+  font-size: 13px;
+  padding: 6px 12px;
+  height: auto;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.ReserveHeader > button:hover {
+  border-color: #ff530e;
+  color: #ff530e;
+  background: none;
+}
+
+.ReserveHeader > p:nth-child(2) {
+  font-size: 22px;
+  font-weight: 600;
+  color: #111111;
+  margin: 0;
+}
+
+.ReserveHeader > p:last-child {
+  font-size: 13px;
+  color: #666666;
+  margin: 0;
+}
+
+.CalendarWrap {
+  background-color: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 20px;
+  max-width: 400px;
+}
+
+.CalendarHeader {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.CalendarHeader > p {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111111;
+  margin: 0;
+}
+
+.CalendarArrows {
+  display: flex;
+  gap: 4px;
+}
+
+.CalendarArrows button {
+  background: none;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  color: #444444;
+  font-size: 13px;
+  padding: 4px 8px;
+  height: auto;
+  cursor: pointer;
+}
+
+.CalendarArrows button:hover {
+  border-color: #ff530e;
+  color: #ff530e;
+  background: none;
+}
+
+.CalendarWeekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 8px;
+}
+
+.CalendarWeekdays p {
+  font-size: 11px;
+  font-weight: 600;
+  color: #888888;
+  text-align: center;
+  margin: 0;
+  padding: 4px 0;
+}
+
+.CalendarDays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.CalendarDayEmpty {
+  height: 36px;
+}
+
+.CalendarDay {
+  height: 36px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #333333;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.CalendarDay:hover:not(:disabled) {
+  background-color: #fff4f0;
+  border-color: #ff530e;
+  color: #ff530e;
+}
+
+.CalendarDaySelected {
+  background-color: #ff530e !important;
+  color: #ffffff !important;
+  border-color: #ff530e !important;
+}
+
+.CalendarDayDisabled {
+  color: #cccccc;
+  cursor: not-allowed;
+}
+
+.AvailableTimesWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 400px;
+}
+
+.AvailableTimesWrap > p {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111111;
+  margin: 0;
+}
+
+.AvailableTimesGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.TimeSlotButton {
+  height: 38px;
+  background-color: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  color: #333333;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.TimeSlotButton:hover:not(:disabled) {
+  border-color: #ff530e;
+  color: #ff530e;
+  background-color: #fff4f0;
+}
+
+.TimeSlotSelected {
+  background-color: #ff530e !important;
+  color: #ffffff !important;
+  border-color: #ff530e !important;
+}
+
+.TimeSlotButton:disabled {
+  color: #cccccc;
+  cursor: not-allowed;
+}
+
+.ReserveSummary {
+  background-color: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 16px 20px;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ReserveSummaryTop {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ReserveSummaryTop > p {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111111;
+  margin: 0;
+}
+
+.ReserveSummaryBottom {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ReserveSummaryBottom > p {
+  font-size: 13px;
+  color: #444444;
+  margin: 0;
+}
+
+.ReserveSummaryBottom > button {
+  background-color: #ff530e;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  height: 38px;
+  padding: 0 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.ReserveSummaryBottom > button:hover:not(:disabled) {
+  background-color: #e0460a;
+  border-color: transparent;
+}
+
+.ReserveSummaryBottom > button:disabled {
+  background-color: #ff9a78;
+  cursor: not-allowed;
+}

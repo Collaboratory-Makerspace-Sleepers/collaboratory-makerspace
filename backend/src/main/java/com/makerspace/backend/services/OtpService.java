@@ -1,35 +1,34 @@
 package com.makerspace.backend.services;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Issues and validates single-use one-time passcodes for email/OTP login.
- * Codes are stored in-memory keyed by (normalized) email and expire after 10 minutes.
- */
 @Service
 public class OtpService {
 
-    private static final int CODE_LENGTH = 6;
-    private static final long TTL_MINUTES = 10;
+    private static final int OTP_TTL_MINUTES = 10;
+    private static final int RESEND_COOLDOWN_SECONDS = 60;
 
     private final SecureRandom random = new SecureRandom();
-    private final Cache<String, String> codes = Caffeine.newBuilder()
-            .expireAfterWrite(TTL_MINUTES, TimeUnit.MINUTES)
-            .maximumSize(10_000)
-            .build();
+
+    @Autowired
+    private StringRedisTemplate redis;
 
     @Autowired
     private EmailService emailService;
 
+    private String codeKey(String email)     { return "otp:code:"     + email; }
+    private String cooldownKey(String email) { return "otp:cooldown:" + email; }
+
     /**
-     * Generates a fresh 6-digit code for the given email, replacing any previous one,
-     * and dispatches it via email.
+     * Generates and sends a 6-digit OTP to the given email.
+     * Rate-limited: throws 429 if called again within 60 seconds.
      */
     public void sendCode(String email) {
         if (redis.hasKey(cooldownKey(email))) {
@@ -45,12 +44,13 @@ public class OtpService {
     }
 
     /**
-     * Validates the code for the email. The code is consumed on first use,
-     * whether or not it matches, so a code can only be attempted once.
+     * Returns true and consumes the code if it matches; false otherwise.
+     * Consumed codes cannot be reused.
      */
     public boolean verifyCode(String email, String code) {
-        String stored = codes.getIfPresent(email);
-        codes.invalidate(email);
-        return stored != null && stored.equals(code);
+        String stored = redis.opsForValue().get(codeKey(email));
+        if (stored == null || !stored.equals(code)) return false;
+        redis.delete(codeKey(email));
+        return true;
     }
 }

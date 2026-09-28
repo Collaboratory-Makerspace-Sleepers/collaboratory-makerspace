@@ -30,6 +30,7 @@ public class ReservationService {
     @Autowired private EquipmentRepository equipmentRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private MembershipService membershipService;
+    @Autowired private EmailService emailService;
 
     @Transactional
     public EquipmentReservation create(Long userId, Long equipmentId,
@@ -72,6 +73,17 @@ public class ReservationService {
         EquipmentReservation saved = reservationRepository.save(reservation);
         log.info("Reservation created: id={} user={} equipment={} [{} - {}]",
                 saved.getId(), userId, equipmentId, startTime, endTime);
+
+        try {
+            String fullName = user.getProfile() != null
+                    ? user.getProfile().getFirstName() + " " + user.getProfile().getLastName()
+                    : user.getEmail();
+            emailService.sendReservationConfirmation(
+                    user.getEmail(), fullName, equipment.getName(), startTime, endTime);
+        } catch (Exception e) {
+            log.warn("Failed to send reservation confirmation for id={}: {}", saved.getId(), e.getMessage());
+        }
+
         return saved;
     }
 
@@ -145,6 +157,38 @@ public class ReservationService {
         reservation.setStatus(ReservationStatus.CANCELLED);
         reservation.setCancelledAt(ZonedDateTime.now());
         log.info("Reservation cancelled: id={} by userId={}", id, principal.userId());
+        return reservationRepository.save(reservation);
+    }
+
+    @Transactional
+    public EquipmentReservation reschedule(Long id, ZonedDateTime newStartTime, ZonedDateTime newEndTime,
+                                           UserPrincipal principal) {
+        EquipmentReservation reservation = findById(id);
+
+        if (!hasPermission(principal, Permission.MANAGE_RESERVATIONS)
+                && !reservation.getUserId().equals(principal.userId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
+        }
+        if (reservation.getStatus() != ReservationStatus.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Only active reservations can be rescheduled");
+        }
+        if (!newEndTime.isAfter(newStartTime)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "End time must be after start time");
+        }
+
+        List<EquipmentReservation> conflicts = reservationRepository.findOverlapping(
+                reservation.getEquipmentId(), newStartTime, newEndTime,
+                ReservationStatus.ACTIVE, reservation.getId());
+        if (!conflicts.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Equipment is already reserved during that time window");
+        }
+
+        reservation.setStartTime(newStartTime);
+        reservation.setEndTime(newEndTime);
+        log.info("Reservation rescheduled: id={} newStart={} newEnd={}", id, newStartTime, newEndTime);
         return reservationRepository.save(reservation);
     }
 

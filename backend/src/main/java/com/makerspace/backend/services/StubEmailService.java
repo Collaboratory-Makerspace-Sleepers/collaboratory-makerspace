@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
- * Placeholder EmailService — logs the invite link instead of sending email.
+ * Placeholder EmailService — logs the invite link and OTP instead of sending email.
  * Replace with an SES implementation once email transport is configured.
  * The raw token must never appear in production logs.
  * SES wiring: verify the sending domain and from-address, then implement sendRegistrationInvite

@@ -3,7 +3,7 @@
 # postgres is on 5433 outside docker to avoid conflicts
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/collab_app
+    url: jdbc:postgresql://localhost:5433/collab_app
     username: app_admin
     password: admin123
     driver-class-name: org.postgresql.Driver

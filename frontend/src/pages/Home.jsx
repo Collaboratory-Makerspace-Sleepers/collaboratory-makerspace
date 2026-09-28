@@ -14,7 +14,7 @@ export default function Home() {
 
           <div className="links">
             <Link to="/">Home</Link>
-            <a>Pricing</a>
+            <Link to="/pricing">Pricing</Link>
             <button onClick={() => navigate("/signup")}>Sign Up</button>
             <button onClick={() => navigate("/signin")}>Sign in</button>
           </div>
@@ -92,7 +92,7 @@ export default function Home() {
               <a>About</a>
               <Link to="/signup">Sign Up</Link>
               <a>Facebook</a>
-              <a>Pricing</a>
+              <Link to="/pricing">Pricing</Link>
               <a>Contact</a>
               <a>Instagram</a>
             </div>

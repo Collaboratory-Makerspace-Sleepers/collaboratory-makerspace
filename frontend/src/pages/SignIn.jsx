@@ -1,6 +1,8 @@
-import React, { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import OAuthButtons from "../components/OAuthButtons";
+import EmailOtpForm from "../components/EmailOtpForm";
 
 const OAUTH_PROVIDERS = [
   { id: "google",    label: "Sign in with Google" },

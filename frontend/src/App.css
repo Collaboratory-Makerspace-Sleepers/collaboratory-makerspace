@@ -5,10 +5,9 @@ p {
 
 /* Home page */
 .bigdiv {
-  padding-top: 32px;
-  padding-right: 64px;
-  padding-bottom: 32px;
-  padding-left: 64px;
+  width: 100%;
+  padding: 32px clamp(16px, 4vw, 64px);
+  box-sizing: border-box;
 }
 
 .secondDiv {
@@ -24,41 +23,41 @@ p {
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .links {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
 
-  gap: 32px;
+  gap: clamp(12px, 2.5vw, 32px);
 
   margin-left: auto;
 
   width: auto;
-  height: 37px;
 }
 
 .Colla {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  width: 444px;
+  width: min(444px, 100%);
 }
 
 .CollaRow {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   gap: 16px;
 }
 
 .OrangeDiv {
   background-color: #ff530e;
   width: 100%;
-  padding-top: 64px;
-  padding-bottom: 64px;
-  padding-left: 128px;
-  padding-right: 128px;
+  padding: clamp(32px, 6vw, 64px) clamp(16px, 6vw, 128px);
   border-radius: 12px;
   box-sizing: border-box;
 }
@@ -74,7 +73,7 @@ p {
   display: flex;
   flex-direction: column;
 
-  gap: 48px;
+  gap: clamp(24px, 4vw, 48px);
 }
 
 .WhiteDiv1 {
@@ -92,18 +91,21 @@ p {
 .WhiteDivRow {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   justify-content: space-between;
+  align-items: center;
+  gap: 16px;
 }
 
 .WhiteDivText {
-  width: 444px;
+  width: min(444px, 100%);
 }
 
 .PrivateDiv {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 48px;
+  gap: clamp(16px, 4vw, 48px);
 }
 
 .SquareRow {
@@ -113,38 +115,30 @@ p {
   width: 100%;
 }
 
-.Square1 {
-  width: 280px;
-  height: 280px;
+.Square1,
+.Square2,
+.Square3,
+.Square4,
+.Square {
+  width: clamp(120px, 38vw, 280px);
+  height: clamp(120px, 38vw, 280px);
   background-color: black;
-  margin-left: 100px;
 }
 
-.Square2 {
-  width: 280px;
-  height: 280px;
-  background-color: black;
-  margin-top: 50px;
+.Square1 {
+  margin-left: clamp(0px, 7vw, 100px);
+}
+
+.Square2,
+.Square4 {
+  margin-top: clamp(24px, 5vw, 50px);
 }
 
 .Square3 {
-  width: 280px;
-  height: 280px;
-  background-color: black;
-  margin-right: 100px;
-}
-
-.Square4 {
-  width: 280px;
-  height: 280px;
-  background-color: black;
-  margin-top: 50px;
+  margin-right: clamp(0px, 7vw, 100px);
 }
 
 .Square {
-  width: 280px;
-  height: 280px;
-  background-color: black;
   margin-left: 20px;
 }
 
@@ -158,30 +152,33 @@ p {
   gap: 24px;
   align-items: center;
   text-align: center;
-  width: 350px;
+  width: min(350px, 80%);
 }
 
 .FootDiv {
   display: flex;
   flex-direction: column;
   width: 100%;
-  gap: 90px;
-  padding-top: 100px;
+  gap: clamp(40px, 6vw, 90px);
+  padding-top: clamp(48px, 8vw, 100px);
 }
 
 .FootDiv12 {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
   width: 100%;
+  gap: 32px;
 }
 
 .FootDiv2 {
   display: flex;
   flex-direction: column;
-  width: 40%;
+  width: min(40%, 320px);
   gap: 16px;
+  flex: 1 1 260px;
 }
 
 .FootDivGrid {
@@ -205,18 +202,20 @@ p {
   align-items: center;
   width: 100%;
   min-height: 100vh;
+  padding: 32px clamp(16px, 4vw, 64px);
   box-sizing: border-box;
 }
 
 .SignIn {
   border: 1px solid black;
   border-radius: 4px;
-  padding: 10px;
+  padding: clamp(16px, 3vw, 24px);
   display: flex;
   flex-direction: column;
   justify-content: center;
-  width: 465px;
+  width: min(465px, 100%);
   gap: 24px;
+  box-sizing: border-box;
 }
 
 .SignInText {
@@ -225,14 +224,67 @@ p {
   gap: 4px;
 }
 
-.google {
+.oauth-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.oauth-btn {
   border: 1px solid black;
   border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-top: 16px;
-  padding-bottom: 16px;
+  gap: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  text-decoration: none;
+  color: black;
+  font-size: 15px;
+  font-weight: 500;
+  transition: background-color 0.15s;
+}
+
+.oauth-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.otp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.otp-form input[type="text"],
+.otp-form input[type="email"] {
+  box-sizing: border-box;
+  height: 40px;
+  padding: 0 8px;
+  border: 1px solid grey;
+  border-radius: 5px;
+}
+
+.otp-hint {
+  color: #555;
+  font-size: 14px;
+}
+
+.otp-message {
+  color: #1a7f37;
+  font-size: 14px;
+}
+
+.otp-back {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #ff530e;
+  cursor: pointer;
+  font-size: 14px;
+  text-decoration: underline;
+  align-self: center;
 }
 
 .Or {
@@ -252,11 +304,10 @@ p {
 .SignSubmit {
   display: flex;
   flex-direction: column;
-  gap: 24px
+  gap: 24px;
 }
 
 .SignIn input {
-
   box-sizing: border-box;
   height: 40px;
   padding: 0 8px;
@@ -291,6 +342,7 @@ p {
 .SignUpNames {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
@@ -301,7 +353,6 @@ p {
 .checkRow {
   display: flex;
   flex-direction: column;
- 
 }
 
 .checkBox {
@@ -315,11 +366,12 @@ p {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-top: 16px
+  padding-top: 16px;
 }
 
 .signButton {
-  width: 100%
+  width: 100%;
+  cursor: pointer;
 }
 
 .authResult {
@@ -333,4 +385,553 @@ p {
   margin: 8px 0 0;
   font-size: 12px;
   overflow-x: auto;
+}
+
+/* Dashboard Home User page */
+.Dash1 {
+  display: flex;
+  flex-direction: row;
+}
+
+.Dash {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 200px;
+  min-height: 100vh;
+  padding-top: 20px;
+  padding-bottom: 20px;
+  padding-left: 16px;
+  padding-right: 16px;
+  background: #d7d5d5;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.DashNav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.DashNav {
+  width: 100%;
+}
+
+.DashNav1 {
+  width: 100%;
+}
+
+.DashNav1 a {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.DashNav1 a.active {
+  background: white;
+}
+
+.DashNav a.active {
+  background: #ffffff;
+}
+
+.DashNav1 {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+
+.DashMain {
+  flex: 1;
+  min-width: 0;
+  padding: clamp(12px, 3vw, 24px);
+  box-sizing: border-box;
+}
+
+/* Dashboard home user */
+.DashHome1 {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 54px;
+}
+
+.Dash2 {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.Dash3,
+.Dash9 {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid gray;
+}
+
+.Dash4 {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.Dash5 {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 24px;
+}
+
+.SearchInput {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.Dash6 {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.Dash7 {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.Dash8 {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+}
+
+.Dash10 {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+/* Rent user dashboard */
+.RentEquipmentSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+
+  border-radius: 14px;
+}
+
+.RentGrid {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 10px 10px;
+}
+
+.Rent1 {
+  border: 1px solid gray;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.Rent1 img {
+  border-radius: 10px 10px 0 0;
+  display: block;
+  width: 100%;
+}
+
+.Rent2 {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 16px;
+}
+
+.Rent3 {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.Rent4 {
+  border: 1px solid gray;
+  border-radius: 16px;
+  padding: 5px 10px;
+  width: fit-content;
+}
+
+.Rent5 {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+/* Reserve equipment screen */
+.ReserveHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background-color: rgb(232, 232, 232);
+  border-radius: 14px;
+}
+
+.CalendarWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid gray;
+  border-radius: 14px;
+  width: 480px;
+  font-size: 13px;
+  align-self: center;
+
+}
+
+.CalendarHeader {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.CalendarArrows {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+}
+
+.CalendarWeekdays,
+.CalendarDays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  text-align: center;
+}
+
+.CalendarDay {
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 10px 0;
+  font-size: 12px;
+  background: none;
+  color: #1a1a1a;
+  cursor: pointer;
+}
+
+.CalendarDay:hover {
+  border-color: #cbd5e1;
+  background-color: #f8fafc;
+}
+
+.CalendarDaySelected {
+  background-color: #1a1a1a;
+  color: #ffffff;
+}
+
+.CalendarDayDisabled {
+  color: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.CalendarDayDisabled:hover {
+  border-color: #e2e8f0;
+  background: none;
+}
+
+.CalendarDayEmpty {
+  padding: 4px 0;
+}
+
+.AvailableTimesWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.AvailableTimesGrid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.TimeSlotButton {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: none;
+  color: #1a1a1a;
+  cursor: pointer;
+}
+
+.TimeSlotButton:hover {
+  border-color: #cbd5e1;
+  background-color: #f8fafc;
+}
+
+.TimeSlotSelected {
+  background-color: #1a1a1a;
+  color: #ffffff;
+  border-color: #1a1a1a;
+}
+
+.TimeSlotButton:disabled,
+.ReserveSummaryBottom button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.confirmation-banner {
+  padding: 16px;
+  border: 1px solid #22c55e;
+  border-radius: 12px;
+  background-color: #f0fdf4;
+}
+
+.error-text {
+  color: #dc2626;
+}
+
+.Dash5-sub {
+  color: #64748b;
+}
+
+.ReserveSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid gray;
+  border-radius: 14px;
+}
+
+.ReserveSummaryTop {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ReserveSummaryBottom {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* pricing */
+.PricingColla {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.CollaR {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.CollaD {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.CollaR1 {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 24px;
+  width: 100%;
+}
+
+.collar2 {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.colla4 {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.collar3 {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.colla6 {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgb(234, 234, 234);
+  gap: 24px;
+}
+
+.colla5 {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+/* dashboard user account */
+.AccountDiv {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.AccountD1 {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.AccountD2 {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.AccountD3 {
+  padding: 16px;
+  border: 1px solid gray;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.AccountD4 {
+  padding: 16px;
+  border: 1px solid gray;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.AccountD5 {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.AccountFormRow {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+}
+
+.AccountFormField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.AccountFormField input {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .DashHomeD1 {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
+  .Dash1 {
+    flex-direction: column;
+  }
+
+  .Dash {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    min-height: 0;
+    padding: 12px;
+  }
+
+  .DashNav {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .DashNav1 {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .FootDivGrid {
+    gap: 10px 24px;
+  }
+}
+
+/* Phone */
+@media (max-width: 640px) {
+  .DashHomeGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .NavBar {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .links {
+    justify-content: center;
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .FootDivGrid {
+    grid-template-columns: repeat(2, auto);
+  }
+
+  .DashNav1 a {
+    height: 36px;
+  }
 }

@@ -3,15 +3,16 @@ package com.makerspace.backend.services;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Primary;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 /**
- * Real SMTP email service — activated when spring.mail.host is configured.
- * Takes precedence over StubEmailService via @Primary.
+ * Real SMTP email service — activated when spring.mail.host is configured to a non-empty value.
+ * Takes precedence over StubEmailService via @Primary. With no host configured
+ * (local dev), StubEmailService logs the OTP/invite links to the console.
  * Configure via environment variables: MAIL_HOST, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD, MAIL_FROM.
  * For local dev, point at Mailtrap sandbox (sandbox.smtp.mailtrap.io:2525).
  * For production, use Resend (smtp.resend.com:465/587) or SendGrid.
@@ -19,7 +20,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Primary
 @Service
-@ConditionalOnProperty(name = "spring.mail.host")
+@ConditionalOnExpression("'${spring.mail.host:}'.length() > 0")
 public class SmtpEmailService implements EmailService {
 
     @Autowired

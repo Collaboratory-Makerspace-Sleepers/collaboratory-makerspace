@@ -1,22 +1,29 @@
-import { Routes, Route } from 'react-router-dom'
-import LoginPage from './pages/LoginPage'
-import OAuthCallback from './pages/OAuthCallback'
-import OtpLoginPage from './pages/OtpLoginPage'
-import Dashboard from './pages/Dashboard'
-import RequireAuth from './components/RequireAuth'
+import { Routes, Route } from "react-router-dom";
+import Home from "./pages/Home";
+import SignIn from "./pages/SignIn";
+import SignUp from "./pages/SignUp";
+import OAuthCallback from "./pages/OAuthCallback";
+import Dashboard from "./pages/Dashboard";
+import RequireAuth from "./components/RequireAuth";
 
-export default function App() {
+function App() {
   return (
     <Routes>
-      <Route path="/login"          element={<LoginPage />} />
-      <Route path="/login/email"    element={<OtpLoginPage />} />
+      <Route path="/"              element={<Home />} />
+      <Route path="/signup"        element={<SignUp />} />
+      <Route path="/signin"        element={<SignIn />} />
+      <Route path="/login"         element={<SignIn />} />
       <Route path="/oauth-callback" element={<OAuthCallback />} />
-      <Route path="/dashboard"      element={
-        <RequireAuth>
-          <Dashboard />
-        </RequireAuth>
-      } />
-      <Route path="/" element={<LoginPage />} />
+      <Route
+        path="/dashboard"
+        element={
+          <RequireAuth>
+            <Dashboard />
+          </RequireAuth>
+        }
+      />
     </Routes>
-  )
+  );
 }
+
+export default App;

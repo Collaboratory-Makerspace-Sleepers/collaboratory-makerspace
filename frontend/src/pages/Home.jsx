@@ -13,7 +13,7 @@ export default function Home() {
 
           <div className="links">
             <Link to="/" className="nav-link active">Home</Link>
-            <a className="nav-link">Pricing</a>
+            <Link to="/pricing" className="nav-link">Pricing</Link>
             <button className="nav-btn" onClick={() => navigate("/signup")}>Sign Up</button>
             <button className="nav-btn" onClick={() => navigate("/signin")}>Sign In</button>
           </div>
@@ -91,7 +91,7 @@ export default function Home() {
               {/* Column 1 */}
               <Link to="/">Home</Link>
               <a href="#about">About</a>
-              <a href="#pricing">Pricing</a>
+              <Link to="/pricing">Pricing</Link>
 
               {/* Column 2 */}
               <Link to="/signin">Sign In</Link>

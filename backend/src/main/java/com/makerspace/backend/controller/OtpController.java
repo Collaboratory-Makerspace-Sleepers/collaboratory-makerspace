@@ -9,6 +9,7 @@ import com.makerspace.backend.services.UserService;
 import com.makerspace.backend.services.UserStateService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Map;
 
 @RestController
+@Slf4j
 @RequestMapping("/api/v1/auth/otp")
 public class OtpController {
 
@@ -39,11 +41,21 @@ public class OtpController {
      */
     @PostMapping("/send")
     public ResponseEntity<Void> send(@RequestBody Map<String, String> body) {
+        log.info("OTP send requested");
         String email = body.get("email");
         if (email == null || email.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "email is required");
         }
-        otpService.sendCode(email.trim().toLowerCase());
+        try {
+            otpService.sendCode(email.trim().toLowerCase());
+        } catch (ResponseStatusException e) {
+            log.warn("OTP send rejected (HTTP {}): {}", e.getStatusCode().value(), e.getReason());
+            throw e;
+        } catch (RuntimeException e) {
+            log.error("OTP send failed; check Redis and email service", e);
+            throw e;
+        }
+        log.info("OTP send completed");
         return ResponseEntity.ok().build();
     }
 
@@ -54,6 +66,7 @@ public class OtpController {
     @PostMapping("/verify")
     public ResponseEntity<Map<String, String>> verify(@RequestBody Map<String, String> body,
                                                        HttpServletResponse response) {
+        log.info("OTP verification requested");
         String email = body.get("email");
         String code  = body.get("code");
 
@@ -64,6 +77,7 @@ public class OtpController {
         email = email.trim().toLowerCase();
 
         if (!otpService.verifyCode(email, code)) {
+            log.warn("OTP verification rejected: code invalid or expired");
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "invalid_or_expired_code");
         }
 
@@ -97,6 +111,7 @@ public class OtpController {
         cookie.setAttribute("SameSite", "Lax");
         response.addCookie(cookie);
 
+        log.info("OTP verification succeeded; session issued");
         return ResponseEntity.ok(Map.of("access_token", token));
     }
 }

@@ -1,21 +1,19 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { Link } from "react-router-dom";
+import EmailOtpForm from "../components/EmailOtpForm";
 
 export default function SignUp() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [newsletter, setNewsletter] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const { setToken } = useAuth();
-  const navigate = useNavigate();
+  // Once the account exists the form hands over to the OTP step; the backend
+  // issues no token at registration because the address is not yet proven.
+  const [registeredEmail, setRegisteredEmail] = useState("");
+  const [otpDelivery, setOtpDelivery] = useState("");
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -27,28 +25,16 @@ export default function SignUp() {
       return;
     }
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-
     setLoading(true);
 
     try {
       const res = await fetch("/api/v1/auth/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          email,
-          password,
-          newsletter,
-        }),
+        body: JSON.stringify({ firstName, lastName, email }),
       });
+      const data = await res.json().catch(() => null);
 
       if (res.status === 409) {
         setError("An account with this email already exists.");
@@ -61,22 +47,59 @@ export default function SignUp() {
       }
 
       if (!res.ok) {
-        setError("Something went wrong. Please try again.");
+        setError(data?.message || `Sign-up failed (HTTP ${res.status}). Please try again.`);
         return;
       }
 
-      const data = await res.json();
-
-      setToken(data.access_token);
-
-      navigate("/dashboard", {
-        replace: true,
-      });
+      setRegisteredEmail(data.email ?? email);
+      setOtpDelivery(data.otpDelivery ?? "unavailable");
     } catch {
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
+  }
+
+  if (registeredEmail) {
+    return (
+      <div className="bigdiv2">
+        <div className="SignIn">
+          <div className="SignInText">
+            <p className="signin-title">Verify your email</p>
+            <p className="signin-subtitle">
+              Account created for {registeredEmail}. Enter the code we emailed you
+              to finish signing up.
+            </p>
+          </div>
+
+          {otpDelivery !== "sent" && (
+            <p className="auth-error" role="alert">
+              {otpDelivery === "cooldown"
+                ? "A code was recently requested. Wait a minute, then use Send Code."
+                : "Your account was created, but the verification code could not be sent. Use Send Code to retry."}
+            </p>
+          )}
+
+          <EmailOtpForm
+            initialEmail={registeredEmail}
+            codeAlreadySent={otpDelivery === "sent"}
+          />
+
+          <div className="forgot">
+            <p>
+              Wrong address?{" "}
+              <button
+                type="button"
+                className="otp-back"
+                onClick={() => setRegisteredEmail("")}
+              >
+                Register again
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -96,7 +119,7 @@ export default function SignUp() {
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
           </svg>
-          Sign in with Google
+          Sign up with Google
         </a>
 
         {/* Divider */}
@@ -131,7 +154,6 @@ export default function SignUp() {
                   placeholder="Doe"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  required
                 />
               </div>
             </div>
@@ -149,46 +171,12 @@ export default function SignUp() {
               />
             </div>
 
-            {/* Password & Confirm Password (Side by Side) */}
-            <div className="inputRow">
-              <div className="inputColumn">
-                <label htmlFor="password">Password</label>
-                <input
-                  id="password"
-                  type="password"
-                  placeholder="Secret Password!"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={8}
-                />
-              </div>
-
-              <div className="inputColumn">
-                <label htmlFor="confirmPassword">Confirm Password</label>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="Secret Password!"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  minLength={8}
-                />
-              </div>
-            </div>
+            <p className="signin-subtitle">
+              No password needed — we email you a one-time code instead.
+            </p>
 
             {/* Checkboxes */}
             <div className="checkboxGroup">
-              <label className="checkboxLabel">
-                <input
-                  type="checkbox"
-                  checked={newsletter}
-                  onChange={(e) => setNewsletter(e.target.checked)}
-                />
-                Sign Up for newsletter
-              </label>
-
               <label className="checkboxLabel">
                 <input
                   type="checkbox"
@@ -211,7 +199,7 @@ export default function SignUp() {
               disabled={loading}
               className="signButton"
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? "Creating account..." : "Sign Up"}
             </button>
           </div>
         </form>
@@ -221,11 +209,6 @@ export default function SignUp() {
           <p>
             Already a user? <Link to="/signin">Sign in here</Link>
           </p>
-        </div>
-        <EmailOtpForm />
-
-        <div className="sign-in">
-          <p>Already a User? <Link to="/signin">Sign In here</Link></p>
         </div>
       </div>
     </div>

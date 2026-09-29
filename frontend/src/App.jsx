@@ -17,6 +17,8 @@ import MembershipCheckout from "./components/dashboard/MembershipCheckout";
 import MyReservations from "./components/dashboard/MyReservations";
 import PaymentMethods from "./components/dashboard/PaymentMethods";
 import RequireAuth from "./components/RequireAuth";
+import RequirePermission from "./components/RequirePermission";
+import AdminPanel from "./components/dashboard/AdminPanel";
 import BillingSuccess from "./pages/BillingSuccess";
 import BillingCancel from "./pages/BillingCancel";
 
@@ -43,6 +45,14 @@ function App() {
         <Route path="membership/checkout" element={<MembershipCheckout />} />
         <Route path="reservations" element={<MyReservations />} />
         <Route path="payment-methods" element={<PaymentMethods />} />
+        <Route
+          path="admin"
+          element={
+            <RequirePermission anyOf={["MANAGE_USERS", "MANAGE_ROLES"]}>
+              <AdminPanel />
+            </RequirePermission>
+          }
+        />
       </Route>
     </Routes>
   );

@@ -6,8 +6,10 @@ import com.makerspace.backend.model.AppRole;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.model.UserProfile;
 import com.makerspace.backend.model.UserResolution;
+import com.makerspace.backend.repository.AppRoleRepository;
 import com.makerspace.backend.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,23 @@ public class UserService {
 
     @Autowired
     UserStateService userStateService;
+
+    @Autowired
+    AppRoleRepository roleRepository;
+
+    /**
+     * Role assigned to accounts created by self-provisioning (first-time OAuth or
+     * OTP sign-in). Empty by default, which means a new account starts with no
+     * permissions and must be promoted through the admin API or the
+     * {@code /claim} invite flow.
+     *
+     * Setting this to a privileged code such as {@code ADMIN} grants that role to
+     * every account that signs in. That is a development convenience only — it
+     * makes the instance open to anyone who completes an OAuth handshake, so it
+     * must stay unset in any deployed environment.
+     */
+    @Value("${app.registration.default-role:}")
+    private String defaultRole;
 
     // -------------------------------------------------------------------------
     // Lookups
@@ -102,7 +121,8 @@ public class UserService {
     /**
      * Creates a new user from a verified OAuth identity.
      * Caller is responsible for calling resolve() first and only dispatching here
-     * on a NotFound result. New users start with an empty authority role set.
+     * on a NotFound result. The account is granted the configured
+     * {@code app.registration.default-role}, if any.
      */
     @Transactional
     public User provision(OAuthProfile oAuthProfile) {
@@ -115,6 +135,7 @@ public class UserService {
         user.setAuth0Subject(oAuthProfile.subject());
         user.setAccountStatus(AccountStatus.ACTIVE);
         user.setProfile(profile);
+        applyDefaultRole(user);
         return userRepository.save(user);
     }
 
@@ -135,6 +156,55 @@ public class UserService {
         user.setEmail(email);
         user.setAccountStatus(AccountStatus.ACTIVE);
         user.setProfile(profile);
+        applyDefaultRole(user);
+        return userRepository.save(user);
+    }
+
+    /**
+     * Grants the configured default role to a freshly created account.
+     * No-op when the property is unset or the code does not match a known role —
+     * a bad value must not prevent someone from signing up.
+     */
+    private void applyDefaultRole(User user) {
+        if (defaultRole == null || defaultRole.isBlank()) return;
+
+        roleRepository.findById(defaultRole.trim().toUpperCase()).ifPresentOrElse(role -> {
+            user.getRoles().add(role);
+            log.info("Granted default role {} to newly provisioned account", role.getCode());
+        }, () -> log.warn(
+                "app.registration.default-role='{}' does not match a known role code; "
+                        + "account created with no roles", defaultRole));
+    }
+
+    /**
+     * Creates an unverified account for public self-registration.
+     *
+     * The account lands in {@code PRE_REGISTERED}, which carries no usable
+     * authority: it cannot authenticate until the caller proves control of the
+     * address through the OTP flow, at which point
+     * {@link UserStateService#autoClaimByEmail} flips it to {@code ACTIVE}.
+     * This is what keeps registration from being an account-takeover primitive —
+     * anyone can claim an address, but only its real owner can finish signing up.
+     *
+     * @throws ResponseStatusException 409 when the address is already registered
+     */
+    @Transactional
+    public User preRegister(String email, String firstName, String lastName) {
+        String normalized = email.trim().toLowerCase();
+
+        if (userRepository.findByEmailIncludingDeleted(normalized).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
+        }
+
+        UserProfile profile = new UserProfile();
+        profile.setFirstName(firstName);
+        profile.setLastName(lastName);
+
+        User user = new User();
+        user.setEmail(normalized);
+        user.setAccountStatus(AccountStatus.PRE_REGISTERED);
+        user.setProfile(profile);
+        applyDefaultRole(user);
         return userRepository.save(user);
     }
 

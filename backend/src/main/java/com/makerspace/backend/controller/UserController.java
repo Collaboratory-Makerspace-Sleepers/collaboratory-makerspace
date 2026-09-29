@@ -50,6 +50,21 @@ public class UserController {
         return UserDTO.from(userService.updateProfile(userSecurity.getUserId(auth), req.firstName(), req.lastName()));
     }
 
+    /**
+     * Effective permission codes for the calling user — the union of every
+     * permission attached to the roles they hold.
+     *
+     * Lets a client decide which admin affordances to render without hard-coding
+     * role names, mirroring how the filter chains and {@code @PreAuthorize}
+     * expressions evaluate authority. Server-side checks remain authoritative;
+     * this endpoint only drives presentation.
+     */
+    @GetMapping("/me/permissions")
+    public Set<String> getMyPermissions(Authentication auth) {
+        String email = userService.findById(userSecurity.getUserId(auth)).getEmail();
+        return userPermissionService.getEffectivePermissions(email);
+    }
+
     // -------------------------------------------------------------------------
     // Staff / admin user management
     // -------------------------------------------------------------------------

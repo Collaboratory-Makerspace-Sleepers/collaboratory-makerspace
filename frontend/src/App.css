@@ -720,6 +720,18 @@ p {
   color: #444444;
 }
 
+.auth-error {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #b3261e;
+  background: #fdecea;
+  border: 1px solid #f5c6c2;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin: 0;
+  width: 100%;
+}
+
 .otp-back {
   background: none;
   border: none;
@@ -1667,4 +1679,270 @@ p {
 .ReserveSummaryBottom > button:disabled {
   background-color: #ff9a78;
   cursor: not-allowed;
+}
+
+
+/* ========================================
+   ADMIN PANEL
+======================================== */
+
+.AdminPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.AdminTitle {
+  font-size: 26px;
+  font-weight: 700;
+  color: #111111;
+  margin: 0;
+}
+
+.AdminTabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.AdminTab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 4px;
+  margin-right: 20px;
+  font-size: 14px;
+  color: #666666;
+  cursor: pointer;
+}
+
+.AdminTab.active {
+  color: #111111;
+  font-weight: 600;
+  border-bottom-color: #ff530e;
+}
+
+.AdminSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.AdminSectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.AdminSectionHead h2 {
+  font-size: 17px;
+  font-weight: 600;
+  color: #111111;
+  margin: 0;
+}
+
+.AdminBanner {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.AdminBannerError {
+  background-color: #fdecea;
+  color: #b3261e;
+}
+
+.AdminBannerOk {
+  background-color: #e7f5ec;
+  color: #1b5e34;
+}
+
+.AdminEmpty,
+.AdminLoading {
+  color: #666666;
+  font-size: 14px;
+}
+
+.AdminMuted {
+  color: #888888;
+  font-size: 12px;
+}
+
+.AdminTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.AdminTable th {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e5e5e5;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888888;
+}
+
+.AdminTable td {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #111111;
+  vertical-align: middle;
+}
+
+.AdminChip {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: #eeeeee;
+  color: #444444;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.AdminYou {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: #ff530e;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.AdminSelect {
+  padding: 6px 8px;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  background-color: #ffffff;
+  font-size: 13px;
+  color: #111111;
+}
+
+.AdminSelect:disabled {
+  background-color: #f5f5f5;
+  color: #999999;
+}
+
+.AdminBtnPrimary {
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 6px;
+  background-color: #ff530e;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.AdminBtnPrimary:disabled {
+  background-color: #e5e5e5;
+  color: #999999;
+  cursor: not-allowed;
+}
+
+.AdminBtnGhost {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #444444;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.AdminBtnDanger {
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid #f0c4c0;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #b3261e;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.AdminBtnDanger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.AdminNewRole {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.AdminRoleCard {
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.AdminRoleHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.AdminRoleHead p {
+  margin: 4px 0 0;
+}
+
+.AdminPermGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.AdminPerm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #333333;
+  cursor: pointer;
+}
+
+.AdminPerm input:disabled {
+  cursor: not-allowed;
+}
+
+.AdminDenied {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.AdminDenied h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111111;
+  margin: 0;
+}
+
+.AdminDenied p {
+  color: #666666;
+  font-size: 14px;
+  margin: 0;
+}
+
+.AdminDeniedHint {
+  font-size: 12px !important;
+  color: #888888 !important;
+  font-family: monospace;
 }

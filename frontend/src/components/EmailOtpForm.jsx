@@ -2,12 +2,21 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-export default function EmailOtpForm() {
-  const [email, setEmail] = useState("");
+/**
+ * Passwordless email sign-in: request a one-time code, then exchange it for a
+ * session token.
+ *
+ * `codeAlreadySent` lets registration continue to verification without
+ * requesting a second code and triggering the resend cooldown.
+ */
+export default function EmailOtpForm({ initialEmail = "", codeAlreadySent = false }) {
+  const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState("");
-  const [step, setStep] = useState("email");
+  const [step, setStep] = useState(codeAlreadySent ? "code" : "email");
   const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(
+    codeAlreadySent ? "A one-time code was sent to your email." : "",
+  );
   const [loading, setLoading] = useState(false);
   const { setToken } = useAuth();
   const navigate = useNavigate();
@@ -15,7 +24,7 @@ export default function EmailOtpForm() {
   const from = location.state?.from?.pathname ?? "/dashboard";
 
   async function handleRequest(e) {
-    e.preventDefault();
+    e?.preventDefault();
     setError("");
     setMessage("");
     setLoading(true);
@@ -27,7 +36,12 @@ export default function EmailOtpForm() {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        throw new Error(data?.message || "Could not send a code to that email");
+        const message = data?.message || (res.status === 429
+          ? "Please wait before requesting another code."
+          : res.status >= 500
+            ? "The server could not send a code. Check that its Redis and email services are available."
+            : "Could not send a code to that email.");
+        throw new Error(message);
       }
       setStep("code");
       setMessage("A one-time code was sent to your email.");
@@ -50,7 +64,9 @@ export default function EmailOtpForm() {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        throw new Error(data?.message || "Invalid or expired code");
+        throw new Error(data?.message || (res.status >= 500
+          ? "The server could not verify your code. Please try again."
+          : "That code is invalid or expired. Request a new one and try again."));
       }
       setToken(data.access_token);
       navigate(from, { replace: true });

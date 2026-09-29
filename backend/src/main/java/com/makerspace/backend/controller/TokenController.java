@@ -29,11 +29,19 @@ public class TokenController {
 
     @GetMapping("/token")
     public ResponseEntity<Map<String, String>> exchangeToken(HttpServletRequest request) {
-        String token = Arrays.stream(request.getCookies())
-                .filter(c -> c.getName().equals("access_token"))
-                .findFirst()
+        // getCookies() returns null when the request carries none at all, so this
+        // has to tolerate absence rather than NPE into a 500 — the client treats
+        // a non-2xx here as "not signed in" and bounces to /login.
+        Cookie[] cookies = request.getCookies();
+        String token = cookies == null ? null : Arrays.stream(cookies)
+                .filter(c -> "access_token".equals(c.getName()))
                 .map(Cookie::getValue)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+                .findFirst()
+                .orElse(null);
+
+        if (token == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
 
         if (!jwtService.isValid(token)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);

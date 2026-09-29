@@ -3,6 +3,7 @@ package com.makerspace.backend.config;
 import com.makerspace.backend.config.security.InternalAuthFilter;
 import com.makerspace.backend.model.Permission;
 import com.makerspace.backend.security.JwtAuthFilter;
+import com.makerspace.backend.security.OAuth2FailureHandler;
 import com.makerspace.backend.security.OAuth2SuccessHandler;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,7 @@ public class SecurityConfig {
     @Autowired private JwtAuthFilter jwtAuthFilter;
     @Autowired private InternalAuthFilter internalAuthFilter;
     @Autowired private OAuth2SuccessHandler oAuth2SuccessHandler;
+    @Autowired private OAuth2FailureHandler oAuth2FailureHandler;
 
     private HttpSecurity applyShared(HttpSecurity http) throws Exception {
         return http
@@ -65,7 +67,9 @@ public class SecurityConfig {
                         .requestMatchers(POST, "/login/oauth2/code/apple").permitAll()
                         .anyRequest().permitAll()
                 )
-                .oauth2Login(o -> o.successHandler(oAuth2SuccessHandler));
+                .oauth2Login(o -> o
+                        .successHandler(oAuth2SuccessHandler)
+                        .failureHandler(oAuth2FailureHandler));
         return http.build();
     }
 

@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function Dashboard() {
-  const { setToken } = useAuth();
+  const { setToken, hasAnyPermission } = useAuth();
   const navigate = useNavigate();
 
   function handleSignOut() {
@@ -30,6 +30,9 @@ export default function Dashboard() {
             <NavLink to="/dashboard/account">Account</NavLink>
             <NavLink to="/dashboard/membership">Membership</NavLink>
             <NavLink to="/dashboard/payment-methods">Payment Methods</NavLink>
+            {hasAnyPermission(["MANAGE_USERS", "MANAGE_ROLES"]) && (
+              <NavLink to="/dashboard/admin">Admin</NavLink>
+            )}
             <button
               onClick={handleSignOut}
               className="text-sm text-gray-500 hover:text-red-500 transition-colors"

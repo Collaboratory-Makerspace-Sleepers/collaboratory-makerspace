@@ -217,6 +217,15 @@ export default function SignUp() {
         </form>
 
         {/* Footer Link */}
+        <label className="checkboxLabel">
+          <input
+            type="checkbox"
+            checked={agreeTerms}
+            onChange={(e) => setAgreeTerms(e.target.checked)}
+            required
+          />
+          Agree to <Link to="/terms" target="_blank" rel="noopener noreferrer">terms & services</Link>
+        </label>
         <div className="forgot">
           <p>
             Already a user? <Link to="/signin">Sign in here</Link>

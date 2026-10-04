@@ -107,6 +107,7 @@ export default function Home() {
 
           <div className="FootDiv3">
             <p>All Rights Reserved, 2026</p>
+            <Link to="/terms">Terms of Service</Link>
             <a href="#top">Back to Top</a>
           </div>
         </div>

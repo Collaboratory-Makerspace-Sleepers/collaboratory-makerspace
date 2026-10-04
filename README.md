@@ -71,20 +71,20 @@ React + Vite single-page app consuming the backend REST API.
 
 | Layer | Technology |
 | ----- | ---------- |
-| Framework | React |
-| Build | Vite |
-| Auth | Auth0 SPA SDK |
-| Routing | React Router |
+| Framework | React 19 |
+| Build | Vite 7 |
+| Routing | React Router 7 |
+| Styling | Tailwind CSS 4 |
+| Linting | ESLint 9 |
 
 ### Key Features
 
-- **Auth0 login flow** with JWT cookie exchange against the backend
-- **Role-aware UI** that renders based on the permission set returned for the current user
-- **Equipment browsing and reservation** with conflict feedback from the API
+- **Auth0 SSO** through the backend redirect flow; the JWT cookie issued at login is exchanged for a Bearer token on API calls
+- **Role-aware UI** rendered from the permission set returned for the current user
+- **Equipment browsing and reservation** with conflict feedback surfaced from the API
 - **Account claim flow** for users invited through in-person registration
 
 See [`frontend/README.md`](frontend/README.md) for setup instructions.
-
 ---
 
 ## Branch Strategy

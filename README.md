@@ -65,7 +65,25 @@ cp src/main/resources/application.properties.example src/main/resources/applicat
 
 ## Frontend
 
-React + Vite SPA. See [`frontend/README.md`](frontend/README.md) for setup instructions.
+React + Vite single-page app consuming the backend REST API.
+
+### Tech Stack
+
+| Layer | Technology |
+| ----- | ---------- |
+| Framework | React |
+| Build | Vite |
+| Auth | Auth0 SPA SDK |
+| Routing | React Router |
+
+### Key Features
+
+- **Auth0 login flow** with JWT cookie exchange against the backend
+- **Role-aware UI** that renders based on the permission set returned for the current user
+- **Equipment browsing and reservation** with conflict feedback from the API
+- **Account claim flow** for users invited through in-person registration
+
+See [`frontend/README.md`](frontend/README.md) for setup instructions.
 
 ---
 

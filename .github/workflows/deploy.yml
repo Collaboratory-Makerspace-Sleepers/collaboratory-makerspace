@@ -59,7 +59,7 @@ jobs:
 
     - name: Upload JAR to S3
       run: |
-        aws s3 cp backend/target/backend.jar s3://collaboratory-makerspace-backend-artifacts/backend.jar
+        aws s3 cp backend/target/*.jar s3://collaboratory-makerspace-backend-artifacts/backend.jar
    # get the ec2 vals 
     - name: Discover EC2 info
       id: ec2Info

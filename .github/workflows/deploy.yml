@@ -4,7 +4,7 @@ name: Deploy Backend to EC2
 # Trigger: Run on pushes to main branch
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "pipeline-test" ]
 
 jobs:
   build-and-deploy:
@@ -44,7 +44,7 @@ jobs:
     # IAM role created for GitHub OIDC
     # aws-region: Region where S3 bucket + EC2 live (us-east-2)
     # used oicd to avoid long lived aws credentials 
-   
+  
     - name: Configure AWS credentials (OIDC)
       uses: aws-actions/configure-aws-credentials@v4
       with:

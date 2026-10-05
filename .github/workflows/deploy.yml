@@ -64,19 +64,19 @@ jobs:
     - name: Discover EC2 info
       id: ec2Info
       run: |
-            INSTANCE_ID=$(aws ec2 describe-instances 
-                --filters "Name=tag:Name,Values=collaboratory-makerspace-backend" 
-                --query "Reservations[0].Instances[0].InstanceId" 
+            INSTANCE_ID=$(aws ec2 describe-instances \
+                --filters "Name=tag:Name,Values=collaboratory-makerspace-backend" \
+                --query "Reservations[0].Instances[0].InstanceId" \
                 --output text)
 
-            AVAIL_ZONE=$(aws ec2 describe-instances 
-                --instance-id $INSTANCE_ID 
-                --query "Reservations[0].Instances[0].Placement.AvailabilityZone" 
+            AVAIL_ZONE=$(aws ec2 describe-instances \
+                --instance-id $INSTANCE_ID \
+                --query "Reservations[0].Instances[0].Placement.AvailabilityZone" \
                 --output text)
 
-            HOST=$(aws ec2 describe-instances 
-                --instance-id $INSTANCE_ID 
-                --query "Reservations[0].Instances[0].PublicDnsName" 
+            HOST=$(aws ec2 describe-instances \
+                --instance-id $INSTANCE_ID \
+                --query "Reservations[0].Instances[0].PublicDnsName" \
                 --output text)
 
             echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_OUTPUT

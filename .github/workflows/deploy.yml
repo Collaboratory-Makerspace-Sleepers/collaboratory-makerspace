@@ -2,6 +2,7 @@ name: Deploy Backend to EC2
 
 
 # Trigger: Run on pushes to main branch
+# will change back to main branch once testing is complete
 on:
   push:
     branches: [ "pipeline-test" ]

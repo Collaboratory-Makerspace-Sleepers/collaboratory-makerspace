@@ -1,0 +1,38 @@
+{
+  "version": "0",
+  "id": "eb-sub-updated-001",
+  "source": "aws.partner/stripe.com/ed_test_xxx",
+  "detail-type": "customer.subscription.updated",
+  "time": "2026-09-22T11:00:00Z",
+  "region": "us-east-1",
+  "resources": [],
+  "detail": {
+    "id": "evt_sub_updated_001",
+    "object": "event",
+    "api_version": "2024-06-20",
+    "created": 1758596400,
+    "type": "customer.subscription.updated",
+    "livemode": false,
+    "data": {
+      "object": {
+        "id": "sub_test_monthly_001",
+        "object": "subscription",
+        "customer": "cus_test_001",
+        "status": "past_due",
+        "current_period_start": 1758592800,
+        "current_period_end": 1761271200,
+        "cancel_at_period_end": false,
+        "items": {
+          "data": [
+            {
+              "price": {
+                "id": "price_monthly_test",
+                "recurring": { "interval": "month" }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

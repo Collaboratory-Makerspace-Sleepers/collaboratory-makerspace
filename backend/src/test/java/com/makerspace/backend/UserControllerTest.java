@@ -11,6 +11,7 @@ import com.makerspace.backend.model.AppRole;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.model.UserProfile;
 import com.makerspace.backend.repository.AppRoleRepository;
+import com.makerspace.backend.security.OAuth2FailureHandler;
 import com.makerspace.backend.security.OAuth2SuccessHandler;
 import com.makerspace.backend.services.JwtService;
 import com.makerspace.backend.services.UserPermissionService;
@@ -72,6 +73,7 @@ class UserControllerTest {
     @MockBean UserPermissionService userPermissionService;
     @MockBean AppRoleRepository roleRepository;
     @MockBean OAuth2SuccessHandler oAuth2SuccessHandler; // required by SecurityConfig
+    @MockBean OAuth2FailureHandler oAuth2FailureHandler;
 
     private User activeUser;
 

@@ -81,6 +81,9 @@ export default function Membership() {
 
   const [membership, setMembership] = useState(undefined); // undefined = loading, null = none
   const [membershipError, setMembershipError] = useState("");
+  const [checkoutLoading, setCheckoutLoading] = useState(null);
+  const [checkoutError, setCheckoutError] = useState("");
+  const [cancelConfirm, setCancelConfirm] = useState(false);
 
   const banner = location.state?.banner;
 
@@ -127,6 +130,21 @@ export default function Membership() {
     }
   }
 
+  async function handleCancel() {
+    setCheckoutError("");
+    setCheckoutLoading("cancel");
+    try {
+      const res = await authFetch("/api/v1/billing/cancel", { method: "POST" });
+      if (!res.ok) throw new Error("Could not cancel membership");
+      setMembership((m) => ({ ...m, cancelAtPeriodEnd: true }));
+      setCancelConfirm(false);
+    } catch (err) {
+      setCheckoutError(err.message || "Something went wrong.");
+    } finally {
+      setCheckoutLoading(null);
+    }
+  }
+
   return (
     <div className="DashHome1">
       <div className="Dash2">
@@ -151,13 +169,17 @@ export default function Membership() {
           {membership === null && <p>Guest — no active membership</p>}
           {membership && (
             <>
-              <p>{membership.planCode}</p>
+              <p>{PLANS.find((p) => p.code === membership.planCode)?.name ?? membership.planCode}</p>
               <p style={STATUS_COLORS[membership.status]}>
                 {STATUS_LABELS[membership.status] || membership.status}
               </p>
               {membership.currentPeriodEnd && (
                 <p>
-                  {membership.cancelAtPeriodEnd ? "Cancels" : "Renews"}{" "}
+                  {["CANCELED", "GRACE"].includes(membership.status)
+                    ? "Expired"
+                    : membership.cancelAtPeriodEnd
+                    ? "Cancels"
+                    : "Renews"}{" "}
                   {new Date(membership.currentPeriodEnd).toLocaleDateString()}
                 </p>
               )}
@@ -165,12 +187,34 @@ export default function Membership() {
           )}
           {hasActiveMembership && (
             <div className="Dash5">
+              {checkoutError && <p style={{ color: "red" }}>{checkoutError}</p>}
               <button
                 onClick={handlePortal}
-                disabled={checkoutLoading === "portal"}
+                disabled={!!checkoutLoading}
               >
                 {checkoutLoading === "portal" ? "Opening…" : "Manage billing"}
               </button>
+              {!membership?.cancelAtPeriodEnd && (
+                cancelConfirm ? (
+                  <>
+                    <p>Cancel at end of billing period?</p>
+                    <button
+                      onClick={handleCancel}
+                      disabled={checkoutLoading === "cancel"}
+                      style={{ color: "red" }}
+                    >
+                      {checkoutLoading === "cancel" ? "Cancelling…" : "Yes, cancel"}
+                    </button>
+                    <button onClick={() => setCancelConfirm(false)} disabled={!!checkoutLoading}>
+                      Keep membership
+                    </button>
+                  </>
+                ) : (
+                  <button onClick={() => setCancelConfirm(true)} disabled={!!checkoutLoading}>
+                    Cancel membership
+                  </button>
+                )
+              )}
             </div>
           )}
         </div>

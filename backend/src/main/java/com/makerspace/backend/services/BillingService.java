@@ -9,6 +9,7 @@ import com.makerspace.backend.repository.MembershipPlanRepository;
 import com.makerspace.backend.repository.PaymentRecordRepository;
 import com.makerspace.backend.repository.UserRepository;
 import com.stripe.StripeClient;
+import com.stripe.exception.InvalidRequestException;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
 import com.stripe.model.PaymentMethod;
@@ -72,6 +73,12 @@ public class BillingService {
 
         String priceId = plan.get().getStripePriceId();
 
+        // Block if the user already has an active subscription-based membership.
+        if (plan.get().getBillingInterval() != null && membershipService.hasActiveMembership(userId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "You already have an active membership");
+        }
+
         Optional<User> user = userRepository.findByIdForUpdate(userId);
 
         if (user.isEmpty()){
@@ -82,21 +89,10 @@ public class BillingService {
         String stripeCustomerId;
 
         if (user.get().getStripeCustomerId() == null) {
-            CustomerCreateParams customerParams = CustomerCreateParams.builder()
-                    .setName(userProfile.getFirstName()+ " " + userProfile.getLastName())
-                    .setEmail(user.get().getEmail())
-                    .build();
-
-            RequestOptions options = RequestOptions.builder()
-                    .setIdempotencyKey("cust-create-" + userId)
-                    .build();
-
-            Customer customer = stripeClient.v1().customers().create(customerParams, options);
-            stripeCustomerId = customer.getId();
-
-            user.get().setStripeCustomerId(stripeCustomerId);
+            stripeCustomerId = createStripeCustomer(user.get(), userProfile, userId);
         } else {
-            stripeCustomerId = user.get().getStripeCustomerId();
+            // Verify the stored customer still exists (e.g. test-clock customers can be deleted).
+            stripeCustomerId = verifyOrRecreateCustomer(user.get(), userProfile, userId);
         }
 
         SessionCreateParams.LineItem lineItem = SessionCreateParams.LineItem.builder()
@@ -294,6 +290,42 @@ public class BillingService {
                 .sorted(java.util.Comparator.comparingInt(MembershipPlan::getAmountCents))
                 .map(p -> new PlanDTO(p.getCode(), p.getDisplayName(), p.getAmountCents(), p.getBillingInterval()))
                 .toList();
+    }
+
+    private String createStripeCustomer(User user, UserProfile profile, Long userId) throws StripeException {
+        CustomerCreateParams params = CustomerCreateParams.builder()
+                .setName(profile.getFirstName() + " " + profile.getLastName())
+                .setEmail(user.getEmail())
+                .build();
+        RequestOptions options = RequestOptions.builder()
+                .setIdempotencyKey("cust-create-" + userId)
+                .build();
+        Customer customer = stripeClient.v1().customers().create(params, options);
+        user.setStripeCustomerId(customer.getId());
+        return customer.getId();
+    }
+
+    private String verifyOrRecreateCustomer(User user, UserProfile profile, Long userId) throws StripeException {
+        try {
+            stripeClient.v1().customers().retrieve(user.getStripeCustomerId());
+            return user.getStripeCustomerId();
+        } catch (InvalidRequestException e) {
+            if ("resource_missing".equals(e.getCode())) {
+                log.warn("Stripe customer {} no longer exists for user {}, creating new one",
+                        user.getStripeCustomerId(), userId);
+                user.setStripeCustomerId(null);
+                // Idempotency key must differ from the original create to avoid replaying
+                // the old (now-deleted) customer ID from Stripe's idempotency cache.
+                CustomerCreateParams params = CustomerCreateParams.builder()
+                        .setName(profile.getFirstName() + " " + profile.getLastName())
+                        .setEmail(user.getEmail())
+                        .build();
+                Customer customer = stripeClient.v1().customers().create(params);
+                user.setStripeCustomerId(customer.getId());
+                return customer.getId();
+            }
+            throw e;
+        }
     }
 
     public List<PaymentRecordDTO> getPayments(Long userId) {

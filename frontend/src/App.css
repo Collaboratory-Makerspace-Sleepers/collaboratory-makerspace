@@ -1248,6 +1248,75 @@ p {
    MEMBERSHIP / PRICING CARDS
 ======================================== */
 
+/* pricing */
+.PricingColla {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.CollaR {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.CollaD {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* pricing card overrides — scoped to .PricingColla so the dashboard
+   Membership page keeps the shared card styles above */
+.PricingColla .CollaR1 {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 24px;
+  width: 100%;
+}
+
+.PricingColla .collar2 {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.PricingColla .colla4 {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.PricingColla .collar3 {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.PricingColla .colla6 {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgb(234, 234, 234);
+  gap: 24px;
+}
+
+.PricingColla .colla5 {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
 .CollaR1 {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

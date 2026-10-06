@@ -35,15 +35,8 @@ public class UserService {
     AppRoleRepository roleRepository;
 
     /**
-     * Role assigned to accounts created by self-provisioning (first-time OAuth or
-     * OTP sign-in). Empty by default, which means a new account starts with no
-     * permissions and must be promoted through the admin API or the
-     * {@code /claim} invite flow.
-     *
-     * Setting this to a privileged code such as {@code ADMIN} grants that role to
-     * every account that signs in. That is a development convenience only — it
-     * makes the instance open to anyone who completes an OAuth handshake, so it
-     * must stay unset in any deployed environment.
+    * Role assigned to newly created accounts. Privileged defaults are rejected
+    * and replaced with GUEST so public sign-up cannot grant admin access.
      */
     @Value("${app.registration.default-role:}")
     private String defaultRole;
@@ -119,10 +112,10 @@ public class UserService {
     // -------------------------------------------------------------------------
 
     /**
-     * Creates a new user from a verified OAuth identity.
-     * Caller is responsible for calling resolve() first and only dispatching here
-     * on a NotFound result. The account is granted the configured
-     * {@code app.registration.default-role}, if any.
+    * Creates a new user from a verified OAuth identity.
+    * Caller is responsible for calling resolve() first and only dispatching here
+    * on a NotFound result. The configured default is constrained to non-privileged
+    * roles before it is assigned.
      */
     @Transactional
     public User provision(OAuthProfile oAuthProfile) {
@@ -168,12 +161,20 @@ public class UserService {
     private void applyDefaultRole(User user) {
         if (defaultRole == null || defaultRole.isBlank()) return;
 
-        roleRepository.findById(defaultRole.trim().toUpperCase()).ifPresentOrElse(role -> {
+        String configuredRole = defaultRole.trim().toUpperCase();
+        String roleCode = Set.of("ADMIN", "STAFF", "INSTRUCTOR").contains(configuredRole)
+                ? "GUEST"
+                : configuredRole;
+        if (!roleCode.equals(configuredRole)) {
+            log.warn("Ignoring privileged default role {}; assigning GUEST to new account", configuredRole);
+        }
+
+        roleRepository.findById(roleCode).ifPresentOrElse(role -> {
             user.getRoles().add(role);
             log.info("Granted default role {} to newly provisioned account", role.getCode());
         }, () -> log.warn(
                 "app.registration.default-role='{}' does not match a known role code; "
-                        + "account created with no roles", defaultRole));
+                        + "account created with no roles", roleCode));
     }
 
     /**

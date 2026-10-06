@@ -13,8 +13,6 @@ spring:
       client:
         registration:
           google:
-            client-id: local-google-client
-            client-secret: local-google-secret
             scope: openid,profile,email
           microsoft:
             client-id: local-microsoft-client

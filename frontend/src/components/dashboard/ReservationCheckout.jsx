@@ -18,6 +18,14 @@ export default function ReservationCheckout() {
     return null;
   }
 
+  if (state.trainingRequired && !state.waiverSigned) {
+    navigate(`/dashboard/rentequipment/${state.equipmentId}/waiver`, {
+      replace: true,
+      state,
+    });
+    return null;
+  }
+
   const { equipmentId, equipmentName, startTime, endTime, displayDate, displayTime } = state;
 
   const hours =
@@ -99,7 +107,7 @@ export default function ReservationCheckout() {
             <p>You don't have an active membership.</p>
             <p>Members reserve equipment for free.</p>
           </div>
-          <div className="Dash5">
+          <div className="Dash5 reservation-checkout-actions">
             <button onClick={() => navigate("/dashboard/membership")}>
               Get a membership
             </button>
@@ -109,15 +117,20 @@ export default function ReservationCheckout() {
           </div>
         </div>
       ) : (
-        <div className="Dash5">
+        <div className="Dash5 reservation-checkout-actions">
           {status === "error" && <p style={{ color: "red" }}>{errorMsg}</p>}
           <button
+            className="reservation-confirm-button"
             onClick={handleConfirm}
             disabled={status === "confirming"}
           >
             {status === "confirming" ? "Confirming…" : "Confirm reservation"}
           </button>
-          <button onClick={() => navigate(-1)} disabled={status === "confirming"}>
+          <button
+            className="reservation-cancel-button"
+            onClick={() => navigate(-1)}
+            disabled={status === "confirming"}
+          >
             Cancel
           </button>
         </div>

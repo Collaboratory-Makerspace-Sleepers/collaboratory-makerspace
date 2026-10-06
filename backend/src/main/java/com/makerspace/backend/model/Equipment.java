@@ -33,6 +33,9 @@ public class Equipment {
     @Column(name = "image_url")
     private String imageUrl;
 
+    @Column(name = "training_required", nullable = false)
+    private boolean trainingRequired;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private EquipmentStatus status = EquipmentStatus.AVAILABLE;

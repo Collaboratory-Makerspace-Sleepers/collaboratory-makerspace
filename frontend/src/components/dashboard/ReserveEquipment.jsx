@@ -103,10 +103,13 @@ export default function ReserveEquipment() {
       hour, 0, 0
     );
     const end = new Date(start.getTime() + 60 * 60 * 1000);
-    navigate(`/dashboard/rentequipment/${id}/checkout`, {
+    navigate(
+      `/dashboard/rentequipment/${id}/${item.trainingRequired ? "waiver" : "checkout"}`,
+      {
       state: {
         equipmentId: Number(id),
         equipmentName: item.name,
+        trainingRequired: item.trainingRequired,
         startTime: start.toISOString(),
         endTime: end.toISOString(),
         displayDate: selectedDate.toLocaleDateString(undefined, {
@@ -114,7 +117,8 @@ export default function ReserveEquipment() {
         }),
         displayTime: selectedSlot,
       },
-    });
+      }
+    );
   }
 
   if (loadError) {
@@ -181,7 +185,6 @@ export default function ReserveEquipment() {
                 onClick={() => {
                   setSelectedDate(new Date(viewYear, viewMonth, day));
                   setSelectedSlot(null);
-                  setConfirmation(null);
                 }}
               >
                 {day}
@@ -207,8 +210,6 @@ export default function ReserveEquipment() {
                 }
                 onClick={() => {
                   setSelectedSlot(time);
-                  setConfirmation(null);
-                  setNeedsMembership(false);
                 }}
               >
                 {time}

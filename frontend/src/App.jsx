@@ -10,6 +10,7 @@ import DashboardHome from "./components/dashboard/DashboardHome";
 import RentEquipment from "./components/dashboard/RentEquipment";
 import ReserveEquipment from "./components/dashboard/ReserveEquipment";
 import ReservationCheckout from "./components/dashboard/ReservationCheckout";
+import LaserWaiver from "./components/dashboard/LaserWaiver";
 import BookClasses from "./components/dashboard/BookClasses";
 import Account from "./components/dashboard/Account";
 import Membership from "./components/dashboard/Membership";
@@ -38,6 +39,7 @@ function App() {
         <Route path="home" element={<DashboardHome />} />
         <Route path="rentequipment" element={<RentEquipment />} />
         <Route path="rentequipment/:id" element={<ReserveEquipment />} />
+        <Route path="rentequipment/:id/waiver" element={<LaserWaiver />} />
         <Route path="rentequipment/:id/checkout" element={<ReservationCheckout />} />
         <Route path="bookclasses" element={<BookClasses />} />
         <Route path="account" element={<Account />} />

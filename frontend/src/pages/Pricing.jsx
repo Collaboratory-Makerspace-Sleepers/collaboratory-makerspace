@@ -35,8 +35,8 @@ export default function Pricing() {
           <div className="links">
             <Link to="/">Home</Link>
             <Link to="/pricing">Pricing</Link>
-            <button onClick={() => navigate("/signup")}>Sign Up</button>
-            <button onClick={() => navigate("/signin")}>Sign in</button>
+            <button className="nav-btn" onClick={() => navigate("/signup")}>Sign Up</button>
+            <button className="nav-btn" onClick={() => navigate("/signin")}>Sign in</button>
           </div>
         </div>
 
@@ -48,8 +48,8 @@ export default function Pricing() {
               equipment, class bookings, and private studios
             </p>
             <div className="CollaR">
-              <button>Try for free today</button>
-              <button onClick={() => navigate("/signin")}>Sign in</button>
+              <button className="btn-primary">Try for free today</button>
+              <button className="btn-secondary" onClick={() => navigate("/signin")}>Sign in</button>
             </div>
 
             <div className="CollaR1">
@@ -65,7 +65,7 @@ export default function Pricing() {
                       <p>{formatPrice(plan.amountCents, plan.billingInterval)}</p>
                     </div>
                   </div>
-                  <button onClick={() => navigate("/signin")}>Get started</button>
+                  <button className="btn-primary" onClick={() => navigate("/signin")}>Get started</button>
                 </div>
               ))}
             </div>

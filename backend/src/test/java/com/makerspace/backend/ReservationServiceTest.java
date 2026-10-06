@@ -3,6 +3,8 @@ package com.makerspace.backend;
 import com.makerspace.backend.model.*;
 import com.makerspace.backend.repository.EquipmentRepository;
 import com.makerspace.backend.repository.ReservationRepository;
+import com.makerspace.backend.repository.TrainingTaskRepository;
+import com.makerspace.backend.repository.TrainingWaiverSignatureRepository;
 import com.makerspace.backend.repository.UserRepository;
 import com.makerspace.backend.services.MembershipService;
 import com.makerspace.backend.services.ReservationService;
@@ -21,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class ReservationServiceTest {
@@ -28,6 +31,8 @@ class ReservationServiceTest {
     @Mock private ReservationRepository reservationRepository;
     @Mock private EquipmentRepository equipmentRepository;
     @Mock private UserRepository userRepository;
+    @Mock private TrainingTaskRepository trainingTaskRepository;
+    @Mock private TrainingWaiverSignatureRepository trainingWaiverSignatureRepository;
     @Mock private MembershipService membershipService;
 
     @InjectMocks
@@ -51,6 +56,7 @@ class ReservationServiceTest {
 
     @Test
     void create_throws402_whenUserHasNoMembership() {
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(activeEquipment()));
         when(membershipService.hasActiveMembership(1L)).thenReturn(false);
 
         assertThatThrownBy(() -> reservationService.create(1L, 1L, START, END))
@@ -61,6 +67,7 @@ class ReservationServiceTest {
     @Test
     void create_throws402_whenMembershipPeriodExpired() {
         // hasActiveMembership checks both status and date — returning false covers expired periods
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(activeEquipment()));
         when(membershipService.hasActiveMembership(1L)).thenReturn(false);
 
         assertThatThrownBy(() -> reservationService.create(1L, 1L, START, END))
@@ -80,5 +87,35 @@ class ReservationServiceTest {
         EquipmentReservation result = reservationService.create(1L, 1L, START, END);
 
         assertThat(result).isNotNull();
+    }
+
+    @Test
+    void create_addsTrainingTaskForLaserEquipmentAfterMembershipCheck() {
+        Equipment laser = activeEquipment();
+        laser.setTrainingRequired(true);
+        when(trainingWaiverSignatureRepository.existsByUserIdAndEquipmentId(1L, 1L)).thenReturn(true);
+        when(membershipService.hasActiveMembership(1L)).thenReturn(true);
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(laser));
+        when(reservationRepository.findOverlapping(any(), any(), any(), any(), any()))
+                .thenReturn(List.of());
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user()));
+        when(reservationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        reservationService.create(1L, 1L, START, END);
+
+        verify(trainingTaskRepository).save(any(TrainingTask.class));
+    }
+
+    @Test
+    void create_requiresWaiverBeforeMembershipCheck_whenEquipmentRequiresTraining() {
+        Equipment laser = activeEquipment();
+        laser.setTrainingRequired(true);
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(laser));
+        when(trainingWaiverSignatureRepository.existsByUserIdAndEquipmentId(1L, 1L)).thenReturn(false);
+
+        assertThatThrownBy(() -> reservationService.create(1L, 1L, START, END))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("waiver");
+        verify(membershipService, org.mockito.Mockito.never()).hasActiveMembership(1L);
     }
 }

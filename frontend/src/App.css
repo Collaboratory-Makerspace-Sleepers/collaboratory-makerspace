@@ -106,6 +106,43 @@ p {
   background-color: #f8fafc;
 }
 
+.btn-primary,
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-primary {
+  background-color: #ff530e;
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background-color: #e04500;
+  border-color: #e04500;
+}
+
+.btn-secondary {
+  background-color: #ffffff;
+  color: #1a1a1a;
+  border-color: #cbd5e1;
+}
+
+.btn-secondary:hover {
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+  color: #1a1a1a;
+}
+
 
 /* ========================================
    HERO SECTION
@@ -980,6 +1017,51 @@ p {
   height: auto;
 }
 
+.reservation-checkout-actions {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.reservation-checkout-actions button {
+  min-height: 40px;
+  padding: 9px 16px;
+  border: 1px solid #b7b7b7;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #222222;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reservation-checkout-actions .reservation-confirm-button {
+  border-color: #c94716;
+  background: #c94716;
+  color: #ffffff;
+}
+
+.reservation-checkout-actions .reservation-confirm-button:hover:not(:disabled) {
+  border-color: #a93810;
+  background: #a93810;
+}
+
+.reservation-checkout-actions .reservation-cancel-button:hover:not(:disabled) {
+  border-color: #777777;
+  background: #f3f3f3;
+}
+
+.reservation-checkout-actions button:disabled {
+  border-color: #c9c9c9;
+  background: #e7e7e7;
+  color: #727272;
+  cursor: not-allowed;
+}
+
+.reservation-checkout-actions button:focus-visible {
+  outline: 3px solid rgba(201, 71, 22, 0.35);
+  outline-offset: 2px;
+}
+
 .Dash6 {
   display: flex;
   flex-direction: column;
@@ -1470,6 +1552,205 @@ p {
   font-size: 13px;
   color: #666666;
   margin: 0;
+}
+
+.laser-waiver-page {
+  max-width: 820px;
+}
+
+.laser-waiver-document,
+.laser-waiver-document h1 {
+  margin: 0 0 12px;
+  color: #171717;
+  font-size: 26px;
+  line-height: 1.2;
+}
+
+.laser-waiver-intro,
+.laser-waiver-section p {
+  color: #444444;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.laser-waiver-intro {
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.laser-waiver-sections {
+  display: flex;
+  flex-direction: column;
+}
+
+.laser-waiver-section {
+  padding: 16px 0;
+  border-top: 1px solid #e8e8e8;
+}
+
+.laser-waiver-section h2,
+.laser-waiver-section p {
+  margin: 0;
+}
+
+.laser-waiver-signature {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 20px;
+  border-top: 1px solid #e8e8e8;
+}
+
+.laser-waiver-signature > label:first-child {
+  color: #333333;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.laser-waiver-signature > input {
+  width: min(100%, 420px);
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid #bdbdbd;
+  border-radius: 4px;
+  color: #222222;
+  font: inherit;
+}
+
+.laser-waiver-agreement {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: #444444;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.laser-waiver-agreement input {
+  width: 16px;
+  height: 16px;
+  margin: 1px 0 0;
+  accent-color: #d94b16;
+}
+
+.laser-waiver-signature button,
+.laser-waiver-finish {
+  min-height: 40px;
+  padding: 9px 16px;
+  border: 1px solid #d94b16;
+  border-radius: 4px;
+  background: #d94b16;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.laser-waiver-signature button:disabled,
+.laser-waiver-finish:disabled {
+  border-color: #c9c9c9;
+  background: #e7e7e7;
+  color: #727272;
+  cursor: not-allowed;
+}
+
+.laser-waiver-signed {
+  color: #28643a;
+  font-size: 13px;
+}
+
+.laser-waiver-finish {
+  align-self: flex-start;
+}
+
+.training-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.training-tasks-heading,
+.training-task-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.training-tasks-heading h2,
+.training-task-heading h3 {
+  margin: 0;
+  color: #222222;
+  font-size: 16px;
+}
+
+.training-tasks-heading > span,
+.training-task-pending {
+  color: #8a3b1d;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.training-task {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid #e8e8e8;
+}
+
+.training-task-heading p,
+.training-task-complete,
+.training-task-unavailable,
+.training-tasks > p {
+  margin: 4px 0 0;
+  color: #5d5d5d;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.training-task-player {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #171717;
+}
+
+.training-task-player video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.training-task > button {
+  align-self: flex-start;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid #d94b16;
+  border-radius: 4px;
+  background: #d94b16;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.training-task > button:disabled {
+  border-color: #c9c9c9;
+  background: #e7e7e7;
+  color: #727272;
+  cursor: wait;
+}
+
+.training-task-error {
+  color: #a32323 !important;
 }
 
 .CalendarWrap {

@@ -6,9 +6,12 @@ import com.makerspace.backend.model.EquipmentReservation;
 import com.makerspace.backend.model.EquipmentStatus;
 import com.makerspace.backend.model.Permission;
 import com.makerspace.backend.model.ReservationStatus;
+import com.makerspace.backend.model.TrainingTask;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.repository.EquipmentRepository;
 import com.makerspace.backend.repository.ReservationRepository;
+import com.makerspace.backend.repository.TrainingTaskRepository;
+import com.makerspace.backend.repository.TrainingWaiverSignatureRepository;
 import com.makerspace.backend.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +32,8 @@ public class ReservationService {
     @Autowired private ReservationRepository reservationRepository;
     @Autowired private EquipmentRepository equipmentRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private TrainingTaskRepository trainingTaskRepository;
+    @Autowired private TrainingWaiverSignatureRepository trainingWaiverSignatureRepository;
     @Autowired private MembershipService membershipService;
     @Autowired private EmailService emailService;
 
@@ -36,17 +41,22 @@ public class ReservationService {
     public EquipmentReservation create(Long userId, Long equipmentId,
                                        ZonedDateTime startTime, ZonedDateTime endTime) {
 
-        if (!membershipService.hasActiveMembership(userId)) {
-            throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED,
-                    "An active membership is required to reserve equipment");
-        }
-
         if (!endTime.isAfter(startTime)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End time must be after start time");
         }
 
         Equipment equipment = equipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Equipment not found"));
+
+            if (equipment.isTrainingRequired()
+                && !trainingWaiverSignatureRepository.existsByUserIdAndEquipmentId(userId, equipmentId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sign the required equipment waiver before checkout");
+            }
+
+            if (!membershipService.hasActiveMembership(userId)) {
+                throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED,
+                    "An active membership is required to reserve equipment");
+            }
 
         if (equipment.getStatus() == EquipmentStatus.MAINTENANCE
                 || equipment.getStatus() == EquipmentStatus.RETIRED) {
@@ -71,6 +81,13 @@ public class ReservationService {
         reservation.setEndTime(endTime);
 
         EquipmentReservation saved = reservationRepository.save(reservation);
+        if (equipment.isTrainingRequired()
+                && trainingTaskRepository.findByUserIdAndEquipmentId(userId, equipmentId).isEmpty()) {
+            TrainingTask task = new TrainingTask();
+            task.setUser(user);
+            task.setEquipment(equipment);
+            trainingTaskRepository.save(task);
+        }
         log.info("Reservation created: id={} user={} equipment={} [{} - {}]",
                 saved.getId(), userId, equipmentId, startTime, endTime);
 

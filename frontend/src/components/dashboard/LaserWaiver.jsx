@@ -5,11 +5,11 @@ import { useAuth } from "../../context/AuthContext";
 const WAIVER_SECTIONS = [
   {
     title: "Acknowledgment of Risk",
-    text: "I understand that operating or being near laser cutting equipment involves inherent risks, including but not limited to burns, fire hazards, exposure to fumes, eye injury, and damage to personal property. I voluntarily assume all risks associated with the use of the makerspace and its equipment.",
+    text: "I understand that operating or being near makerspace equipment involves inherent risks, including but not limited to burns, fire hazards, exposure to fumes, eye injury, and damage to personal property. I voluntarily assume all risks associated with the use of the makerspace and its equipment.",
   },
   {
     title: "Training & Proper Use",
-    text: "I confirm that I have received proper training or instruction on the safe use of laser cutting equipment, or I agree to seek assistance before operating any machinery. I will follow all posted rules, safety guidelines, and instructions provided by staff.",
+    text: "I confirm that I have received proper training or instruction on the safe use of the equipment I intend to use, or I agree to seek assistance before operating any machinery. I will follow all posted rules, safety guidelines, and instructions provided by staff.",
   },
   {
     title: "Personal Responsibility",
@@ -17,11 +17,11 @@ const WAIVER_SECTIONS = [
   },
   {
     title: "Materials & Safety Compliance",
-    text: "I understand that only approved materials may be used in the laser cutter. I will not cut hazardous, flammable, or prohibited materials and will confirm material safety if unsure.",
+    text: "I understand that only approved materials may be used with makerspace equipment. I will not use hazardous, flammable, or prohibited materials and will confirm material safety if unsure.",
   },
   {
     title: "Supervision & Access",
-    text: "I understand that access to the laser cutter may be restricted and that supervision may be required. I agree to comply with all access policies.",
+    text: "I understand that access to equipment may be restricted and that supervision may be required. I agree to comply with all access policies.",
   },
   {
     title: "Release of Liability",
@@ -52,7 +52,7 @@ export default function LaserWaiver() {
   const [signing, setSigning] = useState(false);
   const [signError, setSignError] = useState("");
 
-  if (!state?.equipmentId || !state.trainingRequired) {
+  if (!state?.equipmentId || !state.waiverRequired) {
     navigate(`/dashboard/rentequipment/${id}`, { replace: true });
     return null;
   }
@@ -91,12 +91,12 @@ export default function LaserWaiver() {
     <div className="DashHome1 laser-waiver-page">
       <div className="ReserveHeader">
         <button onClick={() => navigate(-1)}>Back</button>
-        <p>Laser Cutting Waiver</p>
+        <p>Makerspace Equipment Waiver</p>
         <p>Read the waiver and sign before continuing your reservation.</p>
       </div>
 
       <article className="laser-waiver-document">
-        <h1>Laser Cutting Waiver</h1>
+        <h1>Makerspace Equipment Waiver</h1>
         <p className="laser-waiver-intro">
           By signing this waiver, I acknowledge and agree to the following:
         </p>

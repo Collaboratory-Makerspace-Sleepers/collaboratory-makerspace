@@ -103,12 +103,14 @@ export default function ReserveEquipment() {
       hour, 0, 0
     );
     const end = new Date(start.getTime() + 60 * 60 * 1000);
+    const waiverRequired = item.category !== "CLASS";
     navigate(
-      `/dashboard/rentequipment/${id}/${item.trainingRequired ? "waiver" : "checkout"}`,
+      `/dashboard/rentequipment/${id}/${waiverRequired ? "waiver" : "checkout"}`,
       {
       state: {
         equipmentId: Number(id),
         equipmentName: item.name,
+        waiverRequired,
         trainingRequired: item.trainingRequired,
         startTime: start.toISOString(),
         endTime: end.toISOString(),

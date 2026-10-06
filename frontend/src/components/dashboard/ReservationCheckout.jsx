@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 const HOURLY_RATE = 7;
+const PENDING_RESERVATION_KEY = "pendingReservationAfterPayment";
 
 export default function ReservationCheckout() {
   const { state } = useLocation();
@@ -18,7 +19,7 @@ export default function ReservationCheckout() {
     return null;
   }
 
-  if (state.trainingRequired && !state.waiverSigned) {
+  if (state.waiverRequired && !state.waiverSigned) {
     navigate(`/dashboard/rentequipment/${state.equipmentId}/waiver`, {
       replace: true,
       state,
@@ -55,6 +56,7 @@ export default function ReservationCheckout() {
         );
       }
 
+      sessionStorage.removeItem(PENDING_RESERVATION_KEY);
       setStatus("success");
     } catch (err) {
       setErrorMsg(err.message || "Something went wrong.");
@@ -108,7 +110,15 @@ export default function ReservationCheckout() {
             <p>Members reserve equipment for free.</p>
           </div>
           <div className="Dash5 checkout-actions">
-            <button onClick={() => navigate("/dashboard/membership")}>
+            <button
+              onClick={() => {
+                sessionStorage.setItem(PENDING_RESERVATION_KEY, JSON.stringify({
+                  reservation: state,
+                  savedAt: Date.now(),
+                }));
+                navigate("/dashboard/membership");
+              }}
+            >
               Get a membership
             </button>
             <button disabled title="Coming soon">

@@ -1,5 +1,19 @@
 import { Link, useSearchParams } from "react-router-dom";
 
+const PENDING_RESERVATION_KEY = "pendingReservationAfterPayment";
+const PENDING_RESERVATION_TTL_MS = 2 * 60 * 60 * 1000;
+
+function readPendingReservation() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(PENDING_RESERVATION_KEY));
+    if (Date.now() - saved.savedAt > PENDING_RESERVATION_TTL_MS) return null;
+    if (!saved.reservation?.equipmentId || !saved.reservation?.startTime) return null;
+    return saved.reservation;
+  } catch {
+    return null;
+  }
+}
+
 const CONTENT = {
   membership: {
     title: "Membership activated",
@@ -25,7 +39,17 @@ const CONTENT = {
 export default function BillingSuccess() {
   const [params] = useSearchParams();
   const type = params.get("type");
-  const content = CONTENT[type] ?? {
+  const pendingReservation = ["membership", "daypass"].includes(type)
+    ? readPendingReservation()
+    : null;
+  const content = pendingReservation
+    ? {
+        title: "Payment received",
+        subtitle: "Continue to confirm your reservation. Required training will appear in your dashboard after booking.",
+        link: `/dashboard/rentequipment/${pendingReservation.equipmentId}/checkout`,
+        label: "Continue reservation",
+      }
+    : CONTENT[type] ?? {
     title: "Payment received",
     subtitle: "Your payment was successful.",
     link: "/dashboard/home",
@@ -40,7 +64,12 @@ export default function BillingSuccess() {
           <p className="signin-subtitle">{content.subtitle}</p>
         </div>
         <div className="sign-in">
-          <Link to={content.link}>
+          <Link
+            to={content.link}
+            onClick={() => {
+              if (pendingReservation) sessionStorage.removeItem(PENDING_RESERVATION_KEY);
+            }}
+          >
             <button className="signButton">{content.label}</button>
           </Link>
         </div>

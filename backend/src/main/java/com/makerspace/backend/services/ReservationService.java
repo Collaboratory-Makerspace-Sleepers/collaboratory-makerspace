@@ -48,9 +48,9 @@ public class ReservationService {
         Equipment equipment = equipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Equipment not found"));
 
-            if (equipment.isTrainingRequired()
+            if (!"CLASS".equalsIgnoreCase(equipment.getCategory())
                 && !trainingWaiverSignatureRepository.existsByUserIdAndEquipmentId(userId, equipmentId)) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sign the required equipment waiver before checkout");
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sign the equipment waiver before checkout");
             }
 
             if (!membershipService.hasActiveMembership(userId)) {

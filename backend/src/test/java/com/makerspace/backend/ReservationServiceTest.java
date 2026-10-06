@@ -57,6 +57,7 @@ class ReservationServiceTest {
     @Test
     void create_throws402_whenUserHasNoMembership() {
         when(equipmentRepository.findById(1L)).thenReturn(Optional.of(activeEquipment()));
+        when(trainingWaiverSignatureRepository.existsByUserIdAndEquipmentId(1L, 1L)).thenReturn(true);
         when(membershipService.hasActiveMembership(1L)).thenReturn(false);
 
         assertThatThrownBy(() -> reservationService.create(1L, 1L, START, END))
@@ -68,6 +69,7 @@ class ReservationServiceTest {
     void create_throws402_whenMembershipPeriodExpired() {
         // hasActiveMembership checks both status and date — returning false covers expired periods
         when(equipmentRepository.findById(1L)).thenReturn(Optional.of(activeEquipment()));
+        when(trainingWaiverSignatureRepository.existsByUserIdAndEquipmentId(1L, 1L)).thenReturn(true);
         when(membershipService.hasActiveMembership(1L)).thenReturn(false);
 
         assertThatThrownBy(() -> reservationService.create(1L, 1L, START, END))
@@ -77,6 +79,7 @@ class ReservationServiceTest {
 
     @Test
     void create_succeeds_withActiveMembership() {
+        when(trainingWaiverSignatureRepository.existsByUserIdAndEquipmentId(1L, 1L)).thenReturn(true);
         when(membershipService.hasActiveMembership(1L)).thenReturn(true);
         when(equipmentRepository.findById(1L)).thenReturn(Optional.of(activeEquipment()));
         when(reservationRepository.findOverlapping(any(), any(), any(), any(), any()))
@@ -107,10 +110,10 @@ class ReservationServiceTest {
     }
 
     @Test
-    void create_requiresWaiverBeforeMembershipCheck_whenEquipmentRequiresTraining() {
-        Equipment laser = activeEquipment();
-        laser.setTrainingRequired(true);
-        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(laser));
+    void create_requiresWaiverBeforeMembershipCheck_forNonTrainingEquipment() {
+        Equipment printer = activeEquipment();
+        printer.setCategory("3D_PRINTER");
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(printer));
         when(trainingWaiverSignatureRepository.existsByUserIdAndEquipmentId(1L, 1L)).thenReturn(false);
 
         assertThatThrownBy(() -> reservationService.create(1L, 1L, START, END))

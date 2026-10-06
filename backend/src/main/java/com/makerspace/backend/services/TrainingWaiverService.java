@@ -23,8 +23,8 @@ public class TrainingWaiverService {
     public void sign(Long userId, Long equipmentId, String signerName) {
         var equipment = equipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Equipment not found"));
-        if (!equipment.isTrainingRequired()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This equipment does not require training");
+        if ("CLASS".equalsIgnoreCase(equipment.getCategory())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Class bookings do not require an equipment waiver");
         }
         var user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));

@@ -71,11 +71,11 @@ export default function MembershipCheckout() {
 
       {error && <p style={{ color: "red" }}>{error}</p>}
 
-      <div className="Dash5">
-        <button onClick={handleConfirm} disabled={loading}>
+      <div className="Dash5 checkout-actions">
+        <button className="checkout-primary-button" onClick={handleConfirm} disabled={loading}>
           {loading ? "Redirecting to payment…" : "Proceed to payment"}
         </button>
-        <button onClick={() => navigate(-1)} disabled={loading}>
+        <button className="checkout-secondary-button" onClick={() => navigate(-1)} disabled={loading}>
           Cancel
         </button>
       </div>

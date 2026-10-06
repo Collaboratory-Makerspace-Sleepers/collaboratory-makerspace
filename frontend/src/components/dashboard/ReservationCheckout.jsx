@@ -107,7 +107,7 @@ export default function ReservationCheckout() {
             <p>You don't have an active membership.</p>
             <p>Members reserve equipment for free.</p>
           </div>
-          <div className="Dash5 reservation-checkout-actions">
+          <div className="Dash5 checkout-actions">
             <button onClick={() => navigate("/dashboard/membership")}>
               Get a membership
             </button>
@@ -117,17 +117,17 @@ export default function ReservationCheckout() {
           </div>
         </div>
       ) : (
-        <div className="Dash5 reservation-checkout-actions">
+        <div className="Dash5 checkout-actions">
           {status === "error" && <p style={{ color: "red" }}>{errorMsg}</p>}
           <button
-            className="reservation-confirm-button"
+            className="checkout-primary-button"
             onClick={handleConfirm}
             disabled={status === "confirming"}
           >
             {status === "confirming" ? "Confirming…" : "Confirm reservation"}
           </button>
           <button
-            className="reservation-cancel-button"
+            className="checkout-secondary-button"
             onClick={() => navigate(-1)}
             disabled={status === "confirming"}
           >

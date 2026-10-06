@@ -1017,12 +1017,12 @@ p {
   height: auto;
 }
 
-.reservation-checkout-actions {
+.checkout-actions {
   flex-wrap: wrap;
   gap: 10px;
 }
 
-.reservation-checkout-actions button {
+.checkout-actions button {
   min-height: 40px;
   padding: 9px 16px;
   border: 1px solid #b7b7b7;
@@ -1034,30 +1034,30 @@ p {
   cursor: pointer;
 }
 
-.reservation-checkout-actions .reservation-confirm-button {
+.checkout-actions .checkout-primary-button {
   border-color: #c94716;
   background: #c94716;
   color: #ffffff;
 }
 
-.reservation-checkout-actions .reservation-confirm-button:hover:not(:disabled) {
+.checkout-actions .checkout-primary-button:hover:not(:disabled) {
   border-color: #a93810;
   background: #a93810;
 }
 
-.reservation-checkout-actions .reservation-cancel-button:hover:not(:disabled) {
+.checkout-actions .checkout-secondary-button:hover:not(:disabled) {
   border-color: #777777;
   background: #f3f3f3;
 }
 
-.reservation-checkout-actions button:disabled {
+.checkout-actions button:disabled {
   border-color: #c9c9c9;
   background: #e7e7e7;
   color: #727272;
   cursor: not-allowed;
 }
 
-.reservation-checkout-actions button:focus-visible {
+.checkout-actions button:focus-visible {
   outline: 3px solid rgba(201, 71, 22, 0.35);
   outline-offset: 2px;
 }

@@ -30,6 +30,7 @@ export default function Dashboard() {
             <NavLink to="/dashboard/account">Account</NavLink>
             <NavLink to="/dashboard/membership">Membership</NavLink>
             <NavLink to="/dashboard/payment-methods">Payment Methods</NavLink>
+            <NavLink to="/dashboard/billing-history">Billing History</NavLink>
             <button
               onClick={handleSignOut}
               className="text-sm text-gray-500 hover:text-red-500 transition-colors"

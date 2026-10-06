@@ -16,6 +16,7 @@ import Membership from "./components/dashboard/Membership";
 import MembershipCheckout from "./components/dashboard/MembershipCheckout";
 import MyReservations from "./components/dashboard/MyReservations";
 import PaymentMethods from "./components/dashboard/PaymentMethods";
+import BillingHistory from "./components/dashboard/BillingHistory";
 import RequireAuth from "./components/RequireAuth";
 import BillingSuccess from "./pages/BillingSuccess";
 import BillingCancel from "./pages/BillingCancel";
@@ -43,6 +44,7 @@ function App() {
         <Route path="membership/checkout" element={<MembershipCheckout />} />
         <Route path="reservations" element={<MyReservations />} />
         <Route path="payment-methods" element={<PaymentMethods />} />
+        <Route path="billing-history" element={<BillingHistory />} />
       </Route>
     </Routes>
   );

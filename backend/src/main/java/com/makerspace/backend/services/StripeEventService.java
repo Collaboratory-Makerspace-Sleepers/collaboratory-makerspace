@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.makerspace.backend.controller.dto.StripeEventCommand;
 import com.makerspace.backend.controller.dto.SubscriptionSnapshot;
-import com.makerspace.backend.model.EventOutcome;
-import com.makerspace.backend.model.MembershipStatus;
-import com.makerspace.backend.model.User;
+import com.makerspace.backend.model.*;
+import com.makerspace.backend.repository.MembershipRepository;
+import com.makerspace.backend.repository.PaymentRecordRepository;
 import com.makerspace.backend.repository.StripeEventLogRepository;
 import com.makerspace.backend.repository.UserRepository;
 import com.stripe.StripeClient;
@@ -33,7 +33,9 @@ public class StripeEventService {
 
     @Autowired private StripeEventLogRepository eventLogRepository;
     @Autowired private MembershipService membershipService;
+    @Autowired private MembershipRepository membershipRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private PaymentRecordRepository paymentRecordRepository;
     @Autowired private ObjectMapper objectMapper;
     @Autowired private StripeEventLogWriter eventLogWriter;
     @Autowired private EmailService emailService;
@@ -198,15 +200,37 @@ public class StripeEventService {
             return;
         }
 
-        int amountPaid = invoice.path("amount_paid").asInt(0);
-        String currency = invoice.path("currency").asText("usd");
+        int amountPaid    = invoice.path("amount_paid").asInt(0);
+        String currency   = invoice.path("currency").asText("usd");
+        String invoiceId  = invoice.path("id").asText(null);
+        String piId       = invoice.path("payment_intent").asText(null);
         String description = invoice.path("lines").path("data").path(0)
                 .path("description").asText("Membership payment");
+        String subscriptionId = invoice.path("subscription").asText(null);
+
+        Membership membership = subscriptionId != null
+                ? membershipRepository.findByStripeSubscriptionId(subscriptionId).orElse(null)
+                : null;
+
+        // Persist payment record (idempotent via unique payment_intent constraint).
+        if (piId != null && paymentRecordRepository.findByStripePaymentIntentId(piId).isEmpty()) {
+            PaymentRecord record = new PaymentRecord();
+            record.setUser(user);
+            record.setMembership(membership);
+            record.setStripeInvoiceId(invoiceId);
+            record.setStripePaymentIntentId(piId);
+            record.setKind(PaymentKind.MEMBERSHIP);
+            record.setAmountCents(amountPaid);
+            record.setCurrency(currency);
+            record.setStatus(PaymentStatus.SUCCEEDED);
+            record.setDescription(description);
+            record.setOccurredAt(ZonedDateTime.now());
+            paymentRecordRepository.save(record);
+        }
 
         String fullName = user.getProfile() != null
                 ? user.getProfile().getFirstName() + " " + user.getProfile().getLastName()
                 : user.getEmail();
-
         try {
             emailService.sendPaymentReceipt(user.getEmail(), fullName, description, amountPaid, currency);
         } catch (Exception e) {
@@ -234,8 +258,23 @@ public class StripeEventService {
             case "payment" -> {
                 int amountTotal = session.path("amount_total").asInt(0);
                 String currency = session.path("currency").asText("usd");
+                String piId = session.path("payment_intent").asText(null);
+
+                if (piId != null && paymentRecordRepository.findByStripePaymentIntentId(piId).isEmpty()) {
+                    PaymentRecord record = new PaymentRecord();
+                    record.setUser(user);
+                    record.setStripePaymentIntentId(piId);
+                    record.setKind(PaymentKind.DAY_PASS);
+                    record.setAmountCents(amountTotal);
+                    record.setCurrency(currency);
+                    record.setStatus(PaymentStatus.SUCCEEDED);
+                    record.setDescription("Day pass");
+                    record.setOccurredAt(ZonedDateTime.now());
+                    paymentRecordRepository.save(record);
+                }
+
                 try {
-                    emailService.sendPaymentReceipt(user.getEmail(), fullName, "One-time payment", amountTotal, currency);
+                    emailService.sendPaymentReceipt(user.getEmail(), fullName, "Day pass", amountTotal, currency);
                 } catch (Exception e) {
                     log.warn("Failed to send payment receipt for checkout event {}: {}", cmd.eventId(), e.getMessage());
                 }

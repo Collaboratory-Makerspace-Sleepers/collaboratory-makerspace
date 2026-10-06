@@ -1,0 +1,31 @@
+{
+  "version": "0",
+  "id": "eb-checkout-completed-001",
+  "source": "aws.partner/stripe.com/ed_test_xxx",
+  "detail-type": "checkout.session.completed",
+  "time": "2026-09-22T10:03:00Z",
+  "region": "us-east-1",
+  "resources": [],
+  "detail": {
+    "id": "evt_checkout_completed_001",
+    "object": "event",
+    "api_version": "2024-06-20",
+    "created": 1758592980,
+    "type": "checkout.session.completed",
+    "livemode": false,
+    "data": {
+      "object": {
+        "id": "cs_test_001",
+        "object": "checkout.session",
+        "customer": "cus_test_001",
+        "subscription": "sub_test_monthly_001",
+        "payment_status": "paid",
+        "mode": "subscription",
+        "status": "complete",
+        "amount_total": 4999,
+        "currency": "usd",
+        "payment_intent": "pi_test_001"
+      }
+    }
+  }
+}

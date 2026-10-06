@@ -1,0 +1,28 @@
+{
+  "version": "0",
+  "id": "eb-dispute-001",
+  "source": "aws.partner/stripe.com/ed_test_xxx",
+  "detail-type": "charge.dispute.created",
+  "time": "2026-09-28T14:00:00Z",
+  "region": "us-east-1",
+  "resources": [],
+  "detail": {
+    "id": "evt_dispute_001",
+    "object": "event",
+    "api_version": "2024-06-20",
+    "created": 1759118400,
+    "type": "charge.dispute.created",
+    "livemode": false,
+    "data": {
+      "object": {
+        "id": "dp_test_001",
+        "object": "dispute",
+        "charge": "ch_test_001",
+        "amount": 4999,
+        "currency": "usd",
+        "reason": "fraudulent",
+        "status": "needs_response"
+      }
+    }
+  }
+}

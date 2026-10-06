@@ -1,0 +1,122 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Stripe event consumers for Collaboratory Makerspace
+
+# Queue ARNs and IAM role ARNs come from Terraform outputs:
+#   terraform -chdir=../infra output -raw membership_queue_arn
+#
+# Deploy:
+#   sam build
+#   sam deploy --config-env dev      (first time: sam deploy --guided --config-env dev)
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [dev, prod]
+
+  MembershipQueueArn:
+    Type: String
+    Description: ARN of the Stripe membership SQS queue (from Terraform output)
+
+  BillingQueueArn:
+    Type: String
+    Description: ARN of the Stripe billing SQS queue (from Terraform output)
+
+  AlertQueueArn:
+    Type: String
+    Description: ARN of the Stripe alert SQS queue (from Terraform output)
+
+  MembershipLambdaRoleArn:
+    Type: String
+    Description: ARN of the membership Lambda IAM role (from Terraform output)
+
+  BillingLambdaRoleArn:
+    Type: String
+    Description: ARN of the billing Lambda IAM role (from Terraform output)
+
+  AlertLambdaRoleArn:
+    Type: String
+    Description: ARN of the alert Lambda IAM role (from Terraform output)
+
+  ExpectedLivemode:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
+    Description: Set to "true" for prod. Rejects events with the wrong livemode flag.
+
+Globals:
+  Function:
+    Runtime: python3.13
+    Timeout: 30
+    MemorySize: 256
+    Layers:
+      - !Ref SharedLayer
+    Environment:
+      Variables:
+        ENVIRONMENT: !Ref Environment
+        EXPECTED_LIVEMODE: !Ref ExpectedLivemode
+        POWERTOOLS_SERVICE_NAME: stripe-consumers
+        POWERTOOLS_LOG_LEVEL: INFO
+
+Resources:
+
+  SharedLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub "${Environment}-stripe-shared"
+      ContentUri: layer/
+      CompatibleRuntimes:
+        - python3.13
+    Metadata:
+      BuildMethod: python3.13
+
+  MembershipConsumer:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${Environment}-stripe-membership-consumer"
+      CodeUri: membership_consumer/
+      Handler: handler.handler
+      Role: !Ref MembershipLambdaRoleArn
+      Description: Processes customer.subscription.* events; re-fetches subscription before forwarding
+      Events:
+        SQSTrigger:
+          Type: SQS
+          Properties:
+            Queue: !Ref MembershipQueueArn
+            BatchSize: 10
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+
+  BillingConsumer:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${Environment}-stripe-billing-consumer"
+      CodeUri: billing_consumer/
+      Handler: handler.handler
+      Role: !Ref BillingLambdaRoleArn
+      Description: Processes invoice.*, checkout.session.*, charge.refunded events
+      Events:
+        SQSTrigger:
+          Type: SQS
+          Properties:
+            Queue: !Ref BillingQueueArn
+            BatchSize: 10
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+
+  AlertConsumer:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${Environment}-stripe-alert-consumer"
+      CodeUri: alert_consumer/
+      Handler: handler.handler
+      Role: !Ref AlertLambdaRoleArn
+      Description: Processes charge.dispute.* events
+      Events:
+        SQSTrigger:
+          Type: SQS
+          Properties:
+            Queue: !Ref AlertQueueArn
+            BatchSize: 10
+            FunctionResponseTypes:
+              - ReportBatchItemFailures

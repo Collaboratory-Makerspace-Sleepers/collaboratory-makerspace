@@ -16,7 +16,26 @@ import java.util.Optional;
 
 @Repository
 public interface MembershipRepository extends JpaRepository<Membership, Long> {
-    Optional<Membership> findByUserId(Long userId);
+    /**
+     * Returns the most relevant membership for a user: live statuses (ACTIVE, TRIALING,
+     * PAST_DUE, GRACE) are preferred over terminal ones, and within each group the most
+     * recently updated row wins. A user may have multiple terminal rows from past subscriptions.
+     */
+    @Query(value = """
+            SELECT * FROM membership
+            WHERE user_id = :userId
+            ORDER BY
+                CASE status
+                    WHEN 'ACTIVE'    THEN 0
+                    WHEN 'TRIALING'  THEN 1
+                    WHEN 'PAST_DUE'  THEN 2
+                    WHEN 'GRACE'     THEN 3
+                    ELSE 4
+                END,
+                updated_at DESC
+            LIMIT 1
+            """, nativeQuery = true)
+    Optional<Membership> findByUserId(@Param("userId") Long userId);
     Optional<Membership> findByStripeSubscriptionId(String stripeSubscriptionId);
     List<Membership> findByUserIdAndStatusIn(Long userId, List<MembershipStatus> statuses);
 

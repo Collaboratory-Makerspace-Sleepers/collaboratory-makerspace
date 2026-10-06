@@ -1,0 +1,42 @@
+version = 0.1
+
+# Usage:
+#   sam build
+#   sam deploy --config-env dev
+#   sam deploy --config-env prod
+#
+# First-time deploy (creates the S3 bucket and saves answers to this file):
+#   sam deploy --guided --config-env dev
+
+[dev.deploy.parameters]
+stack_name = "dev-stripe-consumers"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+# Fill in from: terraform -chdir=../infra output
+parameter_overrides = [
+  "Environment=dev",
+  "ExpectedLivemode=false",
+  "MembershipQueueArn=FILL_FROM_TF_OUTPUT",
+  "BillingQueueArn=FILL_FROM_TF_OUTPUT",
+  "AlertQueueArn=FILL_FROM_TF_OUTPUT",
+  "MembershipLambdaRoleArn=FILL_FROM_TF_OUTPUT",
+  "BillingLambdaRoleArn=FILL_FROM_TF_OUTPUT",
+  "AlertLambdaRoleArn=FILL_FROM_TF_OUTPUT",
+]
+
+[prod.deploy.parameters]
+stack_name = "prod-stripe-consumers"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = [
+  "Environment=prod",
+  "ExpectedLivemode=true",
+  "MembershipQueueArn=FILL_FROM_TF_OUTPUT",
+  "BillingQueueArn=FILL_FROM_TF_OUTPUT",
+  "AlertQueueArn=FILL_FROM_TF_OUTPUT",
+  "MembershipLambdaRoleArn=FILL_FROM_TF_OUTPUT",
+  "BillingLambdaRoleArn=FILL_FROM_TF_OUTPUT",
+  "AlertLambdaRoleArn=FILL_FROM_TF_OUTPUT",
+]

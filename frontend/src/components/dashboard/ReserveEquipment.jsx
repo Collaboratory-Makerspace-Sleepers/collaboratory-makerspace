@@ -181,7 +181,6 @@ export default function ReserveEquipment() {
                 onClick={() => {
                   setSelectedDate(new Date(viewYear, viewMonth, day));
                   setSelectedSlot(null);
-                  setConfirmation(null);
                 }}
               >
                 {day}
@@ -207,8 +206,6 @@ export default function ReserveEquipment() {
                 }
                 onClick={() => {
                   setSelectedSlot(time);
-                  setConfirmation(null);
-                  setNeedsMembership(false);
                 }}
               >
                 {time}

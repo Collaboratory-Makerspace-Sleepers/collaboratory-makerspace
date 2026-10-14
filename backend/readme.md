@@ -8,6 +8,7 @@ Spring Boot 3.3.9 / Java 21 REST API. Manages users, equipment, reservations, an
 
 - **Framework:** Spring Boot 3.3.9, Java 21
 - **Database:** PostgreSQL (prod), H2 (test)
+- **Local services:** PostgreSQL and Redis via Docker Compose
 - **Auth:** Auth0 (OIDC/OAuth2) + OTP (email code)
 - **Payments:** Stripe (stripe-java 33.x)
 - **Migrations:** Flyway (V1, V3–V6)
@@ -60,6 +61,14 @@ app.billing.portal-return-url=http://localhost:5173/account
 ```
 
 ### 3. Run the app
+
+Start the local PostgreSQL and Redis services from `backend`:
+
+```bash
+docker compose up -d postgres redis
+```
+
+Then run the application:
 
 ```bash
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev,local

@@ -49,7 +49,7 @@ export default function Home() {
                 with options for class bookings and private studios.
               </p>
             </div>
-            <button className="btn-primary">
+            <button className="btn-primary" onClick={() => navigate("/signup")}>
               <span>↗</span> Start your project today
             </button>
           </div>
@@ -69,7 +69,9 @@ export default function Home() {
               book classes to learn and create using top-notch equipment and
               private studios.
             </p>
-            <button className="btn-primary">View Membership Options</button>
+            <button className="btn-primary" onClick={() => navigate("/pricing")}>
+              View Membership Options
+            </button>
           </div>
           <div className="SquareRow">
             <div className="Square3"></div>

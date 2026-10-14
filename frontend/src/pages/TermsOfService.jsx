@@ -1,8 +1,26 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 export default function TermsOfService() {
   const navigate = useNavigate();
+
+  // Form states
+  const [fullName, setFullName] = useState("");
+  const [isChecked, setIsChecked] = useState(false);
+  const [isSigned, setIsSigned] = useState(false);
+
+  const handleSign = (e) => {
+    e.preventDefault();
+    if (fullName.trim() && isChecked) {
+      setIsSigned(true);
+    }
+  };
+
+  const handleContinue = () => {
+    if (fullName.trim() && isChecked && isSigned) {
+      navigate("/checkout");
+    }
+  };
 
   return (
     <div className="bigdiv">
@@ -21,56 +39,87 @@ export default function TermsOfService() {
           </div>
         </div>
 
-        {/* Header Title Section */}
-        <div className="CollaD">
-          <div className="PricingColla">
-            <p className="section-title">Terms of Service</p>
-            <p className="signin-subtitle">Last updated: June 2027 • Version 1.0</p>
-          </div>
-        </div>
-
         {/* Content Container */}
-        <div className="WhiteDiv TermsContent">
-          <section className="TermsSection">
-            <h2>1. Memberships & Billing</h2>
+        <div className="WhiteDiv WaiverContent">
+          <section className="WaiverSection">
+            <h2>Supervision & Access</h2>
             <p>
-              Memberships at The Collaboratory renew automatically on a recurring monthly or annual basis depending on your selected plan. Memberships may be canceled at any time to prevent future automated renewals[cite: 2]. Cancellation stops future billing cycles but does not automatically issue a refund for the current billing period[cite: 2].
+              I understand that access to equipment may be restricted and that supervision may be required. I agree to comply with all access policies.
             </p>
           </section>
 
-          <section className="TermsSection">
-            <h2>2. Cancellation & Refund Policies</h2>
-            <ul className="TermsList">
-              <li><strong>Equipment Reservations:</strong> Cancellations made at least 24 hours prior to the scheduled start time are eligible for a full refund or account credit[cite: 2]. Cancellations within 24 hours are non-refundable[cite: 2].</li>
-              <li><strong>Classes & Events:</strong> Cancellations made at least 48 hours prior to the event are eligible for a refund or credit[cite: 2]. If The Collaboratory cancels a class or event, you will receive a full refund or credit[cite: 2].</li>
-              <li><strong>Exceptions:</strong> Partial-month refunds are generally not provided[cite: 2]. Exceptions may be made at the discretion of management[cite: 2].</li>
-            </ul>
+          <section className="WaiverSection">
+            <h2>Release of Liability</h2>
+            <p>
+              I hereby release, waive, and discharge Collaboratory Makerspace, its staff, affiliates, and representatives from any and all liability, claims, demands, or causes of action arising out of or related to any loss, damage, or injury, including serious injury or death, that may occur while using the facility or equipment.
+            </p>
           </section>
 
-          <section className="TermsSection">
-            <h2>3. Reservations & No-Show Policy</h2>
+          <section className="WaiverSection">
+            <h2>Indentification</h2>
             <p>
-              Reservations can be made up to 30 days in advance and up to 1 hour before the start time[cite: 2]. Members may hold up to 3 concurrent future equipment reservations[cite: 2].
+              I agree to indemnify and hold harmless Collaboratory Makerspace from any claims resulting from my actions, misuse of equipment, or violation of safety rules.
             </p>
-            <div className="TermsNotice">
-              <strong>No-Show Rule:</strong> If you do not check in within 15 minutes of your scheduled reservation start time, your slot will be considered a no-show and may be released to other members[cite: 2].
+          </section>
+
+          <section className="WaiverSection">
+            <h2>Medical Treatment Authorization</h2>
+            <p>
+              In the event of an emergency, I authorize staff to obtain medical treatment on my behalf if I am unable to do so.
+            </p>
+          </section>
+
+          <section className="WaiverSection">
+            <h2>Agreement & Understanding</h2>
+            <p>
+              I have read this waiver, fully understand its terms, and sign it freely and voluntarily. I understand that I am giving up certain legal rights.
+            </p>
+          </section>
+
+          {/* Form Actions */}
+          <form className="WaiverForm">
+            <div className="inputColumn">
+              <label htmlFor="fullName">Full legal name</label>
+              <input
+                id="fullName"
+                type="text"
+                placeholder="Enter your full name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
             </div>
-          </section>
 
-          <section className="TermsSection">
-            <h2>4. Safety & Certifications</h2>
-            <ul className="TermsList">
-              <li><strong>Age Requirements:</strong> Independent membership requires users to be at least 18 years old[cite: 2]. Minor accounts require a parent or legal guardian signature on all liability waivers[cite: 2].</li>
-              <li><strong>Certifications:</strong> Certain specialized equipment requires safety training prior to booking[cite: 2]. Operating restricted machinery without active certifications or staff authorization is strictly prohibited[cite: 2].</li>
-            </ul>
-          </section>
+            <div className="checkboxGroup">
+              <label className="checkboxLabel">
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={(e) => setIsChecked(e.target.checked)}
+                />
+                I have read and agree to this waiver.
+              </label>
+            </div>
 
-          <section className="TermsSection">
-            <h2>5. Operating Hours</h2>
-            <p>
-              General makerspace access is available 24/7 for qualified members[cite: 2]. Equipment requiring specific training or oversight is available from 6:00 AM to 11:00 PM, 7 days a week[cite: 2].
-            </p>
-          </section>
+            <div className="WaiverButtons">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={handleSign}
+                disabled={!fullName.trim() || !isChecked}
+              >
+                {isSigned ? "Signed ✓" : "Sign electronically"}
+              </button>
+
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={handleContinue}
+                disabled={!isSigned}
+              >
+                Continue to checkout
+              </button>
+            </div>
+          </form>
         </div>
 
         {/* Footer */}
@@ -80,7 +129,7 @@ export default function TermsOfService() {
               <h2 className="footer-logo">The Collaboratory</h2>
               <p className="footer-description">
                 The collaboratory is a makerspace that offers state-of-the-art
-                equipment, class bookings, and private studios[cite: 6].
+                equipment, class bookings, and private studios.
               </p>
             </div>
 

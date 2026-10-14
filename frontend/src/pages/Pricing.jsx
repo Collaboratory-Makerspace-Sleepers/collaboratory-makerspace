@@ -48,7 +48,7 @@ export default function Pricing() {
               equipment, class bookings, and private studios
             </p>
             <div className="CollaR">
-              <button>Try for free today</button>
+              <button onClick={() => navigate("/signup")}>Try for free today</button>
               <button onClick={() => navigate("/signin")}>Sign in</button>
             </div>
 

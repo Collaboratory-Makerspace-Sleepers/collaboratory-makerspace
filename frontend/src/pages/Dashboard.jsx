@@ -1,8 +1,18 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
+export function DashboardLanding() {
+  const { loadingProfile, hasPermission } = useAuth();
+
+  if (loadingProfile) return <p className="AdminLoading">Loading dashboard…</p>;
+
+  return hasPermission("MANAGE_ROLES")
+    ? <Navigate to="/admin-dashboard" replace />
+    : <Navigate to="/dashboard/home" replace />;
+}
+
 export default function Dashboard() {
-  const { setToken, hasAnyPermission } = useAuth();
+  const { setToken, hasPermission } = useAuth();
   const navigate = useNavigate();
 
   function handleSignOut() {
@@ -31,8 +41,8 @@ export default function Dashboard() {
             <NavLink to="/dashboard/membership">Membership</NavLink>
             <NavLink to="/dashboard/payment-methods">Payment Methods</NavLink>
             <NavLink to="/dashboard/billing-history">Billing History</NavLink>
-            {hasAnyPermission(["MANAGE_USERS", "MANAGE_ROLES"]) && (
-              <NavLink to="/dashboard/admin">Admin</NavLink>
+            {hasPermission("MANAGE_ROLES") && (
+              <NavLink to="/admin-dashboard">Admin dashboard</NavLink>
             )}
             <button
               onClick={handleSignOut}

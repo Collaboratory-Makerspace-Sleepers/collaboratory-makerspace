@@ -25,7 +25,6 @@ p {
   margin: 0;
 }
 
-
 /* ========================================
    HOME LAYOUT
 ======================================== */
@@ -43,7 +42,6 @@ p {
   flex-direction: column;
   gap: 24px;
 }
-
 
 /* ========================================
    NAVIGATION BAR
@@ -118,7 +116,10 @@ p {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .btn-primary {
@@ -142,7 +143,6 @@ p {
   border-color: #94a3b8;
   color: #1a1a1a;
 }
-
 
 /* ========================================
    HERO SECTION
@@ -189,7 +189,6 @@ p {
   align-items: center;
 }
 
-
 /* ========================================
    ORANGE IMAGE BANNER
 ======================================== */
@@ -211,7 +210,6 @@ p {
   border-radius: 12px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
 }
-
 
 /* ========================================
    EQUIPMENT / CAROUSEL SECTION
@@ -264,7 +262,6 @@ p {
   color: #4a4a4a;
   margin: 0;
 }
-
 
 /* ========================================
    PRIVATE STUDIO SECTION
@@ -336,7 +333,6 @@ p {
   color: #4a4a4a;
 }
 
-
 /* ========================================
    FOOTER SECTION
 ======================================== */
@@ -359,7 +355,6 @@ p {
   width: 100%;
   gap: 32px;
 }
-
 
 /* Left Column */
 
@@ -386,7 +381,6 @@ p {
   margin: 0;
 }
 
-
 /* Right Link Grid */
 
 .FootDivGrid {
@@ -407,7 +401,6 @@ p {
 .FootDivGrid a:hover {
   color: #ff530e;
 }
-
 
 /* Bottom Row */
 
@@ -431,7 +424,6 @@ p {
   color: #ff530e;
 }
 
-
 /* ========================================
    AUTH / SIGN-IN & SIGN-UP SECTION
 ======================================== */
@@ -454,7 +446,6 @@ p {
   background-color: #f7f7f7;
 }
 
-
 /* Top left Link */
 
 .auth-nav {
@@ -471,7 +462,6 @@ p {
 .auth-nav:hover {
   text-decoration: underline;
 }
-
 
 /* ========================================
    SIGN IN / SIGN UP CARD
@@ -496,7 +486,6 @@ p {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 }
 
-
 /* ========================================
    CARD HEADER TEXT
 ======================================== */
@@ -517,7 +506,6 @@ p {
   font-size: 13px;
   color: #666666;
 }
-
 
 /* ========================================
    OAUTH BUTTONS
@@ -545,14 +533,15 @@ p {
   font-weight: 500;
   cursor: pointer;
   text-decoration: none;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .oauth-btn:hover {
   background-color: #fafafa;
   border-color: #d1d1d1;
 }
-
 
 /* ========================================
    OR DIVIDER
@@ -581,7 +570,6 @@ p {
 
   background-color: #e5e5e5;
 }
-
 
 /* ========================================
    FORM & INPUT GRID
@@ -618,7 +606,6 @@ p {
   font-weight: 500;
   color: #444444;
 }
-
 
 /* ========================================
    FORM INPUTS
@@ -662,7 +649,6 @@ p {
   color: #cccccc;
 }
 
-
 /* ========================================
    FORGOT PASSWORD / FOOTER LINK
 ======================================== */
@@ -696,7 +682,6 @@ p {
 .forgot a:hover {
   color: #e0460a;
 }
-
 
 /* ========================================
    SIGN IN / SUBMIT BUTTON
@@ -739,7 +724,6 @@ p {
   background-color: #ff9a78;
   cursor: not-allowed;
 }
-
 
 /* ========================================
    AUTH ERROR / OTP FORM
@@ -795,7 +779,6 @@ p {
   border-color: #86efac;
 }
 
-
 /* ========================================
    CHECKBOX STYLES
 ======================================== */
@@ -825,7 +808,6 @@ p {
   accent-color: #ff530e;
 }
 
-
 /* ========================================
    AUTH RESULT
 ======================================== */
@@ -846,7 +828,6 @@ p {
 
   overflow-x: auto;
 }
-
 
 /* ========================================
    DASHBOARD LAYOUT
@@ -899,7 +880,9 @@ p {
   padding: 7px 10px;
   border-radius: 6px;
   text-decoration: none;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .DashNav1 a:hover,
@@ -919,7 +902,9 @@ p {
   cursor: pointer;
   text-align: left;
   width: 100%;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .DashNav1 button:hover {
@@ -934,7 +919,6 @@ p {
   background-color: #f9f9f9;
   overflow-y: auto;
 }
-
 
 /* ========================================
    DASHBOARD HOME
@@ -1075,7 +1059,6 @@ p {
   margin: 0;
 }
 
-
 /* ========================================
    EQUIPMENT GRID
 ======================================== */
@@ -1164,7 +1147,6 @@ p {
   background-color: #e0460a;
   border-color: transparent;
 }
-
 
 /* ========================================
    ACCOUNT PAGE
@@ -1301,7 +1283,9 @@ p {
   color: #333333;
   font-size: 13px;
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .AccountD3 form input[type="text"]:focus {
@@ -1336,7 +1320,6 @@ p {
   background-color: #ff9a78;
   cursor: not-allowed;
 }
-
 
 /* ========================================
    MEMBERSHIP / PRICING CARDS
@@ -1510,7 +1493,6 @@ p {
   color: #999999;
   cursor: not-allowed;
 }
-
 
 /* ========================================
    RESERVE EQUIPMENT / CALENDAR
@@ -1831,7 +1813,9 @@ p {
   color: #333333;
   font-size: 13px;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .CalendarDay:hover:not(:disabled) {
@@ -1879,7 +1863,9 @@ p {
   color: #333333;
   font-size: 12px;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .TimeSlotButton:hover:not(:disabled) {
@@ -1961,7 +1947,6 @@ p {
   background-color: #ff9a78;
   cursor: not-allowed;
 }
-
 
 /* ========================================
    ADMIN PANEL
@@ -2226,4 +2211,393 @@ p {
   font-size: 12px !important;
   color: #888888 !important;
   font-family: monospace;
+}
+
+/* Admin Home */
+.AdHome {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  justify-content: flex-start;
+}
+
+.AdRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 16px;
+  width: 100%;
+}
+
+.AdminCalendar {
+  width: min(100%, 320px);
+  padding: 14px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.AdminCalendarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.AdminCalendarHeader > p {
+  margin: 0;
+  color: #222222;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.AdminCalendarControls {
+  display: flex;
+  gap: 6px;
+}
+
+.AdminCalendarControls button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #dddddd;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #333333;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.AdminCalendarControls button:hover {
+  border-color: #ff530e;
+  color: #ff530e;
+}
+
+.AdminCalendarControls button:focus-visible {
+  outline: 2px solid #ff530e;
+  outline-offset: 2px;
+}
+
+.AdminCalendarWeekdays,
+.AdminCalendarDays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.AdminCalendarWeekdays {
+  margin-bottom: 5px;
+}
+
+.AdminCalendarWeekdays span {
+  padding: 4px 0;
+  color: #777777;
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.AdminCalendarDays {
+  row-gap: 3px;
+}
+
+.AdminCalendarDay,
+.AdminCalendarEmpty {
+  display: grid;
+  min-width: 0;
+  aspect-ratio: 1;
+  place-items: center;
+}
+
+.AdminCalendarDay {
+  border-radius: 50%;
+  color: #333333;
+  font-size: 12px;
+}
+
+.AdminCalendarToday {
+  background: #ff530e;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.AdCon,
+.AdAct {
+  width: 100%;
+  min-width: 0;
+  padding: 20px;
+  background-color: grey;
+  border-radius: 12px;
+}
+
+.AdCon > .AdminCalendar {
+  width: 100%;
+  max-width: none;
+}
+
+.AdR {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 12px;
+  width: 100%;
+}
+
+.AdCol {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.AdCol button {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.Ad1 {
+  display: flex;
+  flex-direction: column;
+}
+
+.Ad2 {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: white;
+  padding: 20px;
+}
+
+.Ad3 {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  align-items: center;
+}
+
+/* grids */
+.ra-wrapper {
+  --ra-bg: #f4f4f4;
+  --ra-card: #ffffff;
+  --ra-border: #ececec;
+  --ra-text: #3f3f3f;
+  --ra-heading: #111111;
+  --ra-muted-btn: #f4f4f4;
+ 
+  font-family: "Poppins", sans-serif;
+  background: var(--ra-bg);
+  padding: 24px;
+  border-radius: 16px;
+  box-sizing: border-box;
+}
+ 
+.ra-wrapper *,
+.ra-wrapper *::before,
+.ra-wrapper *::after {
+  box-sizing: inherit;
+}
+ 
+.ra-card {
+  background: var(--ra-card);
+  border-radius: 14px;
+  overflow: hidden;
+}
+ 
+/* Header */
+.ra-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 12px 12px 14px;
+  gap: 16px;
+}
+ 
+.ra-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ra-heading);
+}
+ 
+.ra-title h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: -0.2px;
+}
+ 
+/* Pagination */
+.ra-pagination {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+ 
+.ra-page-btn {
+  width: 46px;
+  height: 38px;
+  border: none;
+  border-radius: 6px;
+  background: var(--ra-muted-btn);
+  color: var(--ra-heading);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+ 
+.ra-page-btn:hover:not(:disabled) {
+  background: #e8e8e8;
+}
+ 
+.ra-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+ 
+.ra-page-info {
+  font-size: 14px;
+  color: var(--ra-heading);
+  white-space: nowrap;
+}
+ 
+/* Table */
+.ra-table-scroll {
+  overflow-x: auto;
+}
+ 
+.ra-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: 900px;
+}
+ 
+.ra-table th,
+.ra-table td {
+  text-align: left;
+  padding: 0 12px;
+  font-size: 14px;
+  color: var(--ra-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+ 
+.ra-table thead th {
+  background: var(--ra-bg);
+
+  height: 45px;
+}
+ 
+.ra-table tbody td {
+  font-weight: 300;
+  height: 45px;
+  border-bottom: 1px solid var(--ra-border);
+}
+ 
+.ra-table tbody tr:last-child td {
+  border-bottom: none;
+}
+ 
+.ra-table tbody td + td {
+  border-left: 1px solid var(--ra-border);
+}
+ 
+.ra-table tbody tr:hover td {
+  background: #fafafa;
+}
+ 
+/* View Profile link */
+.ra-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+
+  color: var(--ra-text);
+  cursor: pointer;
+}
+ 
+.ra-link:hover {
+  color: var(--ra-heading);
+  text-decoration: underline;
+}
+
+.ra-profile-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.38);
+}
+
+.ra-profile-dialog {
+  width: min(100%, 480px);
+  padding: 20px;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+}
+
+.ra-profile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.ra-profile-header h3 {
+  margin: 0;
+  color: #222222;
+  font-size: 18px;
+}
+
+.ra-profile-header button {
+  padding: 6px 10px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #333333;
+  cursor: pointer;
+}
+
+.ra-profile-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 20px;
+  margin: 0;
+}
+
+.ra-profile-details dt {
+  margin-bottom: 3px;
+  color: #777777;
+  font-size: 11px;
+ 
+  text-transform: uppercase;
+}
+
+.ra-profile-details dd {
+  margin: 0;
+  color: #333333;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 680px) {
+  .AdRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

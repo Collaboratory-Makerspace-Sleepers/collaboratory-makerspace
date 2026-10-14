@@ -11,4 +11,6 @@ public interface TrainingWaiverSignatureRepository extends JpaRepository<Trainin
     Optional<TrainingWaiverSignature> findByUserIdAndEquipmentId(Long userId, Long equipmentId);
 
     boolean existsByUserIdAndEquipmentId(Long userId, Long equipmentId);
+
+    boolean existsByUserId(Long userId);
 }

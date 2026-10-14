@@ -1,12 +1,16 @@
 package com.makerspace.backend.services;
 
 import com.makerspace.backend.config.security.OAuthProfile;
+import com.makerspace.backend.controller.dto.UserActivityDTO;
 import com.makerspace.backend.model.AccountStatus;
 import com.makerspace.backend.model.AppRole;
+import com.makerspace.backend.model.Membership;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.model.UserProfile;
 import com.makerspace.backend.model.UserResolution;
 import com.makerspace.backend.repository.AppRoleRepository;
+import com.makerspace.backend.repository.MembershipRepository;
+import com.makerspace.backend.repository.TrainingWaiverSignatureRepository;
 import com.makerspace.backend.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +24,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -33,6 +39,12 @@ public class UserService {
 
     @Autowired
     AppRoleRepository roleRepository;
+
+    @Autowired
+    MembershipRepository membershipRepository;
+
+    @Autowired
+    TrainingWaiverSignatureRepository trainingWaiverSignatureRepository;
 
     /**
     * Role assigned to newly created accounts. Privileged defaults are rejected
@@ -69,6 +81,29 @@ public class UserService {
 
     public Page<User> findAllActive(Pageable pageable) {
         return userRepository.findAll(pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<UserActivityDTO> findRecentActivity(Pageable pageable) {
+        return userRepository.findAll(pageable).map(user -> {
+            Membership membership = membershipRepository.findByUserId(user.getId()).orElse(null);
+            UserProfile profile = user.getProfile();
+            String name = profile == null
+                    ? ""
+                    : Stream.of(profile.getFirstName(), profile.getLastName())
+                            .filter(value -> value != null && !value.isBlank())
+                            .collect(Collectors.joining(" "));
+
+            return new UserActivityDTO(
+                    user.getId(),
+                    name.isBlank() ? user.getEmail() : name,
+                    user.getEmail(),
+                    user.getCreatedAt(),
+                    membership == null ? "None" : membership.getPlan().getDisplayName(),
+                    user.getAccountStatus() == AccountStatus.ACTIVE ? "Allowed" : "Pending",
+                    trainingWaiverSignatureRepository.existsByUserId(user.getId())
+            );
+        });
     }
 
     public long countActiveAdmins() {

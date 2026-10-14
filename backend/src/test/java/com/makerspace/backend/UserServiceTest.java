@@ -2,8 +2,12 @@ package com.makerspace.backend;
 
 import com.makerspace.backend.config.security.OAuthProfile;
 import com.makerspace.backend.model.AppRole;
+import com.makerspace.backend.model.Membership;
+import com.makerspace.backend.model.MembershipPlan;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.model.UserProfile;
+import com.makerspace.backend.repository.MembershipRepository;
+import com.makerspace.backend.repository.TrainingWaiverSignatureRepository;
 import com.makerspace.backend.repository.UserRepository;
 import com.makerspace.backend.services.UserService;
 import com.makerspace.backend.services.UserStateService;
@@ -32,6 +36,8 @@ class UserServiceTest {
 
     @Mock private UserRepository userRepository;
     @Mock private UserStateService userStateService;
+    @Mock private MembershipRepository membershipRepository;
+    @Mock private TrainingWaiverSignatureRepository trainingWaiverSignatureRepository;
 
     @InjectMocks
     private UserService userService;
@@ -58,6 +64,29 @@ class UserServiceTest {
         User user = makeUser(email);
         user.setRoles(new HashSet<>(Set.of(role("ADMIN"))));
         return user;
+    }
+
+    @Test
+    void findRecentActivity_mapsMembershipAllowanceAndWaiverStatus() {
+        User user = makeUser("activity@test.com");
+        MembershipPlan plan = new MembershipPlan();
+        plan.setDisplayName("Student Membership");
+        Membership membership = new Membership();
+        membership.setPlan(plan);
+
+        when(userRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(user), PageRequest.of(0, 6), 1));
+        when(membershipRepository.findByUserId(1L)).thenReturn(Optional.of(membership));
+        when(trainingWaiverSignatureRepository.existsByUserId(1L)).thenReturn(true);
+
+        var result = userService.findRecentActivity(PageRequest.of(0, 6));
+
+        assertThat(result.getContent()).singleElement().satisfies(activity -> {
+            assertThat(activity.name()).isEqualTo("Test User");
+            assertThat(activity.membership()).isEqualTo("Student Membership");
+            assertThat(activity.allowed()).isEqualTo("Allowed");
+            assertThat(activity.waiverSigned()).isTrue();
+        });
     }
 
     private OAuthProfile makeProfile(String email, String firstName, String lastName) {

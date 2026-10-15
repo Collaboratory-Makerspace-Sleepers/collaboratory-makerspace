@@ -101,7 +101,8 @@ public class UserService {
                     user.getCreatedAt(),
                     membership == null ? "None" : membership.getPlan().getDisplayName(),
                     user.getAccountStatus() == AccountStatus.ACTIVE ? "Allowed" : "Pending",
-                    trainingWaiverSignatureRepository.existsByUserId(user.getId())
+                    trainingWaiverSignatureRepository.existsByUserId(user.getId()),
+                    user.getRoles().stream().map(AppRole::getCode).sorted().toList()
             );
         });
     }

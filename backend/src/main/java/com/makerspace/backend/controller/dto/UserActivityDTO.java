@@ -1,6 +1,7 @@
 package com.makerspace.backend.controller.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record UserActivityDTO(
         Long id,
@@ -9,5 +10,6 @@ public record UserActivityDTO(
         LocalDateTime createdAt,
         String membership,
         String allowed,
-        boolean waiverSigned
+        boolean waiverSigned,
+        List<String> roles
 ) {}

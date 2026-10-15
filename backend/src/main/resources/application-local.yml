@@ -1,9 +1,9 @@
 # spring boot app runs 8080(server port)
 # postgres runs on 5432 inside docker
-# postgres is on 5433 outside docker to avoid conflicts
+# postgres is on 5434 outside docker to avoid conflicts
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5433/collab_app
+    url: jdbc:postgresql://localhost:5434/collab_app
     username: app_admin
     password: admin123
     driver-class-name: org.postgresql.Driver
@@ -35,3 +35,16 @@ app:
   jwt:
     secret: local-development-secret-key-change-for-real-use
     expiration: 3600000
+  internal:
+    api:
+      secret: ${APP_INTERNAL_API_SECRET:local-only-development-secret}
+  billing:
+    success-url: ${APP_BILLING_SUCCESS_URL:http://localhost:5173/billing/success}
+    cancel-url: ${APP_BILLING_CANCEL_URL:http://localhost:5173/billing/cancel}
+    portal-return-url: ${APP_BILLING_PORTAL_RETURN_URL:http://localhost:5173/account}
+
+stripe:
+  secret:
+    key: ${STRIPE_SECRET_KEY:sk_test_PLACEHOLDER}
+  webhook:
+    secret: ${STRIPE_WEBHOOK_SECRET:whsec_local_placeholder}

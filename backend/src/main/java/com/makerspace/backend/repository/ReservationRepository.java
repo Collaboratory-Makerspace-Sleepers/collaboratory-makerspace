@@ -2,6 +2,7 @@ package com.makerspace.backend.repository;
 
 import com.makerspace.backend.model.EquipmentReservation;
 import com.makerspace.backend.model.ReservationStatus;
+import java.util.Collection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -26,14 +27,14 @@ public interface ReservationRepository extends JpaRepository<EquipmentReservatio
     List<EquipmentReservation> findByEquipmentIdOrderByStartTimeDesc(Long equipmentId);
 
     /**
-     * Returns any ACTIVE reservations for the given equipment that overlap [startTime, endTime).
+     * Returns any ACTIVE or PENDING reservations for the given equipment that overlap [startTime, endTime).
      * Two intervals overlap when: existingStart < newEnd AND existingEnd > newStart.
      * Excludes a specific reservation ID so extend operations can check without self-conflict.
      */
     @Query("""
             SELECT r FROM EquipmentReservation r
             WHERE r.equipmentId = :equipmentId
-              AND r.status = :status
+              AND r.status IN :statuses
               AND r.startTime < :endTime
               AND r.endTime > :startTime
               AND (:excludeId IS NULL OR r.id <> :excludeId)
@@ -42,7 +43,7 @@ public interface ReservationRepository extends JpaRepository<EquipmentReservatio
             @Param("equipmentId") Long equipmentId,
             @Param("startTime") ZonedDateTime startTime,
             @Param("endTime") ZonedDateTime endTime,
-            @Param("status") ReservationStatus status,
+            @Param("statuses") Collection<ReservationStatus> statuses,
             @Param("excludeId") Long excludeId
     );
 }

@@ -111,6 +111,9 @@ export default function UserInformation({ user, onClose: onClosed }) {
                 {user.email}
               </a>
             </InfoRow>
+            <InfoRow label="Student">
+              {user.student ? "Yes (.edu email)" : "No"}
+            </InfoRow>
             <InfoRow label="Waiver">
               {user.waiverSigned ? "Signed" : "Not signed"}
             </InfoRow>

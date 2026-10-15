@@ -58,7 +58,7 @@ export default function AllClasses() {
       .filter((c) => !term || (c.name || "").toLowerCase().includes(term))
       .map((c) => {
         const booked = reservations
-          .filter((r) => r.equipmentId === c.id && r.status === "ACTIVE")
+          .filter((r) => r.equipmentId === c.id && (r.status === "ACTIVE" || r.status === "PENDING"))
           .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
         const next = booked.find((r) => new Date(r.endTime) > now);
         return { cls: c, booked, next };

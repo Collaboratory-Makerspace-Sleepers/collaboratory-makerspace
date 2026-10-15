@@ -2375,7 +2375,7 @@ p {
 .AdCol button {
   flex: 0 0 auto;
   margin-left: auto;
-  background: #1f2937;
+  background: #f76902;
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -2385,7 +2385,7 @@ p {
 }
 
 .AdCol button:hover {
-  background: #374151;
+  background: #d95a00;
 }
 
 .Ad1 {
@@ -2473,8 +2473,8 @@ p {
   height: 38px;
   border: none;
   border-radius: 6px;
-  background: var(--ra-muted-btn);
-  color: var(--ra-heading);
+  background: #f76902;
+  color: #ffffff;
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -2482,7 +2482,7 @@ p {
 }
  
 .ra-page-btn:hover:not(:disabled) {
-  background: #e8e8e8;
+  background: #d95a00;
 }
  
 .ra-page-btn:disabled {
@@ -2641,10 +2641,24 @@ p {
 
 .ra-profile-header button {
   padding: 6px 10px;
-  border: 1px solid #cccccc;
+  border: none;
   border-radius: 4px;
-  background: #ffffff;
-  color: #333333;
+  background: #f76902;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.ra-profile-header button:hover,
+.ra-profile-dialog button[type="submit"]:hover {
+  background: #d95a00;
+}
+
+.ra-profile-dialog button[type="submit"] {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background: #f76902;
+  color: #ffffff;
   cursor: pointer;
 }
 
@@ -2692,6 +2706,20 @@ p {
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
+}
+
+.AdUser2 button {
+  background: #f76902;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.AdUser2 button:hover {
+  background: #d95a00;
 }
 
 .AdUser3{

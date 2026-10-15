@@ -15,6 +15,7 @@ import java.util.List;
 public class TrainingTaskService {
 
     @Autowired private TrainingTaskRepository trainingTaskRepository;
+    @Autowired private ReservationService reservationService;
 
     @Transactional(readOnly = true)
     public List<TrainingTask> findByUser(Long userId) {
@@ -40,7 +41,9 @@ public class TrainingTaskService {
         if (task.getCompletedAt() == null) {
             task.setCompletedAt(LocalDateTime.now());
         }
-        return trainingTaskRepository.save(task);
+        TrainingTask saved = trainingTaskRepository.save(task);
+        reservationService.confirmPendingForTraining(userId, saved.getEquipment().getId());
+        return saved;
     }
 
     private TrainingTask findOwnedTask(Long taskId, Long userId) {

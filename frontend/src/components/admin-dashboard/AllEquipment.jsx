@@ -12,7 +12,7 @@ const dateTimeFmt = (value) =>
 
 function describeAvailability(equipment, reservations, now) {
   const upcoming = reservations
-    .filter((r) => r.status === "ACTIVE" && new Date(r.endTime) > now)
+    .filter((r) => (r.status === "ACTIVE" || r.status === "PENDING") && new Date(r.endTime) > now)
     .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
   const current = upcoming.find((r) => new Date(r.startTime) <= now);
   const next = upcoming.find((r) => new Date(r.startTime) > now);
@@ -133,7 +133,7 @@ export default function AllEquipment() {
         .filter(
           (r) =>
             r.equipmentId === availabilityFor.id &&
-            r.status === "ACTIVE" &&
+            (r.status === "ACTIVE" || r.status === "PENDING") &&
             new Date(r.endTime) > new Date()
         )
         .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
@@ -281,7 +281,7 @@ export default function AllEquipment() {
                 {availabilityList.map((r) => (
                   <div key={r.id}>
                     <dt>{userName(r.userId)}</dt>
-                    <dd>{dateTimeFmt(r.startTime)} – {dateTimeFmt(r.endTime)}</dd>
+                    <dd>{dateTimeFmt(r.startTime)} – {dateTimeFmt(r.endTime)}{r.status === "PENDING" ? " (Pending training)" : ""}</dd>
                   </div>
                 ))}
               </dl>

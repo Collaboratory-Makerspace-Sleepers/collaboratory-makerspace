@@ -144,7 +144,7 @@ class UserControllerTest {
         void recentActivity_returnsRealActivityFieldsForAdmin() throws Exception {
         var activity = new UserActivityDTO(
             2L, "Recent Member", "recent@test.com", LocalDateTime.parse("2026-10-10T09:00:00"),
-            "Student Membership", "Allowed", true);
+            "Student Membership", "Allowed", true, List.of(), false);
         when(userService.findRecentActivity(any())).thenReturn(
             new PageImpl<>(List.of(activity), PageRequest.of(0, 6), 1));
 

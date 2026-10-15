@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 
+// Placeholder shared by every training until real videos exist.
+const PLACEHOLDER_VIDEO_URL =
+  "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
+
 export default function TrainingTasks() {
   const { authFetch } = useAuth();
   const [tasks, setTasks] = useState([]);
@@ -8,7 +12,8 @@ export default function TrainingTasks() {
   const [busyTaskId, setBusyTaskId] = useState(null);
   const [error, setError] = useState("");
   const watchedUntil = useRef({});
-  const trainingVideoUrl = import.meta.env.VITE_LASER_TRAINING_VIDEO_URL;
+  const trainingVideoUrl =
+    import.meta.env.VITE_LASER_TRAINING_VIDEO_URL || PLACEHOLDER_VIDEO_URL;
 
   useEffect(() => {
     let cancelled = false;

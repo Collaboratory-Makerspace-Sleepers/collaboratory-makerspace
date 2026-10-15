@@ -102,7 +102,8 @@ public class UserService {
                     membership == null ? "None" : membership.getPlan().getDisplayName(),
                     user.getAccountStatus() == AccountStatus.ACTIVE ? "Allowed" : "Pending",
                     trainingWaiverSignatureRepository.existsByUserId(user.getId()),
-                    user.getRoles().stream().map(AppRole::getCode).sorted().toList()
+                    user.getRoles().stream().map(AppRole::getCode).sorted().toList(),
+                    user.getEmail() != null && user.getEmail().toLowerCase().endsWith(".edu")
             );
         });
     }

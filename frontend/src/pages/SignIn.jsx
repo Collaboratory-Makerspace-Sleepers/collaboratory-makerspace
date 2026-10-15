@@ -50,7 +50,7 @@ export default function SignIn() {
         </div>
 
         {/* OTP Form */}
-        <EmailOtpForm />
+        <EmailOtpForm redirectNewToSignUp />
 
         {/* Footer Links */}
         <div className="forgot">

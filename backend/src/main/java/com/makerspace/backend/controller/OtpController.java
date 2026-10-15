@@ -7,6 +7,7 @@ import com.makerspace.backend.services.JwtService;
 import com.makerspace.backend.services.OtpService;
 import com.makerspace.backend.services.UserService;
 import com.makerspace.backend.services.UserStateService;
+import com.makerspace.backend.repository.UserRepository;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -31,9 +32,21 @@ public class OtpController {
     @Autowired private UserService userService;
     @Autowired private UserStateService userStateService;
     @Autowired private JwtService jwtService;
+    @Autowired private UserRepository userRepository;
 
     @Value("${app.jwt.expiration:3600000}")
     private int jwtExpiration;
+
+    /** Lets the UI route an email to sign-in (registered) or sign-up (new). */
+    @PostMapping("/exists")
+    public ResponseEntity<Map<String, Boolean>> exists(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        if (email == null || email.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "email is required");
+        }
+        boolean exists = userRepository.findByEmailIncludingDeleted(email.trim().toLowerCase()).isPresent();
+        return ResponseEntity.ok(Map.of("exists", exists));
+    }
 
     /**
      * Sends a 6-digit OTP to the provided email.

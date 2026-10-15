@@ -9,8 +9,13 @@ import { useAuth } from "../context/AuthContext";
  * `codeAlreadySent` lets registration continue to verification without
  * requesting a second code and triggering the resend cooldown.
  */
-export default function EmailOtpForm({ initialEmail = "", codeAlreadySent = false }) {
-  const [email, setEmail] = useState(initialEmail);
+export default function EmailOtpForm({
+  initialEmail = "",
+  codeAlreadySent = false,
+  redirectNewToSignUp = false,
+}) {
+  const location = useLocation();
+  const [email, setEmail] = useState(initialEmail || location.state?.email || "");
   const [code, setCode] = useState("");
   const [step, setStep] = useState(codeAlreadySent ? "code" : "email");
   const [error, setError] = useState("");
@@ -20,7 +25,6 @@ export default function EmailOtpForm({ initialEmail = "", codeAlreadySent = fals
   const [loading, setLoading] = useState(false);
   const { setToken } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const from = location.state?.from?.pathname ?? "/dashboard";
 
   async function handleRequest(e) {
@@ -29,12 +33,28 @@ export default function EmailOtpForm({ initialEmail = "", codeAlreadySent = fals
     setMessage("");
     setLoading(true);
     try {
+      if (redirectNewToSignUp) {
+        const check = await fetch("/api/v1/auth/otp/exists", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+        if (check.ok && !(await check.json()).exists) {
+          navigate("/signup", { state: { email } });
+          return;
+        }
+      }
       const res = await fetch("/api/v1/auth/otp/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
       const data = await res.json().catch(() => null);
+      if (res.status === 429) {
+        setStep("code");
+        setMessage("A code was already sent recently. Enter it below, or wait a minute to request a new one.");
+        return;
+      }
       if (!res.ok) {
         const message = data?.message || (res.status === 429
           ? "Please wait before requesting another code."

@@ -60,6 +60,7 @@ public class SecurityConfig {
                 .securityMatcher("/api/v1/auth/**", "/oauth2/**", "/login/**")
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/token").permitAll()
+                        .requestMatchers(POST, "/api/v1/auth/otp/exists").permitAll()
                         .requestMatchers(POST, "/api/v1/auth/otp/send").permitAll()
                         .requestMatchers(POST, "/api/v1/auth/otp/verify").permitAll()
                         .requestMatchers("/api/v1/auth/me").authenticated()

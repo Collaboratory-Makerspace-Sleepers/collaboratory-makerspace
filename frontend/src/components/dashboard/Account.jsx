@@ -85,7 +85,7 @@ export default function Account() {
           </div>
 
           <div className="AccountD5">
-            <button>Change Image</button>
+            <button type="button" className="change-image-btn">Change Image</button>
             <p>We support PNG, JPEGs, and GIFs under 2MB</p>
           </div>
 

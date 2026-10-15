@@ -89,25 +89,25 @@ export default function LaserWaiver() {
 
   return (
     <div className="DashHome1 laser-waiver-page">
-      <div className="ReserveHeader">
-        <button onClick={() => navigate(-1)}>Back</button>
-        <p>Makerspace Equipment Waiver</p>
+      <header className="laser-waiver-header">
+        <button type="button" onClick={() => navigate(-1)}>↖ Back</button>
+        <h1>Makerspace Equipment Waiver</h1>
         <p>Read the waiver and sign before continuing your reservation.</p>
-      </div>
+      </header>
 
       <article className="laser-waiver-document">
-        <h1>Makerspace Equipment Waiver</h1>
-        <p className="laser-waiver-intro">
-          By signing this waiver, I acknowledge and agree to the following:
-        </p>
-
-        <div className="laser-waiver-sections">
-          {WAIVER_SECTIONS.map(({ title, text }) => (
-            <section className="laser-waiver-section" key={title}>
-              <h2>{title}</h2>
-              <p>{text}</p>
-            </section>
-          ))}
+        <div className="laser-waiver-box">
+          <p className="laser-waiver-intro">
+            By signing this waiver, I acknowledge and agree to the following:
+          </p>
+          <ol className="laser-waiver-sections">
+            {WAIVER_SECTIONS.map(({ title, text }) => (
+              <li className="laser-waiver-section" key={title}>
+                <strong>{title}</strong>
+                <span>{text}</span>
+              </li>
+            ))}
+          </ol>
         </div>
 
         <form className="laser-waiver-signature" onSubmit={handleSign}>
@@ -140,6 +140,18 @@ export default function LaserWaiver() {
           )}
         </form>
       </article>
+
+      <section className="laser-waiver-training">
+        <h2>Equipment Training</h2>
+        <p>Please watch the full training video. You will confirm it in your account.</p>
+        <video
+          controls
+          preload="metadata"
+          src={import.meta.env.VITE_LASER_TRAINING_VIDEO_URL || "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"}
+        >
+          Your browser does not support video playback.
+        </video>
+      </section>
 
       <button
         className="laser-waiver-finish"

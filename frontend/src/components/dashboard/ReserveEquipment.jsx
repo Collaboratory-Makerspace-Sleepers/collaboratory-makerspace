@@ -103,7 +103,7 @@ export default function ReserveEquipment() {
       hour, 0, 0
     );
     const end = new Date(start.getTime() + 60 * 60 * 1000);
-    const waiverRequired = item.category !== "CLASS";
+    const waiverRequired = true;
     navigate(
       `/dashboard/rentequipment/${id}/${waiverRequired ? "waiver" : "checkout"}`,
       {

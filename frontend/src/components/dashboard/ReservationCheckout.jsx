@@ -99,6 +99,12 @@ export default function ReservationCheckout() {
           <p>{displayDate}</p>
           <p>{displayTime} · {hours} hr</p>
           <p><strong>${price.toFixed(2)}</strong> without membership</p>
+          {state.trainingRequired && (
+            <p>
+              This machine requires training. Your reservation will be pending until you watch the
+              training video in your account and check the box confirming you watched it.
+            </p>
+          )}
         </div>
       </div>
 

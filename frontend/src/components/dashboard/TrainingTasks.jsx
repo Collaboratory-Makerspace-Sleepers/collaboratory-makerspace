@@ -12,6 +12,7 @@ export default function TrainingTasks() {
   const [busyTaskId, setBusyTaskId] = useState(null);
   const [error, setError] = useState("");
   const watchedUntil = useRef({});
+  const [confirmed, setConfirmed] = useState({});
   const trainingVideoUrl =
     import.meta.env.VITE_LASER_TRAINING_VIDEO_URL || PLACEHOLDER_VIDEO_URL;
 
@@ -117,12 +118,22 @@ export default function TrainingTasks() {
           {task.completed ? (
             <p className="training-task-complete">Training completed.</p>
           ) : task.videoCompleted ? (
-            <button
-              disabled={busyTaskId === task.id}
-              onClick={() => markTaskComplete(task)}
-            >
-              {busyTaskId === task.id ? "Saving…" : "Mark complete"}
-            </button>
+            <div className="training-task-confirm">
+              <label>
+                <input
+                  checked={Boolean(confirmed[task.id])}
+                  onChange={(event) => setConfirmed((c) => ({ ...c, [task.id]: event.target.checked }))}
+                  type="checkbox"
+                />
+                <span>I watched the full training video.</span>
+              </label>
+              <button
+                disabled={busyTaskId === task.id || !confirmed[task.id]}
+                onClick={() => markTaskComplete(task)}
+              >
+                {busyTaskId === task.id ? "Saving…" : "Mark complete"}
+              </button>
+            </div>
           ) : trainingVideoUrl ? (
             <div className="training-task-player">
               <video

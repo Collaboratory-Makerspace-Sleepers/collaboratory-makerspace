@@ -6,9 +6,11 @@ import com.makerspace.backend.model.EquipmentReservation;
 import com.makerspace.backend.model.EquipmentStatus;
 import com.makerspace.backend.model.Permission;
 import com.makerspace.backend.model.ReservationStatus;
+import com.makerspace.backend.model.TrainingCompletion;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.repository.EquipmentRepository;
 import com.makerspace.backend.repository.ReservationRepository;
+import com.makerspace.backend.repository.TrainingCompletionRepository;
 import com.makerspace.backend.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +21,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Duration;
 import java.time.ZonedDateTime;
+import java.util.EnumSet;
 import java.util.List;
 
 @Slf4j
@@ -30,6 +34,7 @@ public class ReservationService {
     @Autowired private EquipmentRepository equipmentRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private MembershipService membershipService;
+    @Autowired private TrainingCompletionRepository trainingCompletionRepository;
     @Autowired private EmailService emailService;
 
     @Transactional
@@ -54,8 +59,18 @@ public class ReservationService {
                     "Equipment is not available for reservation (status: " + equipment.getStatus() + ")");
         }
 
-        List<EquipmentReservation> conflicts = reservationRepository.findOverlapping(
-                equipmentId, startTime, endTime, ReservationStatus.ACTIVE, null);
+        // If training is required and not yet done, the reservation is created in
+        // TRAINING_PENDING status. The user watches the video online and calls the
+        // training-attest endpoint to advance it to ACTIVE. Subsequent bookings on
+        // the same equipment skip this step because a training_completion row exists.
+        boolean needsTraining = equipment.isRequiresTraining()
+                && !trainingCompletionRepository.existsByUserIdAndEquipmentId(userId, equipmentId);
+
+        // Check for conflicts against both ACTIVE and TRAINING_PENDING slots.
+        List<EquipmentReservation> conflicts = reservationRepository.findOverlappingByStatuses(
+                equipmentId, startTime, endTime,
+                EnumSet.of(ReservationStatus.ACTIVE, ReservationStatus.TRAINING_PENDING),
+                null);
         if (!conflicts.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Equipment is already reserved during that time window");
@@ -64,15 +79,24 @@ public class ReservationService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
+        boolean isMember = membershipService.hasActiveMembership(userId);
+        boolean isStudioMember = membershipService.hasMachineRateWaiver(userId);
+        int quotedRate = resolveRate(equipment, isMember, isStudioMember);
+        long durationMinutes = Duration.between(startTime, endTime).toMinutes();
+        int estimatedCost = Math.round((float) quotedRate * durationMinutes / 60);
+
         EquipmentReservation reservation = new EquipmentReservation();
         reservation.setUser(user);
         reservation.setEquipment(equipment);
         reservation.setStartTime(startTime);
         reservation.setEndTime(endTime);
+        reservation.setStatus(needsTraining ? ReservationStatus.TRAINING_PENDING : ReservationStatus.ACTIVE);
+        reservation.setQuotedRateCents(quotedRate);
+        reservation.setEstimatedCostCents(estimatedCost);
 
         EquipmentReservation saved = reservationRepository.save(reservation);
-        log.info("Reservation created: id={} user={} equipment={} [{} - {}]",
-                saved.getId(), userId, equipmentId, startTime, endTime);
+        log.info("Reservation created: id={} user={} equipment={} status={} [{} - {}]",
+                saved.getId(), userId, equipmentId, saved.getStatus(), startTime, endTime);
 
         try {
             String fullName = user.getProfile() != null
@@ -85,6 +109,44 @@ public class ReservationService {
         }
 
         return saved;
+    }
+
+    /**
+     * Confirms that the user has watched the online training video for the equipment
+     * associated with this reservation. Creates a training_completion record and
+     * advances the reservation from TRAINING_PENDING to ACTIVE.
+     */
+    @Transactional
+    public EquipmentReservation trainingAttest(Long reservationId, Long userId) {
+        EquipmentReservation reservation = findById(reservationId);
+
+        if (!reservation.getUserId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
+        }
+        if (reservation.getStatus() != ReservationStatus.TRAINING_PENDING) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Reservation is not awaiting training attestation");
+        }
+
+        Long equipmentId = reservation.getEquipmentId();
+
+        if (!trainingCompletionRepository.existsByUserIdAndEquipmentId(userId, equipmentId)) {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+            Equipment equipment = equipmentRepository.findById(equipmentId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Equipment not found"));
+
+            TrainingCompletion completion = new TrainingCompletion();
+            completion.setUser(user);
+            completion.setEquipment(equipment);
+            completion.setCompletedAt(ZonedDateTime.now());
+            completion.setTrainingReservation(reservation);
+            trainingCompletionRepository.save(completion);
+        }
+
+        reservation.setStatus(ReservationStatus.ACTIVE);
+        log.info("Training attested: reservationId={} userId={} equipmentId={}", reservationId, userId, equipmentId);
+        return reservationRepository.save(reservation);
     }
 
     @Transactional(readOnly = true)
@@ -199,11 +261,24 @@ public class ReservationService {
 
     @Transactional(readOnly = true)
     public List<EquipmentReservation> findByEquipment(Long equipmentId) {
-        // Verify the equipment exists before returning an empty list
         if (!equipmentRepository.existsById(equipmentId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Equipment not found");
         }
         return reservationRepository.findByEquipmentIdOrderByStartTimeDesc(equipmentId);
+    }
+
+    /**
+     * Returns the per-hour rate in cents that applies to this booking.
+     *
+     * Priority:
+     *  1. Studio members (active studio_assignment) → 0 (all machines free)
+     *  2. Active members booking CLASS equipment → 50% off
+     *  3. Everyone else → hourly_rate_cents
+     */
+    private int resolveRate(Equipment equipment, boolean isMember, boolean isStudioMember) {
+        if (isStudioMember) return 0;
+        if (isMember && "CLASS".equals(equipment.getCategory())) return equipment.getHourlyRateCents() / 2;
+        return equipment.getHourlyRateCents();
     }
 
     private boolean hasPermission(UserPrincipal principal, String permission) {

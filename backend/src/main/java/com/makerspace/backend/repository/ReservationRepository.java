@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.ZonedDateTime;
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -43,6 +44,27 @@ public interface ReservationRepository extends JpaRepository<EquipmentReservatio
             @Param("startTime") ZonedDateTime startTime,
             @Param("endTime") ZonedDateTime endTime,
             @Param("status") ReservationStatus status,
+            @Param("excludeId") Long excludeId
+    );
+
+    /**
+     * Returns reservations for the given equipment overlapping [startTime, endTime)
+     * whose status is any of the given statuses. Used when new bookings must not
+     * conflict with both ACTIVE and TRAINING_PENDING slots.
+     */
+    @Query("""
+            SELECT r FROM EquipmentReservation r
+            WHERE r.equipmentId = :equipmentId
+              AND r.status IN :statuses
+              AND r.startTime < :endTime
+              AND r.endTime > :startTime
+              AND (:excludeId IS NULL OR r.id <> :excludeId)
+            """)
+    List<EquipmentReservation> findOverlappingByStatuses(
+            @Param("equipmentId") Long equipmentId,
+            @Param("startTime") ZonedDateTime startTime,
+            @Param("endTime") ZonedDateTime endTime,
+            @Param("statuses") Collection<ReservationStatus> statuses,
             @Param("excludeId") Long excludeId
     );
 }

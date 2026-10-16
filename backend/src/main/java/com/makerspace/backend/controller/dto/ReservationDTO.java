@@ -14,7 +14,9 @@ public record ReservationDTO(
         ZonedDateTime endTime,
         ReservationStatus status,
         ZonedDateTime createdAt,
-        ZonedDateTime cancelledAt
+        ZonedDateTime cancelledAt,
+        int quotedRateCents,
+        int estimatedCostCents
 ) {
     public static ReservationDTO from(EquipmentReservation r) {
         return new ReservationDTO(
@@ -26,7 +28,9 @@ public record ReservationDTO(
                 r.getEndTime(),
                 r.getStatus(),
                 r.getCreatedAt(),
-                r.getCancelledAt()
+                r.getCancelledAt(),
+                r.getQuotedRateCents(),
+                r.getEstimatedCostCents()
         );
     }
 }

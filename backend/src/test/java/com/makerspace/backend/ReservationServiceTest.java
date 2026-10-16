@@ -72,7 +72,7 @@ class ReservationServiceTest {
     void create_succeeds_withActiveMembership() {
         when(membershipService.hasActiveMembership(1L)).thenReturn(true);
         when(equipmentRepository.findById(1L)).thenReturn(Optional.of(activeEquipment()));
-        when(reservationRepository.findOverlapping(any(), any(), any(), any(), any()))
+        when(reservationRepository.findOverlappingByStatuses(any(), any(), any(), any(), any()))
                 .thenReturn(List.of());
         when(userRepository.findById(1L)).thenReturn(Optional.of(user()));
         when(reservationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));

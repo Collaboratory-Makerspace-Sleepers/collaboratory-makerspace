@@ -85,6 +85,12 @@ public class BillingService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
         }
 
+        // Student plan requires a .edu email address.
+        if ("STUDENT".equals(planCode) && !user.get().getEmail().endsWith(".edu")) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "The student plan requires a .edu email address");
+        }
+
         UserProfile userProfile = user.get().getProfile();
         String stripeCustomerId;
 

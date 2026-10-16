@@ -49,6 +49,12 @@ public class ReservationController {
         return ReservationDTO.from(reservationService.findByIdForUser(id, userSecurity.getPrincipal(auth)));
     }
 
+    @PostMapping("/{id}/training-attest")
+    public ReservationDTO trainingAttest(@PathVariable Long id, Authentication auth) {
+        Long userId = userSecurity.getUserId(auth);
+        return ReservationDTO.from(reservationService.trainingAttest(id, userId));
+    }
+
     @PatchMapping("/{id}/cancel")
     public ReservationDTO cancel(@PathVariable Long id, Authentication auth) {
         return ReservationDTO.from(reservationService.cancel(id, userSecurity.getPrincipal(auth)));

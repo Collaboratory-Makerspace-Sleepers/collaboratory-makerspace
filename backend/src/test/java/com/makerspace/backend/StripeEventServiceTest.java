@@ -5,6 +5,7 @@ import com.makerspace.backend.controller.dto.StripeEventCommand;
 import com.makerspace.backend.controller.dto.SubscriptionSnapshot;
 import com.makerspace.backend.model.EventOutcome;
 import com.makerspace.backend.model.Membership;
+import com.makerspace.backend.model.MembershipPlan;
 import com.makerspace.backend.model.MembershipStatus;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.repository.StripeEventLogRepository;
@@ -61,8 +62,11 @@ class StripeEventServiceTest {
     }
 
     private Membership membership(MembershipStatus status) {
+        MembershipPlan plan = new MembershipPlan();
+        plan.setCode("MONTHLY");
         Membership m = new Membership();
         m.setStatus(status);
+        m.setPlan(plan);
         m.setCurrentPeriodEnd(ZonedDateTime.now().plusMonths(1));
         return m;
     }

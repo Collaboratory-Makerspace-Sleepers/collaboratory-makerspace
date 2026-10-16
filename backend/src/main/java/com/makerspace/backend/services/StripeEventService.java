@@ -5,9 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.makerspace.backend.controller.dto.StripeEventCommand;
 import com.makerspace.backend.controller.dto.SubscriptionSnapshot;
 import com.makerspace.backend.model.*;
+import com.makerspace.backend.model.Equipment;
+import com.makerspace.backend.model.StudioAssignment;
+import com.makerspace.backend.repository.EquipmentRepository;
 import com.makerspace.backend.repository.MembershipRepository;
 import com.makerspace.backend.repository.PaymentRecordRepository;
 import com.makerspace.backend.repository.StripeEventLogRepository;
+import com.makerspace.backend.repository.StudioAssignmentRepository;
 import com.makerspace.backend.repository.UserRepository;
 import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
@@ -40,6 +44,8 @@ public class StripeEventService {
     @Autowired private StripeEventLogWriter eventLogWriter;
     @Autowired private EmailService emailService;
     @Autowired private StripeClient stripeClient;
+    @Autowired private EquipmentRepository equipmentRepository;
+    @Autowired private StudioAssignmentRepository studioAssignmentRepository;
 
     @Value("${app.billing.grace-period-days:7}")
     private int gracePeriodDays;
@@ -160,7 +166,45 @@ public class StripeEventService {
             membership.setGracePeriodEndsAt(ZonedDateTime.now().plusDays(gracePeriodDays));
         }
 
+        // Studio plan handling: assign a room on activation, release it on cancellation.
+        String planCode = membership.getPlan().getCode();
+        if (planCode.startsWith("STUDIO_")) {
+            if (status == MembershipStatus.ACTIVE || status == MembershipStatus.TRIALING) {
+                assignStudioRoom(user, membership, planCode, cmd.eventId());
+            } else if (status == MembershipStatus.GRACE || status == MembershipStatus.CANCELED
+                    || status == MembershipStatus.EXPIRED) {
+                studioAssignmentRepository.deleteByMembershipId(membership.getId());
+                log.info("Studio assignment released for membership {} user {}", membership.getId(), user.getId());
+            }
+        }
+
         log.info("Stripe event {} processed: sub {} → status {}", cmd.eventId(), subscriptionId, status);
+    }
+
+    private void assignStudioRoom(User user, Membership membership, String planCode, String eventId) {
+        // Idempotent: skip if the user already holds an assignment for this membership.
+        if (studioAssignmentRepository.existsByUserId(user.getId())) {
+            return;
+        }
+        // planCode matches the equipment category (STUDIO_SMALL, STUDIO_MEDIUM, STUDIO_LARGE).
+        Equipment room = equipmentRepository.findByCategory(planCode).stream()
+                .filter(e -> !studioAssignmentRepository.existsByEquipmentId(e.getId()))
+                .findFirst()
+                .orElse(null);
+
+        if (room == null) {
+            log.warn("No available {} room for user {} (event {}). Staff must assign manually.",
+                    planCode, user.getId(), eventId);
+            return;
+        }
+
+        StudioAssignment assignment = new StudioAssignment();
+        assignment.setUser(user);
+        assignment.setEquipment(room);
+        assignment.setMembership(membership);
+        studioAssignmentRepository.save(assignment);
+        log.info("Studio room {} assigned to user {} for membership {} (event {})",
+                room.getId(), user.getId(), membership.getId(), eventId);
     }
 
     private MembershipStatus mapStripeStatus(String stripeStatus, boolean isDeleted) {

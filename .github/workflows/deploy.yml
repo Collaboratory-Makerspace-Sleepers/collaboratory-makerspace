@@ -2,9 +2,10 @@ name: Deploy Backend to EC2
 
 
 # Trigger: Run on pushes to main branch
+# will change back to main branch once testing is complete
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "pipeline-test" ]
 
 jobs:
   build-and-deploy:
@@ -44,7 +45,7 @@ jobs:
     # IAM role created for GitHub OIDC
     # aws-region: Region where S3 bucket + EC2 live (us-east-2)
     # used oicd to avoid long lived aws credentials 
-   
+  
     - name: Configure AWS credentials (OIDC)
       uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -58,24 +59,24 @@ jobs:
 
     - name: Upload JAR to S3
       run: |
-        aws s3 cp backend/target/backend.jar s3://collaboratory-makerspace-backend-artifacts/backend.jar
+        aws s3 cp backend/target/*.jar s3://collaboratory-makerspace-backend-810995308688-us-east-2-an/latest/backend.jar
    # get the ec2 vals 
     - name: Discover EC2 info
       id: ec2Info
       run: |
-            INSTANCE_ID=$(aws ec2 describe-instances 
-                --filters "Name=tag:Name,Values=collaboratory-makerspace-backend" 
-                --query "Reservations[0].Instances[0].InstanceId" 
+            INSTANCE_ID=$(aws ec2 describe-instances \
+                --filters "Name=tag:Name,Values=collaboratory-makerspace-backend" \
+                --query "Reservations[0].Instances[0].InstanceId" \
                 --output text)
 
-            AVAIL_ZONE=$(aws ec2 describe-instances 
-                --instance-id $INSTANCE_ID 
-                --query "Reservations[0].Instances[0].Placement.AvailabilityZone" 
+            AVAIL_ZONE=$(aws ec2 describe-instances \
+                --instance-id $INSTANCE_ID \
+                --query "Reservations[0].Instances[0].Placement.AvailabilityZone" \
                 --output text)
 
-            HOST=$(aws ec2 describe-instances 
-                --instance-id $INSTANCE_ID 
-                --query "Reservations[0].Instances[0].PublicDnsName" 
+            HOST=$(aws ec2 describe-instances \
+                --instance-id $INSTANCE_ID \
+                --query "Reservations[0].Instances[0].PublicDnsName" \
                 --output text)
 
             echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_OUTPUT

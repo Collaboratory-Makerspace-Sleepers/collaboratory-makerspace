@@ -20,6 +20,7 @@ import BillingHistory from "./components/dashboard/BillingHistory";
 import RequireAuth from "./components/RequireAuth";
 import BillingSuccess from "./pages/BillingSuccess";
 import BillingCancel from "./pages/BillingCancel";
+import TermsOfService from "./pages/TermsOfService"; //added this import for Terms of Service page
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
       <Route path="/signup" element={<SignUp />} />
       <Route path="/signin" element={<SignIn />} />
       <Route path="/login" element={<SignIn />} />
+      <Route path="/terms" element={<TermsOfService />} /> //added this route for Terms of Service page
       <Route path="/oauth-callback" element={<OAuthCallback />} />
       <Route path="/billing/success" element={<BillingSuccess />} />
       <Route path="/billing/cancel" element={<BillingCancel />} />

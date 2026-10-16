@@ -1,6 +1,7 @@
 package com.makerspace.backend.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,10 @@ public class OtpService {
 
     @Autowired
     private StringRedisTemplate redis;
+
+    // Local testing only: when set, this code is accepted for any email. Leave unset in production.
+    @Value("${APP_OTP_DEV_CODE:}")
+    private String devCode;
 
     @Autowired
     private EmailService emailService;
@@ -48,6 +53,7 @@ public class OtpService {
      * Consumed codes cannot be reused.
      */
     public boolean verifyCode(String email, String code) {
+        if (!devCode.isBlank() && devCode.equals(code)) return true;
         String stored = redis.opsForValue().get(codeKey(email));
         if (stored == null || !stored.equals(code)) return false;
         redis.delete(codeKey(email));

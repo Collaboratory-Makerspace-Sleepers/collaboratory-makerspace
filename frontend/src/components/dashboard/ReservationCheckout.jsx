@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 const HOURLY_RATE = 7;
+const PENDING_RESERVATION_KEY = "pendingReservationAfterPayment";
 
 export default function ReservationCheckout() {
   const { state } = useLocation();
@@ -15,6 +16,14 @@ export default function ReservationCheckout() {
   // Guard: if navigated here directly without state, go back
   if (!state?.equipmentId) {
     navigate("/dashboard/rentequipment", { replace: true });
+    return null;
+  }
+
+  if (state.waiverRequired && !state.waiverSigned) {
+    navigate(`/dashboard/rentequipment/${state.equipmentId}/waiver`, {
+      replace: true,
+      state,
+    });
     return null;
   }
 
@@ -47,6 +56,7 @@ export default function ReservationCheckout() {
         );
       }
 
+      sessionStorage.removeItem(PENDING_RESERVATION_KEY);
       setStatus("success");
     } catch (err) {
       setErrorMsg(err.message || "Something went wrong.");
@@ -89,6 +99,12 @@ export default function ReservationCheckout() {
           <p>{displayDate}</p>
           <p>{displayTime} · {hours} hr</p>
           <p><strong>${price.toFixed(2)}</strong> without membership</p>
+          {state.trainingRequired && (
+            <p>
+              This machine requires training. Your reservation will be pending until you watch the
+              training video in your account and check the box confirming you watched it.
+            </p>
+          )}
         </div>
       </div>
 
@@ -99,8 +115,16 @@ export default function ReservationCheckout() {
             <p>You don't have an active membership.</p>
             <p>Members reserve equipment for free.</p>
           </div>
-          <div className="Dash5">
-            <button onClick={() => navigate("/dashboard/membership")}>
+          <div className="Dash5 checkout-actions">
+            <button
+              onClick={() => {
+                sessionStorage.setItem(PENDING_RESERVATION_KEY, JSON.stringify({
+                  reservation: state,
+                  savedAt: Date.now(),
+                }));
+                navigate("/dashboard/membership");
+              }}
+            >
               Get a membership
             </button>
             <button disabled title="Coming soon">
@@ -109,15 +133,20 @@ export default function ReservationCheckout() {
           </div>
         </div>
       ) : (
-        <div className="Dash5">
+        <div className="Dash5 checkout-actions">
           {status === "error" && <p style={{ color: "red" }}>{errorMsg}</p>}
           <button
+            className="checkout-primary-button"
             onClick={handleConfirm}
             disabled={status === "confirming"}
           >
             {status === "confirming" ? "Confirming…" : "Confirm reservation"}
           </button>
-          <button onClick={() => navigate(-1)} disabled={status === "confirming"}>
+          <button
+            className="checkout-secondary-button"
+            onClick={() => navigate(-1)}
+            disabled={status === "confirming"}
+          >
             Cancel
           </button>
         </div>

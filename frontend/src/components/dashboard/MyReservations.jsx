@@ -163,8 +163,8 @@ export default function MyReservations() {
     }
   }
 
-  const active = reservations.filter((r) => r.status === "ACTIVE");
-  const past = reservations.filter((r) => r.status !== "ACTIVE");
+  const active = reservations.filter((r) => r.status === "ACTIVE" || r.status === "PENDING");
+  const past = reservations.filter((r) => r.status !== "ACTIVE" && r.status !== "PENDING");
 
   return (
     <div className="DashHome1">
@@ -190,6 +190,11 @@ export default function MyReservations() {
               {" – "}
               {new Date(r.endTime).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
             </p>
+            {r.status === "PENDING" && (
+              <p style={{ color: "#d95a00" }}>
+                Pending — watch the training video and check the box in your account to confirm this reservation.
+              </p>
+            )}
             <div className="Dash5">
               <button
                 onClick={() => setReschedulingId(reschedulingId === r.id ? null : r.id)}

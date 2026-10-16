@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Makerspacecarousel from "../Makerspacecarousel";
+import TrainingTasks from "./TrainingTasks";
 import { useAuth } from "../../context/AuthContext";
 import {
   useDashboard,
@@ -61,6 +62,8 @@ export default function DashboardHome() {
             </div>
           ))}
       </div>
+
+        <TrainingTasks />
 
       {equipment.length > 0 && (
         <div className="Dash6">

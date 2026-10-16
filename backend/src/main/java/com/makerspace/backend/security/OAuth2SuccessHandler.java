@@ -10,6 +10,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+@Slf4j
 @Component
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
@@ -47,6 +49,9 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         try {
             resolution = userService.resolve(profile);
         } catch (Exception e) {
+            // Without this the failure is invisible server-side, which is what
+            // made a provisioning bug look like "Google sign-in is broken".
+            log.error("resolve() failed for {}: {}", profile.email(), e.toString(), e);
             response.sendRedirect(frontendUrl + "/login?error=server");
             return;
         }
@@ -67,6 +72,8 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                         issueTokenAndRedirect(request, activated, profile.subject(), response);
                     }
                 } catch (Exception e) {
+                    log.error("autoClaimByEmail failed for {}: {}",
+                            pending.user().getId(), e.toString(), e);
                     response.sendRedirect(frontendUrl + "/login?error=server");
                 }
             }
@@ -78,6 +85,8 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                     User provisioned = userService.provision(notFound.profile());
                     issueTokenAndRedirect(request, provisioned, profile.subject(), response);
                 } catch (Exception e) {
+                    log.error("provision() failed for {}: {}",
+                            profile.email(), e.toString(), e);
                     response.sendRedirect(frontendUrl + "/login?error=server");
                 }
             }

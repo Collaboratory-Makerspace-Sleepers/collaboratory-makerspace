@@ -3,6 +3,7 @@ package com.makerspace.backend.controller;
 import com.makerspace.backend.config.security.UserSecurity;
 import com.makerspace.backend.controller.dto.UpdateProfileRequest;
 import com.makerspace.backend.controller.dto.UpdateRoleRequest;
+import com.makerspace.backend.controller.dto.UserActivityDTO;
 import com.makerspace.backend.controller.dto.UserAdminDTO;
 import com.makerspace.backend.controller.dto.UserDTO;
 import com.makerspace.backend.model.AppRole;
@@ -15,6 +16,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,9 +52,31 @@ public class UserController {
         return UserDTO.from(userService.updateProfile(userSecurity.getUserId(auth), req.firstName(), req.lastName()));
     }
 
+    /**
+     * Effective permission codes for the calling user — the union of every
+     * permission attached to the roles they hold.
+     *
+     * Lets a client decide which admin affordances to render without hard-coding
+     * role names, mirroring how the filter chains and {@code @PreAuthorize}
+     * expressions evaluate authority. Server-side checks remain authoritative;
+     * this endpoint only drives presentation.
+     */
+    @GetMapping("/me/permissions")
+    public Set<String> getMyPermissions(Authentication auth) {
+        String email = userService.findById(userSecurity.getUserId(auth)).getEmail();
+        return userPermissionService.getEffectivePermissions(email);
+    }
+
     // -------------------------------------------------------------------------
     // Staff / admin user management
     // -------------------------------------------------------------------------
+
+    @GetMapping("/activity")
+    @PreAuthorize("hasAuthority('MANAGE_USERS')")
+    public Page<UserActivityDTO> recentActivity(
+            @PageableDefault(size = 6, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return userService.findRecentActivity(pageable);
+    }
 
     @GetMapping
     @PreAuthorize("hasAuthority('MANAGE_USERS')")

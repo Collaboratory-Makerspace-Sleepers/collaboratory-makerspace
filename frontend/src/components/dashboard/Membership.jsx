@@ -7,11 +7,9 @@ import {
   reservationSentence,
 } from "../../hooks/useDashboard";
 
-const PLANS = [
-  {
-    code: "MONTHLY",
+const PLAN_DETAILS = {
+  MONTHLY: {
     name: "Member",
-    price: "$95/Month",
     features: [
       "Rent equipment for free",
       "Access to common space",
@@ -19,10 +17,8 @@ const PLANS = [
       "Access to events and discounts",
     ],
   },
-  {
-    code: "ANNUAL",
+  ANNUAL: {
     name: "Member with Private Studio Space",
-    price: "$350-750/Month",
     features: [
       "Rent equipment for free",
       "Access to common space",
@@ -31,27 +27,32 @@ const PLANS = [
       "Private studio space",
     ],
   },
-  {
-    code: "STUDENT",
+  STUDENT: {
     name: "Student",
-    price: "$45/Month",
     features: [
       "Rent equipment for free",
       "Book classes for free",
       "Access to events and discounts",
     ],
   },
-  {
-    code: "DAY_PASS",
+  DAY_PASS: {
     name: "Day Pass",
-    price: "$25",
     features: [
       "Full access for one day",
       "Rent equipment",
       "Book classes",
     ],
   },
-];
+};
+
+function formatPrice(amountCents, billingInterval) {
+  const amount = (amountCents / 100).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+  });
+  return billingInterval ? `${amount}/${billingInterval.toLowerCase()}` : amount;
+}
 
 const STATUS_LABELS = {
   ACTIVE: "Active",
@@ -81,6 +82,8 @@ export default function Membership() {
 
   const [membership, setMembership] = useState(undefined); // undefined = loading, null = none
   const [membershipError, setMembershipError] = useState("");
+  const [plans, setPlans] = useState([]);
+  const [plansError, setPlansError] = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState(null);
   const [checkoutError, setCheckoutError] = useState("");
   const [cancelConfirm, setCancelConfirm] = useState(false);
@@ -105,6 +108,22 @@ export default function Membership() {
       });
     return () => { cancelled = true; };
   }, [authFetch]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/v1/billing/plans")
+      .then((res) => {
+        if (!res.ok) throw new Error("Could not load plans");
+        return res.json();
+      })
+      .then((data) => {
+        if (!cancelled) setPlans(data);
+      })
+      .catch(() => {
+        if (!cancelled) setPlansError("Could not load membership prices.");
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   const hasActiveMembership =
     membership &&
@@ -169,7 +188,7 @@ export default function Membership() {
           {membership === null && <p>Guest — no active membership</p>}
           {membership && (
             <>
-              <p>{PLANS.find((p) => p.code === membership.planCode)?.name ?? membership.planCode}</p>
+              <p>{PLAN_DETAILS[membership.planCode]?.name ?? membership.planCode}</p>
               <p style={STATUS_COLORS[membership.status]}>
                 {STATUS_LABELS[membership.status] || membership.status}
               </p>
@@ -222,7 +241,15 @@ export default function Membership() {
 
 
       <div className="CollaR1">
-        {PLANS.map((plan) => {
+        {plansError && <p role="alert">{plansError}</p>}
+        {plans.map((catalogPlan) => {
+          const details = PLAN_DETAILS[catalogPlan.code];
+          if (!details) return null;
+          const plan = {
+            ...catalogPlan,
+            ...details,
+            price: formatPrice(catalogPlan.amountCents, catalogPlan.billingInterval),
+          };
           const isCurrent =
             membership?.planCode === plan.code && hasActiveMembership;
           return (

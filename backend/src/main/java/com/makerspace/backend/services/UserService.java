@@ -1,13 +1,19 @@
 package com.makerspace.backend.services;
 
 import com.makerspace.backend.config.security.OAuthProfile;
+import com.makerspace.backend.controller.dto.UserActivityDTO;
 import com.makerspace.backend.model.AccountStatus;
 import com.makerspace.backend.model.AppRole;
+import com.makerspace.backend.model.Membership;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.model.UserProfile;
 import com.makerspace.backend.model.UserResolution;
+import com.makerspace.backend.repository.AppRoleRepository;
+import com.makerspace.backend.repository.MembershipRepository;
+import com.makerspace.backend.repository.TrainingWaiverSignatureRepository;
 import com.makerspace.backend.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +24,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -28,6 +36,22 @@ public class UserService {
 
     @Autowired
     UserStateService userStateService;
+
+    @Autowired
+    AppRoleRepository roleRepository;
+
+    @Autowired
+    MembershipRepository membershipRepository;
+
+    @Autowired
+    TrainingWaiverSignatureRepository trainingWaiverSignatureRepository;
+
+    /**
+    * Role assigned to newly created accounts. Privileged defaults are rejected
+    * and replaced with GUEST so public sign-up cannot grant admin access.
+     */
+    @Value("${app.registration.default-role:}")
+    private String defaultRole;
 
     // -------------------------------------------------------------------------
     // Lookups
@@ -57,6 +81,31 @@ public class UserService {
 
     public Page<User> findAllActive(Pageable pageable) {
         return userRepository.findAll(pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<UserActivityDTO> findRecentActivity(Pageable pageable) {
+        return userRepository.findAll(pageable).map(user -> {
+            Membership membership = membershipRepository.findByUserId(user.getId()).orElse(null);
+            UserProfile profile = user.getProfile();
+            String name = profile == null
+                    ? ""
+                    : Stream.of(profile.getFirstName(), profile.getLastName())
+                            .filter(value -> value != null && !value.isBlank())
+                            .collect(Collectors.joining(" "));
+
+            return new UserActivityDTO(
+                    user.getId(),
+                    name.isBlank() ? user.getEmail() : name,
+                    user.getEmail(),
+                    user.getCreatedAt(),
+                    membership == null ? "None" : membership.getPlan().getDisplayName(),
+                    user.getAccountStatus() == AccountStatus.ACTIVE ? "Allowed" : "Pending",
+                    trainingWaiverSignatureRepository.existsByUserId(user.getId()),
+                    user.getRoles().stream().map(AppRole::getCode).sorted().toList(),
+                    user.getEmail() != null && user.getEmail().toLowerCase().endsWith(".edu")
+            );
+        });
     }
 
     public long countActiveAdmins() {
@@ -100,9 +149,10 @@ public class UserService {
     // -------------------------------------------------------------------------
 
     /**
-     * Creates a new user from a verified OAuth identity.
-     * Caller is responsible for calling resolve() first and only dispatching here
-     * on a NotFound result. New users start with an empty authority role set.
+    * Creates a new user from a verified OAuth identity.
+    * Caller is responsible for calling resolve() first and only dispatching here
+    * on a NotFound result. The configured default is constrained to non-privileged
+    * roles before it is assigned.
      */
     @Transactional
     public User provision(OAuthProfile oAuthProfile) {
@@ -115,6 +165,7 @@ public class UserService {
         user.setAuth0Subject(oAuthProfile.subject());
         user.setAccountStatus(AccountStatus.ACTIVE);
         user.setProfile(profile);
+        applyDefaultRole(user);
         return userRepository.save(user);
     }
 
@@ -135,6 +186,63 @@ public class UserService {
         user.setEmail(email);
         user.setAccountStatus(AccountStatus.ACTIVE);
         user.setProfile(profile);
+        applyDefaultRole(user);
+        return userRepository.save(user);
+    }
+
+    /**
+     * Grants the configured default role to a freshly created account.
+     * No-op when the property is unset or the code does not match a known role —
+     * a bad value must not prevent someone from signing up.
+     */
+    private void applyDefaultRole(User user) {
+        if (defaultRole == null || defaultRole.isBlank()) return;
+
+        String configuredRole = defaultRole.trim().toUpperCase();
+        String roleCode = Set.of("ADMIN", "STAFF", "INSTRUCTOR").contains(configuredRole)
+                ? "GUEST"
+                : configuredRole;
+        if (!roleCode.equals(configuredRole)) {
+            log.warn("Ignoring privileged default role {}; assigning GUEST to new account", configuredRole);
+        }
+
+        roleRepository.findById(roleCode).ifPresentOrElse(role -> {
+            user.getRoles().add(role);
+            log.info("Granted default role {} to newly provisioned account", role.getCode());
+        }, () -> log.warn(
+                "app.registration.default-role='{}' does not match a known role code; "
+                        + "account created with no roles", roleCode));
+    }
+
+    /**
+     * Creates an unverified account for public self-registration.
+     *
+     * The account lands in {@code PRE_REGISTERED}, which carries no usable
+     * authority: it cannot authenticate until the caller proves control of the
+     * address through the OTP flow, at which point
+     * {@link UserStateService#autoClaimByEmail} flips it to {@code ACTIVE}.
+     * This is what keeps registration from being an account-takeover primitive —
+     * anyone can claim an address, but only its real owner can finish signing up.
+     *
+     * @throws ResponseStatusException 409 when the address is already registered
+     */
+    @Transactional
+    public User preRegister(String email, String firstName, String lastName) {
+        String normalized = email.trim().toLowerCase();
+
+        if (userRepository.findByEmailIncludingDeleted(normalized).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
+        }
+
+        UserProfile profile = new UserProfile();
+        profile.setFirstName(firstName);
+        profile.setLastName(lastName);
+
+        User user = new User();
+        user.setEmail(normalized);
+        user.setAccountStatus(AccountStatus.PRE_REGISTERED);
+        user.setProfile(profile);
+        applyDefaultRole(user);
         return userRepository.save(user);
     }
 

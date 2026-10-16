@@ -103,10 +103,15 @@ export default function ReserveEquipment() {
       hour, 0, 0
     );
     const end = new Date(start.getTime() + 60 * 60 * 1000);
-    navigate(`/dashboard/rentequipment/${id}/checkout`, {
+    const waiverRequired = true;
+    navigate(
+      `/dashboard/rentequipment/${id}/${waiverRequired ? "waiver" : "checkout"}`,
+      {
       state: {
         equipmentId: Number(id),
         equipmentName: item.name,
+        waiverRequired,
+        trainingRequired: item.trainingRequired,
         startTime: start.toISOString(),
         endTime: end.toISOString(),
         displayDate: selectedDate.toLocaleDateString(undefined, {
@@ -114,7 +119,8 @@ export default function ReserveEquipment() {
         }),
         displayTime: selectedSlot,
       },
-    });
+      }
+    );
   }
 
   if (loadError) {

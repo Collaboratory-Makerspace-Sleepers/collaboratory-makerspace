@@ -30,9 +30,14 @@ import java.util.List;
 @Service
 public class ReservationService {
 
+    private static final List<ReservationStatus> BLOCKING_STATUSES =
+            List.of(ReservationStatus.ACTIVE, ReservationStatus.PENDING);
+
     @Autowired private ReservationRepository reservationRepository;
     @Autowired private EquipmentRepository equipmentRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private TrainingTaskRepository trainingTaskRepository;
+    @Autowired private TrainingWaiverSignatureRepository trainingWaiverSignatureRepository;
     @Autowired private MembershipService membershipService;
     @Autowired private TrainingCompletionRepository trainingCompletionRepository;
     @Autowired private EmailService emailService;
@@ -41,17 +46,21 @@ public class ReservationService {
     public EquipmentReservation create(Long userId, Long equipmentId,
                                        ZonedDateTime startTime, ZonedDateTime endTime) {
 
-        if (!membershipService.hasActiveMembership(userId)) {
-            throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED,
-                    "An active membership is required to reserve equipment");
-        }
-
         if (!endTime.isAfter(startTime)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End time must be after start time");
         }
 
         Equipment equipment = equipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Equipment not found"));
+
+            if (!trainingWaiverSignatureRepository.existsByUserIdAndEquipmentId(userId, equipmentId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sign the equipment waiver before checkout");
+            }
+
+            if (!membershipService.hasActiveMembership(userId)) {
+                throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED,
+                    "An active membership is required to reserve equipment");
+            }
 
         if (equipment.getStatus() == EquipmentStatus.MAINTENANCE
                 || equipment.getStatus() == EquipmentStatus.RETIRED) {
@@ -93,6 +102,20 @@ public class ReservationService {
         reservation.setStatus(needsTraining ? ReservationStatus.TRAINING_PENDING : ReservationStatus.ACTIVE);
         reservation.setQuotedRateCents(quotedRate);
         reservation.setEstimatedCostCents(estimatedCost);
+
+        if (equipment.isTrainingRequired()) {
+            TrainingTask task = trainingTaskRepository.findByUserIdAndEquipmentId(userId, equipmentId)
+                    .orElse(null);
+            if (task == null) {
+                task = new TrainingTask();
+                task.setUser(user);
+                task.setEquipment(equipment);
+                trainingTaskRepository.save(task);
+            }
+            if (task.getCompletedAt() == null) {
+                reservation.setStatus(ReservationStatus.PENDING);
+            }
+        }
 
         EquipmentReservation saved = reservationRepository.save(reservation);
         log.info("Reservation created: id={} user={} equipment={} status={} [{} - {}]",
@@ -177,9 +200,9 @@ public class ReservationService {
     public EquipmentReservation extend(Long id, ZonedDateTime newEndTime) {
         EquipmentReservation reservation = findById(id);
 
-        if (reservation.getStatus() != ReservationStatus.ACTIVE) {
+        if (!BLOCKING_STATUSES.contains(reservation.getStatus())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Only active reservations can be extended");
+                    "Only active or pending reservations can be extended");
         }
         if (!newEndTime.isAfter(reservation.getEndTime())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -188,7 +211,7 @@ public class ReservationService {
 
         List<EquipmentReservation> conflicts = reservationRepository.findOverlapping(
                 reservation.getEquipmentId(), reservation.getEndTime(), newEndTime,
-                ReservationStatus.ACTIVE, reservation.getId());
+                BLOCKING_STATUSES, reservation.getId());
         if (!conflicts.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Cannot extend: another reservation starts before the new end time");
@@ -231,9 +254,9 @@ public class ReservationService {
                 && !reservation.getUserId().equals(principal.userId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
         }
-        if (reservation.getStatus() != ReservationStatus.ACTIVE) {
+        if (!BLOCKING_STATUSES.contains(reservation.getStatus())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Only active reservations can be rescheduled");
+                    "Only active or pending reservations can be rescheduled");
         }
         if (!newEndTime.isAfter(newStartTime)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -242,7 +265,7 @@ public class ReservationService {
 
         List<EquipmentReservation> conflicts = reservationRepository.findOverlapping(
                 reservation.getEquipmentId(), newStartTime, newEndTime,
-                ReservationStatus.ACTIVE, reservation.getId());
+                BLOCKING_STATUSES, reservation.getId());
         if (!conflicts.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Equipment is already reserved during that time window");

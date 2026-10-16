@@ -7,6 +7,7 @@ import com.makerspace.backend.controller.InternalBillingController;
 import com.makerspace.backend.controller.dto.StripeEventCommand;
 import com.makerspace.backend.model.EventOutcome;
 import com.makerspace.backend.repository.StripeEventLogRepository;
+import com.makerspace.backend.security.OAuth2FailureHandler;
 import com.makerspace.backend.security.OAuth2SuccessHandler;
 import com.makerspace.backend.services.JwtService;
 import com.makerspace.backend.services.MembershipService;
@@ -58,6 +59,7 @@ class InternalBillingControllerTest {
     @MockBean UserStateService userStateService;
     @MockBean UserPermissionService userPermissionService;
     @MockBean OAuth2SuccessHandler oAuth2SuccessHandler;
+    @MockBean OAuth2FailureHandler oAuth2FailureHandler;
 
     private static Authentication internalAuth() {
         return new PreAuthenticatedAuthenticationToken(

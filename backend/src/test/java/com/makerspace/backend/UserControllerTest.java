@@ -7,10 +7,12 @@ import com.makerspace.backend.config.security.UserSecurity;
 import com.makerspace.backend.controller.UserController;
 import com.makerspace.backend.controller.dto.UpdateProfileRequest;
 import com.makerspace.backend.controller.dto.UpdateRoleRequest;
+import com.makerspace.backend.controller.dto.UserActivityDTO;
 import com.makerspace.backend.model.AppRole;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.model.UserProfile;
 import com.makerspace.backend.repository.AppRoleRepository;
+import com.makerspace.backend.security.OAuth2FailureHandler;
 import com.makerspace.backend.security.OAuth2SuccessHandler;
 import com.makerspace.backend.services.JwtService;
 import com.makerspace.backend.services.UserPermissionService;
@@ -38,6 +40,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.time.LocalDateTime;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -72,6 +75,7 @@ class UserControllerTest {
     @MockBean UserPermissionService userPermissionService;
     @MockBean AppRoleRepository roleRepository;
     @MockBean OAuth2SuccessHandler oAuth2SuccessHandler; // required by SecurityConfig
+    @MockBean OAuth2FailureHandler oAuth2FailureHandler;
 
     private User activeUser;
 
@@ -128,6 +132,30 @@ class UserControllerTest {
         mockMvc.perform(get("/api/v1/users/me"))
                 .andExpect(status().isUnauthorized());
     }
+
+        @Test
+        void recentActivity_requiresManageUsersPermission() throws Exception {
+        mockMvc.perform(get("/api/v1/users/activity")
+                .with(authentication(memberAuth(1L))))
+            .andExpect(status().isForbidden());
+        }
+
+        @Test
+        void recentActivity_returnsRealActivityFieldsForAdmin() throws Exception {
+        var activity = new UserActivityDTO(
+            2L, "Recent Member", "recent@test.com", LocalDateTime.parse("2026-10-10T09:00:00"),
+            "Student Membership", "Allowed", true, List.of(), false);
+        when(userService.findRecentActivity(any())).thenReturn(
+            new PageImpl<>(List.of(activity), PageRequest.of(0, 6), 1));
+
+        mockMvc.perform(get("/api/v1/users/activity")
+                .with(authentication(authWithPermissions(1L, "MANAGE_USERS"))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.content[0].name").value("Recent Member"))
+            .andExpect(jsonPath("$.content[0].membership").value("Student Membership"))
+            .andExpect(jsonPath("$.content[0].allowed").value("Allowed"))
+            .andExpect(jsonPath("$.content[0].waiverSigned").value(true));
+        }
 
     // -------------------------------------------------------------------------
     // PATCH /me

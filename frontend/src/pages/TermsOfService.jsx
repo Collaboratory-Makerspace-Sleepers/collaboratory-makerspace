@@ -42,6 +42,34 @@ export default function TermsOfService() {
         {/* Content Container */}
         <div className="WhiteDiv WaiverContent">
           <section className="WaiverSection">
+            <h2>Acknowledgment of Risk</h2>
+            <p>
+              I understand that operating or being near makerspace equipment involves inherent risks, including but not limited to burns, fire hazards, exposure to fumes, eye injury, and damage to personal property. I voluntarily assume all risks associated with the use of the makerspace and its equipment.
+            </p>
+          </section>
+
+          <section className="WaiverSection">
+            <h2>Training & Proper Use</h2>
+            <p>
+              I confirm that I have received proper training or instruction on the safe use of the equipment I intend to use, or I agree to seek assistance before operating any machinery. I will follow all posted rules, safety guidelines, and instructions provided by staff.
+            </p>
+          </section>
+
+          <section className="WaiverSection">
+            <h2>Personal Responsibility</h2>
+            <p>
+              I agree to use all equipment responsibly and only for its intended purpose. I will not operate machinery under the influence of drugs or alcohol, and I will wear required safety equipment at all times.
+            </p>
+          </section>
+
+          <section className="WaiverSection">
+            <h2>Materials & Safety Compliance</h2>
+            <p>
+              I understand that only approved materials may be used with makerspace equipment. I will not use hazardous, flammable, or prohibited materials and will confirm material safety if unsure.
+            </p>
+          </section>
+
+          <section className="WaiverSection">
             <h2>Supervision & Access</h2>
             <p>
               I understand that access to equipment may be restricted and that supervision may be required. I agree to comply with all access policies.
@@ -56,7 +84,7 @@ export default function TermsOfService() {
           </section>
 
           <section className="WaiverSection">
-            <h2>Indentification</h2>
+            <h2>Indemnification</h2>
             <p>
               I agree to indemnify and hold harmless Collaboratory Makerspace from any claims resulting from my actions, misuse of equipment, or violation of safety rules.
             </p>
@@ -74,6 +102,14 @@ export default function TermsOfService() {
             <p>
               I have read this waiver, fully understand its terms, and sign it freely and voluntarily. I understand that I am giving up certain legal rights.
             </p>
+          </section>
+
+          <section className="WaiverSection">
+            <h2>Safety Training Video</h2>
+            <p>Please watch the training video. You will confirm it in your account after signing in.</p>
+            <video controls preload="metadata" style={{ width: "100%", borderRadius: 8, background: "#000" }} src={import.meta.env.VITE_LASER_TRAINING_VIDEO_URL || "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"}>
+              Your browser does not support video playback.
+            </video>
           </section>
 
           {/* Form Actions */}

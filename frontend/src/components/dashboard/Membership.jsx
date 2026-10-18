@@ -53,6 +53,18 @@ const PLANS = [
   },
 ];
 
+function formatPrice(amountCents, billingInterval) {
+  const dollars = (amountCents / 100).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+  });
+
+  if (!billingInterval) return dollars;
+
+  return `${dollars}/${billingInterval}`;
+}
+
 const STATUS_LABELS = {
   ACTIVE: "Active",
   TRIALING: "Trial",
@@ -80,6 +92,12 @@ export default function Membership() {
   const navigate = useNavigate();
 
   const [membership, setMembership] = useState(undefined); // undefined = loading, null = none
+
+  const [plans, setPlans] = useState([]);
+  const [plansLoading, setPlansLoading] = useState(true);
+  const [plansError, setPlansError] = useState("");
+
+
   const [membershipError, setMembershipError] = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState(null);
   const [checkoutError, setCheckoutError] = useState("");
@@ -106,13 +124,60 @@ export default function Membership() {
     return () => { cancelled = true; };
   }, [authFetch]);
 
+  useEffect(() => {
+  let cancelled = false;
+
+  async function loadPlans() {
+    try {
+      const res = await fetch("/api/v1/billing/plans");
+
+      if (!res.ok) {
+        throw new Error("Could not load membership plans");
+      }
+
+      const data = await res.json();
+
+      if (!Array.isArray(data)) {
+        throw new Error("Invalid membership plan data");
+      }
+
+      if (!cancelled) {
+        setPlans(data);
+      }
+    } catch {
+      if (!cancelled) {
+        setPlansError("Could not load membership plans. Please try again later.");
+      }
+    } finally {
+      if (!cancelled) {
+        setPlansLoading(false);
+      }
+    }
+  }
+
+  loadPlans();
+
+  return () => {
+    cancelled = true;
+  };
+}, []);
+
   const hasActiveMembership =
     membership &&
     ["ACTIVE", "TRIALING", "PAST_DUE"].includes(membership.status);
 
   function handleUpgrade(plan) {
-    navigate("/dashboard/membership/checkout", { state: { plan } });
-  }
+  const selectedPlan = {
+    code: plan.code,
+    name: plan.displayName,
+    price: formatPrice(plan.amountCents, plan.billingInterval),
+    features: PLANS.find((p) => p.code === plan.code)?.features ?? [],
+  };
+
+  navigate("/dashboard/membership/checkout", {
+    state: { plan: selectedPlan },
+  });
+}
 
   async function handlePortal() {
     setCheckoutError("");
@@ -122,8 +187,8 @@ export default function Membership() {
         method: "POST",
       });
       if (!res.ok) throw new Error("Could not open billing portal");
-      const { portalUrl } = await res.json();
-      window.location.href = portalUrl;
+      const { sessionUrl } = await res.json();
+      window.location.href = sessionUrl;
     } catch (err) {
       setCheckoutError(err.message || "Something went wrong.");
       setCheckoutLoading(null);
@@ -169,7 +234,7 @@ export default function Membership() {
           {membership === null && <p>Guest — no active membership</p>}
           {membership && (
             <>
-              <p>{PLANS.find((p) => p.code === membership.planCode)?.name ?? membership.planCode}</p>
+              <p>{plans.find((p) => p.code === membership.planCode)?.displayName ?? membership.planCode}</p>
               <p style={STATUS_COLORS[membership.status]}>
                 {STATUS_LABELS[membership.status] || membership.status}
               </p>
@@ -222,7 +287,12 @@ export default function Membership() {
 
 
       <div className="CollaR1">
-        {PLANS.map((plan) => {
+        {plansLoading && <p>Loading membership plans...</p>}
+        {plansError && <p style={{ color: "red" }}>{plansError}</p>}
+
+        {plans.map((plan) => {
+        const planFeatures =
+      PLANS.find((p) => p.code === plan.code)?.features ?? [];
           const isCurrent =
             membership?.planCode === plan.code && hasActiveMembership;
           return (
@@ -232,15 +302,15 @@ export default function Membership() {
                   <p>{isCurrent ? "Current Plan" : "Membership"}</p>
                 </div>
                 <div className="colla4">
-                  <p>{plan.name}</p>
-                  <p>{plan.price}</p>
+                  <p>{plan.displayName}</p>
+                  <p>{formatPrice(plan.amountCents, plan.billingInterval)}</p>
                 </div>
               </div>
               <div className="colla5">
-                {plan.features.map((feature) => (
-                  <p key={feature}>{feature}</p>
+                {planFeatures.map((feature) => (
+                <p key={feature}>{feature}</p>
                 ))}
-              </div>
+                </div>
               <button
                 disabled={isCurrent}
                 onClick={() => !isCurrent && handleUpgrade(plan)}

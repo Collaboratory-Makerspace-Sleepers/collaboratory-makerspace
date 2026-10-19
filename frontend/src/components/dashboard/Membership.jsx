@@ -9,38 +9,69 @@ import {
 
 const PLAN_DETAILS = {
   MONTHLY: {
-    name: "Member",
+    name: "Monthly Membership",
     features: [
-      "Rent equipment for free",
+      "Equipment access at member rates",
       "Access to common space",
-      "Book classes for free",
+      "50% off classes",
       "Access to events and discounts",
     ],
   },
   ANNUAL: {
-    name: "Member with Private Studio Space",
+    name: "Annual Membership",
     features: [
-      "Rent equipment for free",
+      "Equipment access at member rates",
       "Access to common space",
-      "Book classes for free",
+      "50% off classes",
       "Access to events and discounts",
-      "Private studio space",
+      "Billed once per year",
     ],
   },
   STUDENT: {
-    name: "Student",
+    name: "Student Membership",
     features: [
-      "Rent equipment for free",
-      "Book classes for free",
+      "Equipment access at member rates",
+      "50% off classes",
       "Access to events and discounts",
+      "Requires .edu email address",
     ],
   },
   DAY_PASS: {
     name: "Day Pass",
     features: [
       "Full access for one day",
-      "Rent equipment",
-      "Book classes",
+      "Equipment at standard rates",
+      "Class access",
+    ],
+  },
+  STUDIO_SMALL: {
+    name: "Small Studio",
+    features: [
+      "Private small maker studio",
+      "Machine rate waiver — equipment included",
+      "Access to common space",
+      "50% off classes",
+      "Access to events and discounts",
+    ],
+  },
+  STUDIO_MEDIUM: {
+    name: "Medium Studio",
+    features: [
+      "Private medium maker studio",
+      "Machine rate waiver — equipment included",
+      "Access to common space",
+      "50% off classes",
+      "Access to events and discounts",
+    ],
+  },
+  STUDIO_LARGE: {
+    name: "Large Studio",
+    features: [
+      "Private large maker studio",
+      "Machine rate waiver — equipment included",
+      "Access to common space",
+      "50% off classes",
+      "Access to events and discounts",
     ],
   },
 };

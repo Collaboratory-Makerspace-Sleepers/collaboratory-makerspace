@@ -65,7 +65,11 @@ export function formatTime(iso) {
 export function upcomingReservations(reservations) {
   const now = Date.now();
   return (reservations || [])
-    .filter((r) => r.status === "ACTIVE" && new Date(r.startTime).getTime() >= now)
+    .filter(
+      (r) =>
+        (r.status === "ACTIVE" || r.status === "TRAINING_PENDING") &&
+        new Date(r.startTime).getTime() >= now
+    )
     .slice()
     .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
 }

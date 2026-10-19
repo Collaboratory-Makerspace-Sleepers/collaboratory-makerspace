@@ -95,13 +95,77 @@ function RescheduleCalendar({ reservationId, onConfirm, onCancel, busy }) {
         </div>
       )}
       <div className="Dash5">
-        <button
-          disabled={!selectedDate || !selectedSlot || busy}
-          onClick={handleConfirm}
-        >
+        <button disabled={!selectedDate || !selectedSlot || busy} onClick={handleConfirm}>
           {busy ? "Rescheduling…" : "Confirm reschedule"}
         </button>
         <button onClick={onCancel}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+function TrainingAttestCard({ reservation, onAttest, busy }) {
+  const [watched, setWatched] = useState(false);
+  const [attestError, setAttestError] = useState("");
+
+  async function handleAttest() {
+    if (!watched) return;
+    setAttestError("");
+    try {
+      await onAttest(reservation.id);
+    } catch (err) {
+      setAttestError(err.message || "Could not confirm training.");
+    }
+  }
+
+  return (
+    <div className="Dash3">
+      <div className="Dash4">
+        <div className="Rent4" style={{ background: "#d95a00" }}>
+          <p>Training required</p>
+        </div>
+        <p>{reservation.equipmentName}</p>
+        <p>
+          {new Date(reservation.startTime).toLocaleDateString(undefined, {
+            weekday: "long", month: "long", day: "numeric", year: "numeric",
+          })}{" "}
+          {new Date(reservation.startTime).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+          {" – "}
+          {new Date(reservation.endTime).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+        </p>
+        <p style={{ color: "#d95a00" }}>
+          Your reservation is pending until you complete the training below.
+        </p>
+
+        {reservation.trainingVideoUrl && (
+          <a
+            href={reservation.trainingVideoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Watch training video →
+          </a>
+        )}
+
+        <label style={{ display: "flex", gap: "8px", alignItems: "center", marginTop: "12px" }}>
+          <input
+            type="checkbox"
+            checked={watched}
+            onChange={(e) => setWatched(e.target.checked)}
+          />
+          <span>I have watched the full training video for {reservation.equipmentName}.</span>
+        </label>
+
+        {attestError && <p style={{ color: "red" }}>{attestError}</p>}
+
+        <div className="Dash5">
+          <button
+            onClick={handleAttest}
+            disabled={!watched || busy}
+          >
+            {busy ? "Confirming…" : "Confirm training completed"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -163,8 +227,22 @@ export default function MyReservations() {
     }
   }
 
-  const active = reservations.filter((r) => r.status === "ACTIVE" || r.status === "PENDING");
-  const past = reservations.filter((r) => r.status !== "ACTIVE" && r.status !== "PENDING");
+  async function handleAttest(id) {
+    setBusy(id + "-attest");
+    const res = await authFetch(`/api/v1/reservations/${id}/training-attest`, { method: "POST" });
+    setBusy(null);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.message || "Could not confirm training.");
+    }
+    loadReservations();
+  }
+
+  const trainingPending = reservations.filter((r) => r.status === "TRAINING_PENDING");
+  const active = reservations.filter((r) => r.status === "ACTIVE");
+  const past = reservations.filter(
+    (r) => r.status !== "ACTIVE" && r.status !== "TRAINING_PENDING"
+  );
 
   return (
     <div className="DashHome1">
@@ -176,7 +254,19 @@ export default function MyReservations() {
       {error && <p>{error}</p>}
       {actionError && <p style={{ color: "red" }}>{actionError}</p>}
       {loading && <p>Loading…</p>}
-      {!loading && active.length === 0 && <p>No upcoming reservations.</p>}
+
+      {!loading && trainingPending.length === 0 && active.length === 0 && (
+        <p>No upcoming reservations.</p>
+      )}
+
+      {trainingPending.map((r) => (
+        <TrainingAttestCard
+          key={r.id}
+          reservation={r}
+          onAttest={handleAttest}
+          busy={busy === r.id + "-attest"}
+        />
+      ))}
 
       {active.map((r) => (
         <div className="Dash3" key={r.id}>
@@ -190,15 +280,8 @@ export default function MyReservations() {
               {" – "}
               {new Date(r.endTime).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
             </p>
-            {r.status === "PENDING" && (
-              <p style={{ color: "#d95a00" }}>
-                Pending — watch the training video and check the box in your account to confirm this reservation.
-              </p>
-            )}
             <div className="Dash5">
-              <button
-                onClick={() => setReschedulingId(reschedulingId === r.id ? null : r.id)}
-              >
+              <button onClick={() => setReschedulingId(reschedulingId === r.id ? null : r.id)}>
                 {reschedulingId === r.id ? "Cancel reschedule" : "Reschedule"}
               </button>
               <button

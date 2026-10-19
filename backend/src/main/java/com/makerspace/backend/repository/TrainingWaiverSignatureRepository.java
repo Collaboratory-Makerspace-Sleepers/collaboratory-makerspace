@@ -8,7 +8,13 @@ import java.util.Optional;
 
 @Repository
 public interface TrainingWaiverSignatureRepository extends JpaRepository<TrainingWaiverSignature, Long> {
-    Optional<TrainingWaiverSignature> findByUserIdAndEquipmentId(Long userId, Long equipmentId);
+
+    /**
+     * Used by ReservationService to validate the waiver before booking.
+     * reservationId IS NULL ensures the signature has not already been consumed by another reservation.
+     */
+    Optional<TrainingWaiverSignature> findByIdAndUserIdAndEquipmentIdAndReservationIdIsNull(
+            Long id, Long userId, Long equipmentId);
 
     boolean existsByUserIdAndEquipmentId(Long userId, Long equipmentId);
 

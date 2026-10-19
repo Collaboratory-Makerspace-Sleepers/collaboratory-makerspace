@@ -33,9 +33,6 @@ public class Equipment {
     @Column(name = "image_url")
     private String imageUrl;
 
-    @Column(name = "training_required", nullable = false)
-    private boolean trainingRequired;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private EquipmentStatus status = EquipmentStatus.AVAILABLE;
@@ -74,6 +71,20 @@ public class Equipment {
     /** One-time training session fee in cents (0 when requiresTraining is false). */
     @Column(name = "training_fee_cents", nullable = false)
     private int trainingFeeCents = 0;
+
+    /** YouTube or other URL for the training video shown to users after booking. */
+    @Column(name = "training_video_url")
+    private String trainingVideoUrl;
+
+    // ── Waiver versioning ─────────────────────────────────────────────────────────
+
+    /**
+     * Current version of the safety waiver for this equipment. A waiver signed with
+     * an older version is rejected at booking time, forcing the user to re-sign.
+     * Increment this when the waiver text changes.
+     */
+    @Column(name = "current_waiver_version", nullable = false)
+    private int currentWaiverVersion = 1;
 
 }
 

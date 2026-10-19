@@ -1,10 +1,4 @@
 -- V10: Studio plans, student pricing, studio assignment table, CLASS equipment rates.
---
--- HUMAN TODO before deploying:
---   1. Create three Stripe products + recurring prices for studio plans.
---   2. Replace every 'PLACEHOLDER_PRICE_*' and 'PLACEHOLDER_PRODUCT_*' value with the
---      real Stripe IDs.
---   3. Confirm CLASS equipment hourly rates (currently seeded at $20/hr = 2000 cents).
 
 -- ── Student plan price ────────────────────────────────────────────────────────────
 
@@ -19,9 +13,9 @@ WHERE code = 'STUDENT';
 INSERT INTO membership_plan (code, display_name, stripe_price_id, stripe_product_id,
                              billing_interval, amount_cents, currency, active)
 VALUES
-    ('STUDIO_SMALL',  'Small Studio',  'PLACEHOLDER_PRICE_STUDIO_SMALL',  'PLACEHOLDER_PRODUCT_STUDIO_SMALL',  'MONTH', 35000,  'usd', true),
-    ('STUDIO_MEDIUM', 'Medium Studio', 'PLACEHOLDER_PRICE_STUDIO_MEDIUM', 'PLACEHOLDER_PRODUCT_STUDIO_MEDIUM', 'MONTH', 75000,  'usd', true),
-    ('STUDIO_LARGE',  'Large Studio',  'PLACEHOLDER_PRICE_STUDIO_LARGE',  'PLACEHOLDER_PRODUCT_STUDIO_LARGE',  'MONTH', 120000, 'usd', true);
+    ('STUDIO_SMALL',  'Small Studio',  'price_1URzLjCqDStEDHd02IIYc61m', 'prod_VSvC52zx4mE6w5', 'MONTH', 35000,  'usd', true),
+    ('STUDIO_MEDIUM', 'Medium Studio', 'price_1URzNOCqDStEDHd0gwqul6ah', 'prod_VSvDlFs86lYspI', 'MONTH', 75000,  'usd', true),
+    ('STUDIO_LARGE',  'Large Studio',  'price_1URzNkCqDStEDHd0LxukmIP0', 'prod_VSvEK1PMQOUHJz', 'MONTH', 120000, 'usd', true);
 
 -- ── Studio assignment table ────────────────────────────────────────────────────────
 -- Tracks which user holds which studio room under which membership subscription.

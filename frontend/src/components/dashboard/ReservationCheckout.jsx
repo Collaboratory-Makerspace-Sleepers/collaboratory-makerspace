@@ -2,18 +2,32 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
-const HOURLY_RATE = 7;
 const PENDING_RESERVATION_KEY = "pendingReservationAfterPayment";
+const PENDING_RESERVATION_TTL_MS = 2 * 60 * 60 * 1000;
+
+function readPendingReservation() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(PENDING_RESERVATION_KEY));
+    if (!saved) return null;
+    if (Date.now() - saved.savedAt > PENDING_RESERVATION_TTL_MS) return null;
+    return saved.reservation;
+  } catch {
+    return null;
+  }
+}
 
 export default function ReservationCheckout() {
-  const { state } = useLocation();
+  const { state: routerState } = useLocation();
   const navigate = useNavigate();
   const { authFetch } = useAuth();
 
+  // After a Stripe redirect, router state is gone — fall back to sessionStorage.
+  const state = routerState ?? readPendingReservation();
+
   const [status, setStatus] = useState("idle"); // idle | confirming | success | needs_membership | error
   const [errorMsg, setErrorMsg] = useState("");
+  const [daypassLoading, setDaypassLoading] = useState(false);
 
-  // Guard: if navigated here directly without state, go back
   if (!state?.equipmentId) {
     navigate("/dashboard/rentequipment", { replace: true });
     return null;
@@ -27,11 +41,15 @@ export default function ReservationCheckout() {
     return null;
   }
 
-  const { equipmentId, equipmentName, startTime, endTime, displayDate, displayTime } = state;
+  const {
+    equipmentId, equipmentName, startTime, endTime,
+    displayDate, displayTime, hourlyRateCents, waiverSignatureId,
+  } = state;
 
-  const hours =
-    (new Date(endTime) - new Date(startTime)) / (1000 * 60 * 60);
-  const price = HOURLY_RATE * hours;
+  const hours = (new Date(endTime) - new Date(startTime)) / (1000 * 60 * 60);
+  const totalCents = (hourlyRateCents ?? 0) * hours;
+  const isFree = totalCents === 0;
+  const priceLabel = isFree ? "Free" : `$${(totalCents / 100).toFixed(2)}`;
 
   async function handleConfirm() {
     setStatus("confirming");
@@ -39,7 +57,7 @@ export default function ReservationCheckout() {
     try {
       const res = await authFetch("/api/v1/reservations", {
         method: "POST",
-        body: JSON.stringify({ equipmentId, startTime, endTime }),
+        body: JSON.stringify({ equipmentId, startTime, endTime, waiverSignatureId }),
       });
 
       if (res.status === 402) {
@@ -61,6 +79,31 @@ export default function ReservationCheckout() {
     } catch (err) {
       setErrorMsg(err.message || "Something went wrong.");
       setStatus("error");
+    }
+  }
+
+  async function handleDayPass() {
+    setErrorMsg("");
+    setDaypassLoading(true);
+    try {
+      sessionStorage.setItem(PENDING_RESERVATION_KEY, JSON.stringify({
+        reservation: state,
+        savedAt: Date.now(),
+      }));
+      const res = await authFetch("/api/v1/billing/checkout-session", {
+        method: "POST",
+        body: JSON.stringify({ planCode: "DAY_PASS", saveCard: false }),
+      });
+      if (!res.ok) {
+        sessionStorage.removeItem(PENDING_RESERVATION_KEY);
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || "Could not start checkout");
+      }
+      const { sessionUrl } = await res.json();
+      window.location.href = sessionUrl;
+    } catch (err) {
+      setErrorMsg(err.message || "Something went wrong.");
+      setDaypassLoading(false);
     }
   }
 
@@ -92,29 +135,28 @@ export default function ReservationCheckout() {
         <p>Confirm your reservation</p>
       </div>
 
-      {/* Booking summary */}
       <div className="Dash3">
         <div className="Dash4">
           <p><strong>{equipmentName}</strong></p>
           <p>{displayDate}</p>
-          <p>{displayTime} · {hours} hr</p>
-          <p><strong>${price.toFixed(2)}</strong> without membership</p>
-          {state.trainingRequired && (
+          <p>{displayTime}</p>
+          <p><strong>{priceLabel}</strong>{!isFree && " estimated total"}</p>
+          {state.requiresTraining && (
             <p>
               This machine requires training. Your reservation will be pending until you watch the
-              training video in your account and check the box confirming you watched it.
+              training video in your account and confirm you watched it.
             </p>
           )}
         </div>
       </div>
 
-      {/* Payment options */}
       {status === "needs_membership" ? (
         <div className="Dash3">
           <div className="Dash4">
             <p>You don't have an active membership.</p>
-            <p>Members reserve equipment for free.</p>
+            <p>Members reserve equipment at the member rate.</p>
           </div>
+          {errorMsg && <p style={{ color: "red" }}>{errorMsg}</p>}
           <div className="Dash5 checkout-actions">
             <button
               onClick={() => {
@@ -124,11 +166,16 @@ export default function ReservationCheckout() {
                 }));
                 navigate("/dashboard/membership");
               }}
+              disabled={daypassLoading}
             >
               Get a membership
             </button>
-            <button disabled title="Coming soon">
-              Pay ${price.toFixed(2)}
+            <button
+              className="checkout-primary-button"
+              onClick={handleDayPass}
+              disabled={daypassLoading}
+            >
+              {daypassLoading ? "Redirecting to payment…" : `Pay ${priceLabel} (day pass)`}
             </button>
           </div>
         </div>

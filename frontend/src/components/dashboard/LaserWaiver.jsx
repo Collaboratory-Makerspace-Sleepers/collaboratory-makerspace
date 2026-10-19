@@ -48,7 +48,7 @@ export default function LaserWaiver() {
   const { authFetch } = useAuth();
   const [signerName, setSignerName] = useState("");
   const [agreed, setAgreed] = useState(false);
-  const [signature, setSignature] = useState(null);
+  const [signature, setSignature] = useState(null); // { name, signedAt, waiverSignatureId }
   const [signing, setSigning] = useState(false);
   const [signError, setSignError] = useState("");
 
@@ -66,13 +66,19 @@ export default function LaserWaiver() {
     try {
       const response = await authFetch(`/api/v1/training-waivers/${state.equipmentId}/sign`, {
         method: "POST",
-        body: JSON.stringify({ signerName: name }),
+        body: JSON.stringify({
+          signerName: name,
+          startTime: state.startTime,
+          endTime: state.endTime,
+          waiverVersion: state.currentWaiverVersion ?? 1,
+        }),
       });
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
         throw new Error(body.message || "Could not save your waiver signature.");
       }
-      setSignature({ name, signedAt: new Date().toISOString() });
+      const { waiverSignatureId } = await response.json();
+      setSignature({ name, signedAt: new Date().toISOString(), waiverSignatureId });
     } catch (err) {
       setSignError(err.message || "Could not save your waiver signature.");
     } finally {
@@ -83,9 +89,17 @@ export default function LaserWaiver() {
   function handleContinueToCheckout() {
     if (!signature) return;
     navigate(`/dashboard/rentequipment/${state.equipmentId}/checkout`, {
-      state: { ...state, waiverSigned: true, waiverSignature: signature },
+      state: {
+        ...state,
+        waiverSigned: true,
+        waiverSignature: signature,
+        waiverSignatureId: signature.waiverSignatureId,
+      },
     });
   }
+
+  const videoUrl = state.trainingVideoUrl ||
+    "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
 
   return (
     <div className="DashHome1 laser-waiver-page">
@@ -129,7 +143,10 @@ export default function LaserWaiver() {
             />
             <span>I have read and agree to this waiver.</span>
           </label>
-          <button disabled={!signerName.trim() || !agreed || Boolean(signature) || signing} type="submit">
+          <button
+            disabled={!signerName.trim() || !agreed || Boolean(signature) || signing}
+            type="submit"
+          >
             {signing ? "Saving signature…" : signature ? "Signed electronically" : "Sign electronically"}
           </button>
           {signError && <p className="training-task-error" role="alert">{signError}</p>}
@@ -141,17 +158,15 @@ export default function LaserWaiver() {
         </form>
       </article>
 
-      <section className="laser-waiver-training">
-        <h2>Equipment Training</h2>
-        <p>Please watch the full training video. You will confirm it in your account.</p>
-        <video
-          controls
-          preload="metadata"
-          src={import.meta.env.VITE_LASER_TRAINING_VIDEO_URL || "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"}
-        >
-          Your browser does not support video playback.
-        </video>
-      </section>
+      {state.requiresTraining && (
+        <section className="laser-waiver-training">
+          <h2>Equipment Training</h2>
+          <p>Please watch the full training video. You will confirm it in your account after booking.</p>
+          <video controls preload="metadata" src={videoUrl}>
+            Your browser does not support video playback.
+          </video>
+        </section>
+      )}
 
       <button
         className="laser-waiver-finish"

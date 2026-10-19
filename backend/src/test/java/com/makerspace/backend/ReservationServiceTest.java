@@ -3,7 +3,7 @@ package com.makerspace.backend;
 import com.makerspace.backend.model.*;
 import com.makerspace.backend.repository.EquipmentRepository;
 import com.makerspace.backend.repository.ReservationRepository;
-import com.makerspace.backend.repository.TrainingTaskRepository;
+import com.makerspace.backend.repository.TrainingCompletionRepository;
 import com.makerspace.backend.repository.TrainingWaiverSignatureRepository;
 import com.makerspace.backend.repository.UserRepository;
 import com.makerspace.backend.services.MembershipService;
@@ -15,7 +15,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,7 +25,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class ReservationServiceTest {
@@ -31,20 +32,28 @@ class ReservationServiceTest {
     @Mock private ReservationRepository reservationRepository;
     @Mock private EquipmentRepository equipmentRepository;
     @Mock private UserRepository userRepository;
-    @Mock private TrainingTaskRepository trainingTaskRepository;
-    @Mock private TrainingWaiverSignatureRepository trainingWaiverSignatureRepository;
     @Mock private MembershipService membershipService;
+    @Mock private TrainingCompletionRepository trainingCompletionRepository;
+    @Mock private TrainingWaiverSignatureRepository waiverSignatureRepository;
 
     @InjectMocks
     private ReservationService reservationService;
 
     private static final ZonedDateTime START = ZonedDateTime.now().plusHours(1);
     private static final ZonedDateTime END   = ZonedDateTime.now().plusHours(2);
+    private static final Long WAIVER_ID = 10L;
 
     private Equipment activeEquipment() {
         Equipment e = new Equipment();
         e.setId(1L);
         e.setStatus(EquipmentStatus.AVAILABLE);
+        e.setCurrentWaiverVersion(1);
+        return e;
+    }
+
+    private Equipment trainingEquipment() {
+        Equipment e = activeEquipment();
+        e.setRequiresTraining(true);
         return e;
     }
 
@@ -54,71 +63,135 @@ class ReservationServiceTest {
         return u;
     }
 
+    private TrainingWaiverSignature freshWaiver(Equipment equipment) {
+        TrainingWaiverSignature w = new TrainingWaiverSignature();
+        w.setId(WAIVER_ID);
+        w.setWaiverVersion(1);
+        w.setSignedAt(LocalDateTime.now());
+        w.setStartTime(START);
+        w.setEndTime(END);
+        w.setEquipment(equipment);
+        return w;
+    }
+
     @Test
     void create_throws402_whenUserHasNoMembership() {
-        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(activeEquipment()));
-        when(trainingWaiverSignatureRepository.existsByUserIdAndEquipmentId(1L, 1L)).thenReturn(true);
         when(membershipService.hasActiveMembership(1L)).thenReturn(false);
 
-        assertThatThrownBy(() -> reservationService.create(1L, 1L, START, END))
+        assertThatThrownBy(() -> reservationService.create(1L, 1L, START, END, WAIVER_ID))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("membership");
     }
 
     @Test
     void create_throws402_whenMembershipPeriodExpired() {
-        // hasActiveMembership checks both status and date — returning false covers expired periods
-        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(activeEquipment()));
-        when(trainingWaiverSignatureRepository.existsByUserIdAndEquipmentId(1L, 1L)).thenReturn(true);
         when(membershipService.hasActiveMembership(1L)).thenReturn(false);
 
-        assertThatThrownBy(() -> reservationService.create(1L, 1L, START, END))
+        assertThatThrownBy(() -> reservationService.create(1L, 1L, START, END, WAIVER_ID))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("membership");
     }
 
     @Test
-    void create_succeeds_withActiveMembership() {
-        when(trainingWaiverSignatureRepository.existsByUserIdAndEquipmentId(1L, 1L)).thenReturn(true);
+    void create_throws400_whenWaiverNotFound() {
         when(membershipService.hasActiveMembership(1L)).thenReturn(true);
         when(equipmentRepository.findById(1L)).thenReturn(Optional.of(activeEquipment()));
+        when(waiverSignatureRepository.findByIdAndUserIdAndEquipmentIdAndReservationIdIsNull(
+                WAIVER_ID, 1L, 1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> reservationService.create(1L, 1L, START, END, WAIVER_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("waiver");
+    }
+
+    @Test
+    void create_throws409_whenWaiverVersionStale() {
+        Equipment equipment = activeEquipment();
+        equipment.setCurrentWaiverVersion(2);
+
+        TrainingWaiverSignature staleWaiver = freshWaiver(equipment);
+        staleWaiver.setWaiverVersion(1); // signed with version 1, equipment now at version 2
+
+        when(membershipService.hasActiveMembership(1L)).thenReturn(true);
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(equipment));
+        when(waiverSignatureRepository.findByIdAndUserIdAndEquipmentIdAndReservationIdIsNull(
+                WAIVER_ID, 1L, 1L)).thenReturn(Optional.of(staleWaiver));
+
+        assertThatThrownBy(() -> reservationService.create(1L, 1L, START, END, WAIVER_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("outdated");
+    }
+
+    @Test
+    void create_throws400_whenWaiverExpired() {
+        Equipment equipment = activeEquipment();
+        TrainingWaiverSignature expiredWaiver = freshWaiver(equipment);
+        expiredWaiver.setSignedAt(LocalDateTime.now().minusMinutes(31)); // signed 31 min ago
+
+        when(membershipService.hasActiveMembership(1L)).thenReturn(true);
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(equipment));
+        when(waiverSignatureRepository.findByIdAndUserIdAndEquipmentIdAndReservationIdIsNull(
+                WAIVER_ID, 1L, 1L)).thenReturn(Optional.of(expiredWaiver));
+
+        assertThatThrownBy(() -> reservationService.create(1L, 1L, START, END, WAIVER_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("expired");
+    }
+
+    @Test
+    void create_succeeds_withActiveMembership() {
+        Equipment equipment = activeEquipment();
+        when(membershipService.hasActiveMembership(1L)).thenReturn(true);
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(equipment));
+        when(waiverSignatureRepository.findByIdAndUserIdAndEquipmentIdAndReservationIdIsNull(
+                WAIVER_ID, 1L, 1L)).thenReturn(Optional.of(freshWaiver(equipment)));
         when(reservationRepository.findOverlappingByStatuses(any(), any(), any(), any(), any()))
                 .thenReturn(List.of());
         when(userRepository.findById(1L)).thenReturn(Optional.of(user()));
         when(reservationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(waiverSignatureRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        EquipmentReservation result = reservationService.create(1L, 1L, START, END);
+        EquipmentReservation result = reservationService.create(1L, 1L, START, END, WAIVER_ID);
 
         assertThat(result).isNotNull();
+        assertThat(result.getStatus()).isEqualTo(ReservationStatus.ACTIVE);
     }
 
     @Test
-    void create_addsTrainingTaskForLaserEquipmentAfterMembershipCheck() {
-        Equipment laser = activeEquipment();
-        laser.setTrainingRequired(true);
-        when(trainingWaiverSignatureRepository.existsByUserIdAndEquipmentId(1L, 1L)).thenReturn(true);
+    void create_returnsTrainingPending_forFirstBookingOnTrainingRequiredEquipment() {
+        Equipment equipment = trainingEquipment();
         when(membershipService.hasActiveMembership(1L)).thenReturn(true);
-        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(laser));
-        when(reservationRepository.findOverlapping(any(), any(), any(), any(), any()))
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(equipment));
+        when(waiverSignatureRepository.findByIdAndUserIdAndEquipmentIdAndReservationIdIsNull(
+                WAIVER_ID, 1L, 1L)).thenReturn(Optional.of(freshWaiver(equipment)));
+        when(trainingCompletionRepository.existsByUserIdAndEquipmentId(1L, 1L)).thenReturn(false);
+        when(reservationRepository.findOverlappingByStatuses(any(), any(), any(), any(), any()))
                 .thenReturn(List.of());
         when(userRepository.findById(1L)).thenReturn(Optional.of(user()));
         when(reservationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(waiverSignatureRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        reservationService.create(1L, 1L, START, END);
+        EquipmentReservation result = reservationService.create(1L, 1L, START, END, WAIVER_ID);
 
-        verify(trainingTaskRepository).save(any(TrainingTask.class));
+        assertThat(result.getStatus()).isEqualTo(ReservationStatus.TRAINING_PENDING);
     }
 
     @Test
-    void create_requiresWaiverBeforeMembershipCheck_forNonTrainingEquipment() {
-        Equipment printer = activeEquipment();
-        printer.setCategory("3D_PRINTER");
-        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(printer));
-        when(trainingWaiverSignatureRepository.existsByUserIdAndEquipmentId(1L, 1L)).thenReturn(false);
+    void create_returnsActive_forRepeatBookingOnTrainingRequiredEquipment() {
+        Equipment equipment = trainingEquipment();
+        when(membershipService.hasActiveMembership(1L)).thenReturn(true);
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(equipment));
+        when(waiverSignatureRepository.findByIdAndUserIdAndEquipmentIdAndReservationIdIsNull(
+                WAIVER_ID, 1L, 1L)).thenReturn(Optional.of(freshWaiver(equipment)));
+        when(trainingCompletionRepository.existsByUserIdAndEquipmentId(1L, 1L)).thenReturn(true);
+        when(reservationRepository.findOverlappingByStatuses(any(), any(), any(), any(), any()))
+                .thenReturn(List.of());
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user()));
+        when(reservationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(waiverSignatureRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        assertThatThrownBy(() -> reservationService.create(1L, 1L, START, END))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("waiver");
-        verify(membershipService, org.mockito.Mockito.never()).hasActiveMembership(1L);
+        EquipmentReservation result = reservationService.create(1L, 1L, START, END, WAIVER_ID);
+
+        assertThat(result.getStatus()).isEqualTo(ReservationStatus.ACTIVE);
     }
 }

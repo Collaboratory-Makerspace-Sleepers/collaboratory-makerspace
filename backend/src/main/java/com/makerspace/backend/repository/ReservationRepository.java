@@ -2,7 +2,6 @@ package com.makerspace.backend.repository;
 
 import com.makerspace.backend.model.EquipmentReservation;
 import com.makerspace.backend.model.ReservationStatus;
-import java.util.Collection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -28,14 +27,14 @@ public interface ReservationRepository extends JpaRepository<EquipmentReservatio
     List<EquipmentReservation> findByEquipmentIdOrderByStartTimeDesc(Long equipmentId);
 
     /**
-     * Returns any ACTIVE or PENDING reservations for the given equipment that overlap [startTime, endTime).
+     * Returns any ACTIVE reservations for the given equipment that overlap [startTime, endTime).
      * Two intervals overlap when: existingStart < newEnd AND existingEnd > newStart.
      * Excludes a specific reservation ID so extend operations can check without self-conflict.
      */
     @Query("""
             SELECT r FROM EquipmentReservation r
             WHERE r.equipmentId = :equipmentId
-              AND r.status IN :statuses
+              AND r.status = :status
               AND r.startTime < :endTime
               AND r.endTime > :startTime
               AND (:excludeId IS NULL OR r.id <> :excludeId)
@@ -44,8 +43,48 @@ public interface ReservationRepository extends JpaRepository<EquipmentReservatio
             @Param("equipmentId") Long equipmentId,
             @Param("startTime") ZonedDateTime startTime,
             @Param("endTime") ZonedDateTime endTime,
-            @Param("statuses") Collection<ReservationStatus> statuses,
+            @Param("status") ReservationStatus status,
             @Param("excludeId") Long excludeId
+    );
+
+    /**
+     * Returns reservations for a specific user + equipment whose status is in the given
+     * set and whose time window overlaps [now, windowEnd). Used by access-check logic to
+     * find reservations that are currently active or starting within the access window.
+     *
+     * windowEnd = now + accessWindowMinutes (e.g. 30 min early entry).
+     */
+    @Query("""
+            SELECT r FROM EquipmentReservation r
+            WHERE r.userId      = :userId
+              AND r.equipmentId = :equipmentId
+              AND r.status IN   :statuses
+              AND r.startTime  <= :windowEnd
+              AND r.endTime    >  :now
+            """)
+    List<EquipmentReservation> findByUserEquipmentAndStatusesInWindow(
+            @Param("userId")      Long userId,
+            @Param("equipmentId") Long equipmentId,
+            @Param("statuses")    Collection<ReservationStatus> statuses,
+            @Param("now")         ZonedDateTime now,
+            @Param("windowEnd")   ZonedDateTime windowEnd
+    );
+
+    /**
+     * Returns true if the user has any ACTIVE reservation that is currently in progress
+     * or starts before {@code windowEnd}. Used by hardware check-in for building access.
+     */
+    @Query("""
+            SELECT COUNT(r) > 0 FROM EquipmentReservation r
+            WHERE r.userId    = :userId
+              AND r.status    = com.makerspace.backend.model.ReservationStatus.ACTIVE
+              AND r.startTime <= :windowEnd
+              AND r.endTime   >  :now
+            """)
+    boolean hasActiveReservationInWindow(
+            @Param("userId")    Long userId,
+            @Param("now")       ZonedDateTime now,
+            @Param("windowEnd") ZonedDateTime windowEnd
     );
 
     /**

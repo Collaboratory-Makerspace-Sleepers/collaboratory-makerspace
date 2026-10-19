@@ -35,7 +35,8 @@ public class ReservationController {
     public ReservationDTO create(@Valid @RequestBody CreateReservationRequest req, Authentication auth) {
         Long userId = userSecurity.getUserId(auth);
         return ReservationDTO.from(
-                reservationService.create(userId, req.equipmentId(), req.startTime(), req.endTime()));
+                reservationService.create(userId, req.equipmentId(), req.startTime(), req.endTime(),
+                        req.waiverSignatureId()));
     }
 
     @GetMapping("/me")

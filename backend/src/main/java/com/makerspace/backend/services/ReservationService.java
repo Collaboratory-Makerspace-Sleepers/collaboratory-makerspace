@@ -7,10 +7,12 @@ import com.makerspace.backend.model.EquipmentStatus;
 import com.makerspace.backend.model.Permission;
 import com.makerspace.backend.model.ReservationStatus;
 import com.makerspace.backend.model.TrainingCompletion;
+import com.makerspace.backend.model.TrainingWaiverSignature;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.repository.EquipmentRepository;
 import com.makerspace.backend.repository.ReservationRepository;
 import com.makerspace.backend.repository.TrainingCompletionRepository;
+import com.makerspace.backend.repository.TrainingWaiverSignatureRepository;
 import com.makerspace.backend.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.EnumSet;
 import java.util.List;
@@ -30,42 +33,56 @@ import java.util.List;
 @Service
 public class ReservationService {
 
-    private static final List<ReservationStatus> BLOCKING_STATUSES =
-            List.of(ReservationStatus.ACTIVE, ReservationStatus.PENDING);
-
     @Autowired private ReservationRepository reservationRepository;
     @Autowired private EquipmentRepository equipmentRepository;
     @Autowired private UserRepository userRepository;
-    @Autowired private TrainingTaskRepository trainingTaskRepository;
-    @Autowired private TrainingWaiverSignatureRepository trainingWaiverSignatureRepository;
     @Autowired private MembershipService membershipService;
     @Autowired private TrainingCompletionRepository trainingCompletionRepository;
+    @Autowired private TrainingWaiverSignatureRepository waiverSignatureRepository;
     @Autowired private EmailService emailService;
+
+    /** How long after signing a waiver it remains valid for use in a booking (minutes). */
+    private static final int WAIVER_VALIDITY_MINUTES = 30;
 
     @Transactional
     public EquipmentReservation create(Long userId, Long equipmentId,
-                                       ZonedDateTime startTime, ZonedDateTime endTime) {
+                                       ZonedDateTime startTime, ZonedDateTime endTime,
+                                       Long waiverSignatureId) {
 
         if (!endTime.isAfter(startTime)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End time must be after start time");
         }
 
+        if (!membershipService.hasActiveMembership(userId)) {
+            throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED,
+                    "An active membership is required to reserve equipment");
+        }
+
         Equipment equipment = equipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Equipment not found"));
-
-            if (!trainingWaiverSignatureRepository.existsByUserIdAndEquipmentId(userId, equipmentId)) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sign the equipment waiver before checkout");
-            }
-
-            if (!membershipService.hasActiveMembership(userId)) {
-                throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED,
-                    "An active membership is required to reserve equipment");
-            }
 
         if (equipment.getStatus() == EquipmentStatus.MAINTENANCE
                 || equipment.getStatus() == EquipmentStatus.RETIRED) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Equipment is not available for reservation (status: " + equipment.getStatus() + ")");
+        }
+
+        // Validate waiver — required for all equipment, every booking.
+        TrainingWaiverSignature waiver = waiverSignatureRepository
+                .findByIdAndUserIdAndEquipmentIdAndReservationIdIsNull(waiverSignatureId, userId, equipmentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "A valid signed waiver is required before booking"));
+
+        if (waiver.getWaiverVersion() != equipment.getCurrentWaiverVersion()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Waiver version is outdated — please sign the current waiver version ("
+                            + equipment.getCurrentWaiverVersion() + ") and try again");
+        }
+
+        LocalDateTime waiverExpiry = waiver.getSignedAt().plusMinutes(WAIVER_VALIDITY_MINUTES);
+        if (LocalDateTime.now().isAfter(waiverExpiry)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Waiver signature has expired — please sign again to proceed");
         }
 
         // If training is required and not yet done, the reservation is created in
@@ -103,21 +120,12 @@ public class ReservationService {
         reservation.setQuotedRateCents(quotedRate);
         reservation.setEstimatedCostCents(estimatedCost);
 
-        if (equipment.isTrainingRequired()) {
-            TrainingTask task = trainingTaskRepository.findByUserIdAndEquipmentId(userId, equipmentId)
-                    .orElse(null);
-            if (task == null) {
-                task = new TrainingTask();
-                task.setUser(user);
-                task.setEquipment(equipment);
-                trainingTaskRepository.save(task);
-            }
-            if (task.getCompletedAt() == null) {
-                reservation.setStatus(ReservationStatus.PENDING);
-            }
-        }
-
         EquipmentReservation saved = reservationRepository.save(reservation);
+
+        // Link waiver to the now-created reservation so it cannot be reused.
+        waiver.setReservation(saved);
+        waiverSignatureRepository.save(waiver);
+
         log.info("Reservation created: id={} user={} equipment={} status={} [{} - {}]",
                 saved.getId(), userId, equipmentId, saved.getStatus(), startTime, endTime);
 
@@ -200,9 +208,9 @@ public class ReservationService {
     public EquipmentReservation extend(Long id, ZonedDateTime newEndTime) {
         EquipmentReservation reservation = findById(id);
 
-        if (!BLOCKING_STATUSES.contains(reservation.getStatus())) {
+        if (reservation.getStatus() != ReservationStatus.ACTIVE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Only active or pending reservations can be extended");
+                    "Only active reservations can be extended");
         }
         if (!newEndTime.isAfter(reservation.getEndTime())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -211,7 +219,7 @@ public class ReservationService {
 
         List<EquipmentReservation> conflicts = reservationRepository.findOverlapping(
                 reservation.getEquipmentId(), reservation.getEndTime(), newEndTime,
-                BLOCKING_STATUSES, reservation.getId());
+                ReservationStatus.ACTIVE, reservation.getId());
         if (!conflicts.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Cannot extend: another reservation starts before the new end time");
@@ -254,9 +262,9 @@ public class ReservationService {
                 && !reservation.getUserId().equals(principal.userId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
         }
-        if (!BLOCKING_STATUSES.contains(reservation.getStatus())) {
+        if (reservation.getStatus() != ReservationStatus.ACTIVE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Only active or pending reservations can be rescheduled");
+                    "Only active reservations can be rescheduled");
         }
         if (!newEndTime.isAfter(newStartTime)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -265,7 +273,7 @@ public class ReservationService {
 
         List<EquipmentReservation> conflicts = reservationRepository.findOverlapping(
                 reservation.getEquipmentId(), newStartTime, newEndTime,
-                BLOCKING_STATUSES, reservation.getId());
+                ReservationStatus.ACTIVE, reservation.getId());
         if (!conflicts.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Equipment is already reserved during that time window");

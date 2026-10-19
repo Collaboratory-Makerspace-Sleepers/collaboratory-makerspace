@@ -1,5 +1,6 @@
 package com.makerspace.backend.config;
 
+import com.makerspace.backend.config.security.DeviceKeyFilter;
 import com.makerspace.backend.config.security.InternalAuthFilter;
 import com.makerspace.backend.model.Permission;
 import com.makerspace.backend.security.JwtAuthFilter;
@@ -36,6 +37,7 @@ public class SecurityConfig {
 
     @Autowired private JwtAuthFilter jwtAuthFilter;
     @Autowired private InternalAuthFilter internalAuthFilter;
+    @Autowired private DeviceKeyFilter deviceKeyFilter;
     @Autowired private OAuth2SuccessHandler oAuth2SuccessHandler;
     @Autowired private OAuth2FailureHandler oAuth2FailureHandler;
 
@@ -179,7 +181,29 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // -------------------------------------------------------------------------
+    // Order 8 — Hardware devices (NFC readers, door controllers)
+    // DeviceKeyFilter resolves X-Device-Key → SCOPE_HARDWARE authority.
+    // No JWT is present for hardware requests, so JwtAuthFilter must not run
+    // before DeviceKeyFilter; we add DeviceKeyFilter first.
+    // -------------------------------------------------------------------------
     @Bean @Order(8)
+    public SecurityFilterChain hardwareChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(deviceKeyFilter, UsernamePasswordAuthenticationFilter.class)
+                .securityMatcher("/api/v1/hardware/**")
+                .anonymous(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().hasAuthority("SCOPE_HARDWARE")
+                )
+                .exceptionHandling(e -> e.authenticationEntryPoint(
+                        (req, res, ex) -> res.sendError(HttpServletResponse.SC_UNAUTHORIZED)));
+        return http.build();
+    }
+
+    @Bean @Order(9)
     public SecurityFilterChain devWebhookChain(HttpSecurity http) throws Exception {
         applyShared(http)
                 .securityMatcher("/api/dev/**")
@@ -190,9 +214,9 @@ public class SecurityConfig {
     }
 
     // -------------------------------------------------------------------------
-    // Order 100 — Fallback
+    // Order 101 — Fallback
     // -------------------------------------------------------------------------
-    @Bean @Order(100)
+    @Bean @Order(101)
     public SecurityFilterChain fallbackChain(HttpSecurity http) throws Exception {
         applyShared(http)
                 .authorizeHttpRequests(auth -> auth

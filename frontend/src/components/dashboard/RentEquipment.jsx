@@ -94,7 +94,7 @@ export default function RentEquipment() {
                 </div>
 
                 <div className="Rent5">
-                  <p>$7/hr</p>
+                  <p>{item.hourlyRateCents > 0 ? `$${(item.hourlyRateCents / 100).toFixed(0)}/hr` : "Free"}</p>
                   <button onClick={() => navigate(`/dashboard/rentequipment/${item.id}`)}>
                     Reserve
                   </button>

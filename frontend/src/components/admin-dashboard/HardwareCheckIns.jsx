@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import RabbitSignaturePad from "./RabbitSignaturePad";
 import "./HardwareCheckIns.css";
 
 export default function HardwareCheckIns() {
   const { authFetch } = useAuth();
+  const [signingId, setSigningId] = useState(null);
+  const [viewSignature, setViewSignature] = useState(null);
   const [checkIns, setCheckIns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -68,6 +71,17 @@ export default function HardwareCheckIns() {
     } catch (err) {
       console.error("Error denying access:", err);
       alert("Failed to deny access: " + err.message);
+    }
+  };
+
+  const showSignature = async (checkInId) => {
+    try {
+      const response = await authFetch(`/api/v1/hardware/checkins/${checkInId}/signature`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      setViewSignature(data.signatureData);
+    } catch (err) {
+      alert("Failed to load signature: " + err.message);
     }
   };
 
@@ -165,12 +179,39 @@ export default function HardwareCheckIns() {
                     )}
                   </td>
                   <td className="Actions">
+                    {!checkIn.waiverSigned && checkIn.status === "NEEDS_WAIVER" && (
+                      <>
+                        <button
+                          className="SignBtn"
+                          onClick={() => setSigningId(checkIn.id)}
+                          title="Collect the member's signature on the waiver"
+                        >
+                          Sign Waiver
+                        </button>
+                        <button
+                          className="DenyBtn"
+                          onClick={() => denyAccess(checkIn.id)}
+                          title="Deny access"
+                        >
+                          Deny
+                        </button>
+                      </>
+                    )}
                     {checkIn.waiverSigned && !checkIn.waiverApprovedByAdmin && (
                       <>
+                        {checkIn.hasSignature && (
+                          <button
+                            className="ViewBtn"
+                            onClick={() => showSignature(checkIn.id)}
+                            title="View signature"
+                          >
+                            View Signature
+                          </button>
+                        )}
                         <button
                           className="ApproveBtn"
                           onClick={() => approveWaiver(checkIn.id)}
-                          title="Approve waiver"
+                          title="Approve waiver and allow access"
                         >
                           Approve
                         </button>
@@ -201,6 +242,28 @@ export default function HardwareCheckIns() {
           </button>
           <span>Page {page + 1}</span>
           <button onClick={() => setPage(page + 1)}>Next</button>
+        </div>
+      )}
+
+      {signingId !== null && (
+        <div className="HWModalOverlay">
+          <div className="HWModal">
+            <RabbitSignaturePad
+              checkInId={signingId}
+              onCancel={() => setSigningId(null)}
+              onSignatureSaved={() => { setSigningId(null); fetchCheckIns(); }}
+            />
+          </div>
+        </div>
+      )}
+
+      {viewSignature && (
+        <div className="HWModalOverlay" onClick={() => setViewSignature(null)}>
+          <div className="HWModal" onClick={(e) => e.stopPropagation()}>
+            <h3>Signature</h3>
+            <img className="HWSignatureImg" src={viewSignature} alt="Signed waiver" />
+            <button className="ViewBtn" onClick={() => setViewSignature(null)}>Close</button>
+          </div>
         </div>
       )}
     </div>

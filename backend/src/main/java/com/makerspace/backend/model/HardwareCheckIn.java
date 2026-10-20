@@ -41,6 +41,9 @@ public class HardwareCheckIn {
     @Column(name = "waiver_approved_by_admin")
     private Boolean waiverApprovedByAdmin = false;
 
+    @Column(name = "signature_data", columnDefinition = "TEXT")
+    private String signatureData;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "approved_by_user_id")
     private User approvedByAdmin;
@@ -151,6 +154,14 @@ public class HardwareCheckIn {
 
     public Boolean getWaiverApprovedByAdmin() {
         return waiverApprovedByAdmin;
+    }
+
+    public String getSignatureData() {
+        return signatureData;
+    }
+
+    public void setSignatureData(String signatureData) {
+        this.signatureData = signatureData;
     }
 
     public void setWaiverApprovedByAdmin(Boolean waiverApprovedByAdmin) {

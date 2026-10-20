@@ -1,5 +1,6 @@
 package com.makerspace.backend.controller;
 
+import com.makerspace.backend.config.security.UserPrincipal;
 import com.makerspace.backend.controller.dto.HardwareCheckInDTO;
 import com.makerspace.backend.model.HardwareCheckIn;
 import com.makerspace.backend.model.User;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -115,12 +117,11 @@ public class HardwareCheckInController {
     @PreAuthorize("hasAuthority('MANAGE_EQUIPMENT')")
     public ResponseEntity<HardwareCheckInDTO> approveWaiver(
             @PathVariable Long checkInId,
-            HttpServletRequest request) {
+            Authentication auth) {
         
         log.info("Approving waiver for check-in {}", checkInId);
         
-        User approver = extractUserFromToken(request);
-        HardwareCheckIn checkIn = checkInService.approveWaiver(checkInId, approver);
+        HardwareCheckIn checkIn = checkInService.approveWaiver(checkInId, currentUserId(auth));
         return ResponseEntity.ok(new HardwareCheckInDTO(checkIn));
     }
 
@@ -162,6 +163,16 @@ public class HardwareCheckInController {
     }
 
     /**
+     * GET /api/v1/hardware/checkins/{checkInId}/signature
+     * Admin: view the signature captured for a waiver
+     */
+    @GetMapping("/checkins/{checkInId}/signature")
+    @PreAuthorize("hasAuthority('MANAGE_EQUIPMENT')")
+    public ResponseEntity<Map<String, String>> getSignature(@PathVariable Long checkInId) {
+        return ResponseEntity.ok(Map.of("signatureData", checkInService.getSignature(checkInId)));
+    }
+
+    /**
      * GET /api/v1/hardware/checkins/{checkInId}
      * Get a specific check-in by ID
      */
@@ -196,6 +207,13 @@ public class HardwareCheckInController {
         // In a real implementation, extract the user from token
         // For now, return a placeholder
         return new User();
+    }
+
+    private Long currentUserId(Authentication auth) {
+        if (auth != null && auth.getPrincipal() instanceof UserPrincipal up) {
+            return up.userId();
+        }
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not authenticated");
     }
 
     private String extractToken(HttpServletRequest request) {

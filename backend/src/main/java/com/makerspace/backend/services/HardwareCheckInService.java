@@ -22,6 +22,8 @@ import java.util.List;
 @Service
 public class HardwareCheckInService {
 
+    private static final int MAX_SIGNATURE_CHARS = 700_000;
+
     @Autowired
     private HardwareCheckInRepository checkInRepository;
 
@@ -108,9 +110,12 @@ public class HardwareCheckInService {
      * Approve waiver for a hardware check-in
      */
     @Transactional
-    public HardwareCheckIn approveWaiver(Long checkInId, User approver) {
+    public HardwareCheckIn approveWaiver(Long checkInId, Long approverId) {
         HardwareCheckIn checkIn = checkInRepository.findById(checkInId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Check-in not found"));
+
+        User approver = userRepository.findById(approverId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Approver not found"));
 
         if (checkIn.getWaiverSigned() == null || !checkIn.getWaiverSigned()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Waiver not yet signed");
@@ -150,10 +155,28 @@ public class HardwareCheckInService {
         HardwareCheckIn checkIn = checkInRepository.findById(checkInId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Check-in not found"));
 
+        if (!signatureData.startsWith("data:image/png;base64,") || signatureData.length() > MAX_SIGNATURE_CHARS) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid signature image");
+        }
+        if (Boolean.TRUE.equals(checkIn.getWaiverApprovedByAdmin())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Waiver already approved");
+        }
+
+        checkIn.setSignatureData(signatureData);
         checkIn.setWaiverSigned(true);
         checkIn.setStatus(HardwareCheckIn.CheckInStatus.WAIVER_SIGNED);
 
         log.info("Waiver signed for check-in {} with rabbit signature", checkInId);
         return checkInRepository.save(checkIn);
+    }
+
+    @Transactional(readOnly = true)
+    public String getSignature(Long checkInId) {
+        HardwareCheckIn checkIn = checkInRepository.findById(checkInId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Check-in not found"));
+        if (checkIn.getSignatureData() == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No signature on file");
+        }
+        return checkIn.getSignatureData();
     }
 }

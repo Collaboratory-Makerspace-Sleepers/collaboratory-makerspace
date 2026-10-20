@@ -33,7 +33,8 @@ export default function LaserWaiver() {
   }, [authFetch, equipmentId]);
 
   useEffect(() => {
-    refresh();
+    const timer = setTimeout(refresh, 0);
+    return () => clearTimeout(timer);
   }, [refresh]);
 
   useEffect(() => {

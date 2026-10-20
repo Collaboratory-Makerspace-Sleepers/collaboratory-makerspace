@@ -18,19 +18,21 @@ export default function LaserWaiver() {
   const [request, setRequest] = useState(null);
   const [signError, setSignError] = useState("");
   const equipmentId = state?.equipmentId;
+  const slotStart = state?.startTime;
   const status = request?.status;
   const awaitingStaff = status === "WAIVER_SIGNED" || status === "NEEDS_WAIVER";
 
   const refresh = useCallback(async () => {
     if (!equipmentId) return;
     try {
-      const res = await authFetch(`/api/v1/hardware/checkins/me/equipment/${equipmentId}`);
+      const query = slotStart ? `?start=${encodeURIComponent(slotStart)}` : "";
+      const res = await authFetch(`/api/v1/hardware/checkins/me/equipment/${equipmentId}${query}`);
       if (res.status === 204) setRequest(null);
       else if (res.ok) setRequest(await res.json());
     } catch {
       // the next poll retries
     }
-  }, [authFetch, equipmentId]);
+  }, [authFetch, equipmentId, slotStart]);
 
   useEffect(() => {
     const timer = setTimeout(refresh, 0);
@@ -161,7 +163,11 @@ export default function LaserWaiver() {
         <div className="laser-waiver-pad-overlay" role="dialog" aria-modal="true">
           <RabbitSignaturePad
             submitUrl="/api/v1/hardware/waiver-requests"
-            extraBody={{ equipmentId: state.equipmentId }}
+            extraBody={{
+              equipmentId: state.equipmentId,
+              startTime: state.startTime,
+              endTime: state.endTime,
+            }}
             onSignatureSaved={handleSigned}
             onCancel={() => setShowPad(false)}
           />

@@ -39,14 +39,32 @@ export default function WaiverStatusPanel() {
   if (items.length === 0) return null;
 
   function open(item) {
-    const saved = sessionStorage.getItem(`pendingWaiverReservation:${item.equipmentId}`);
-    const reservation = saved ? JSON.parse(saved) : null;
-    if (reservation?.startTime && new Date(reservation.startTime) > new Date()) {
-      navigate(`/dashboard/rentequipment/${item.equipmentId}/waiver`, { state: reservation });
+    if (item.requestedStart && item.requestedEnd) {
+      const start = new Date(item.requestedStart);
+      navigate(`/dashboard/rentequipment/${item.equipmentId}/waiver`, {
+        state: {
+          equipmentId: item.equipmentId,
+          equipmentName: item.equipmentName,
+          waiverRequired: true,
+          startTime: item.requestedStart,
+          endTime: item.requestedEnd,
+          displayDate: start.toLocaleDateString(undefined, {
+            weekday: "long", month: "long", day: "numeric", year: "numeric",
+          }),
+          displayTime: start.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }),
+        },
+      });
     } else {
-      // No saved time slot: pick one first; the approved waiver is reused there.
       navigate(`/dashboard/rentequipment/${item.equipmentId}`);
     }
+  }
+
+  function slotText(item) {
+    if (!item.requestedStart) return null;
+    const start = new Date(item.requestedStart);
+    const day = start.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+    const time = (d) => new Date(d).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+    return `${day}, ${time(item.requestedStart)}${item.requestedEnd ? ` – ${time(item.requestedEnd)}` : ""}`;
   }
 
   return (
@@ -63,6 +81,7 @@ export default function WaiverStatusPanel() {
             type="button"
           >
             <span>{item.equipmentName}</span>
+            {slotText(item) && <span className="WaiverSlot">{slotText(item)}</span>}
             <span className="Dash5-sub">{label.text}</span>
           </button>
         );

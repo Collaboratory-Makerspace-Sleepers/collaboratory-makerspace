@@ -44,6 +44,12 @@ public class HardwareCheckIn {
     @Column(name = "signature_data", columnDefinition = "TEXT")
     private String signatureData;
 
+    @Column(name = "requested_start")
+    private Instant requestedStart;
+
+    @Column(name = "requested_end")
+    private Instant requestedEnd;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "approved_by_user_id")
     private User approvedByAdmin;
@@ -154,6 +160,22 @@ public class HardwareCheckIn {
 
     public Boolean getWaiverApprovedByAdmin() {
         return waiverApprovedByAdmin;
+    }
+
+    public Instant getRequestedStart() {
+        return requestedStart;
+    }
+
+    public void setRequestedStart(Instant requestedStart) {
+        this.requestedStart = requestedStart;
+    }
+
+    public Instant getRequestedEnd() {
+        return requestedEnd;
+    }
+
+    public void setRequestedEnd(Instant requestedEnd) {
+        this.requestedEnd = requestedEnd;
     }
 
     public String getSignatureData() {

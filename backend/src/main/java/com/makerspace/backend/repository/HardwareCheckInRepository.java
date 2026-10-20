@@ -37,4 +37,7 @@ public interface HardwareCheckInRepository extends JpaRepository<HardwareCheckIn
 
     java.util.List<HardwareCheckIn> findByUserIdAndStatusInAndCheckinTimeAfterOrderByCheckinTimeDesc(
             Long userId, java.util.Collection<HardwareCheckIn.CheckInStatus> statuses, java.time.Instant after);
+
+    java.util.List<HardwareCheckIn> findByUserIdAndEquipmentIdAndStatusInOrderByCheckinTimeDesc(
+            Long userId, Long equipmentId, java.util.Collection<HardwareCheckIn.CheckInStatus> statuses);
 }

@@ -187,36 +187,42 @@ public class HardwareCheckInService {
      * lets the reservation waiver page resume at the waiting or approved step.
      */
     @Transactional(readOnly = true)
-    public java.util.Optional<HardwareCheckIn> getLatestForEquipment(Long userId, Long equipmentId) {
-        return checkInRepository.findFirstByUserIdAndEquipmentIdAndStatusInOrderByCheckinTimeDesc(
-                userId, equipmentId, WAIVER_STATUSES);
+    public java.util.Optional<HardwareCheckIn> getLatestForEquipment(
+            Long userId, Long equipmentId, Instant slotStart) {
+        return checkInRepository
+                .findByUserIdAndEquipmentIdAndStatusInOrderByCheckinTimeDesc(userId, equipmentId, WAIVER_STATUSES)
+                .stream()
+                .filter(c -> java.util.Objects.equals(c.getRequestedStart(), slotStart))
+                .findFirst();
     }
 
-    /** The user's most recent waiver request per equipment from the last 7 days, newest first. */
+    /**
+     * The user's waiver requests from the last 7 days, one per equipment and time slot,
+     * newest first. Requests for slots that already ended are left out.
+     */
     @Transactional(readOnly = true)
     public List<HardwareCheckIn> getMyWaiverRequests(Long userId) {
-        java.util.Map<Long, HardwareCheckIn> latest = new java.util.LinkedHashMap<>();
+        Instant now = Instant.now();
+        java.util.Map<String, HardwareCheckIn> latest = new java.util.LinkedHashMap<>();
         for (HardwareCheckIn c : checkInRepository
                 .findByUserIdAndStatusInAndCheckinTimeAfterOrderByCheckinTimeDesc(
-                        userId, WAIVER_STATUSES,
-                        Instant.now().minus(7, java.time.temporal.ChronoUnit.DAYS))) {
-            latest.putIfAbsent(c.getEquipment().getId(), c);
+                        userId, WAIVER_STATUSES, now.minus(7, java.time.temporal.ChronoUnit.DAYS))) {
+            if (c.getRequestedEnd() != null && c.getRequestedEnd().isBefore(now)) continue;
+            latest.putIfAbsent(c.getEquipment().getId() + "|" + c.getRequestedStart(), c);
         }
         return new java.util.ArrayList<>(latest.values());
     }
 
     /**
-     * Records a waiver signed from the reservation flow so it shows up for staff on the
-     * hardware dashboard. Reuses an open or approved request instead of duplicating it.
+     * Records a waiver signed from the reservation flow for a specific time slot so it shows
+     * up for staff on the hardware dashboard. Reuses the open or approved request for the
+     * same equipment and slot; a different slot gets its own request.
      */
     @Transactional
-    public HardwareCheckIn submitWaiver(Long userId, Long equipmentId, String signatureData) {
-        HardwareCheckIn existing = checkInRepository
-                .findFirstByUserIdAndEquipmentIdAndStatusInOrderByCheckinTimeDesc(
-                        userId, equipmentId,
-                        List.of(HardwareCheckIn.CheckInStatus.NEEDS_WAIVER,
-                                HardwareCheckIn.CheckInStatus.WAIVER_SIGNED,
-                                HardwareCheckIn.CheckInStatus.WAIVER_APPROVED))
+    public HardwareCheckIn submitWaiver(Long userId, Long equipmentId, Instant slotStart,
+                                        Instant slotEnd, String signatureData) {
+        HardwareCheckIn existing = getLatestForEquipment(userId, equipmentId, slotStart)
+                .filter(c -> c.getStatus() != HardwareCheckIn.CheckInStatus.DENIED)
                 .orElse(null);
 
         if (existing != null && existing.getStatus() != HardwareCheckIn.CheckInStatus.NEEDS_WAIVER) {
@@ -232,6 +238,8 @@ public class HardwareCheckInService {
             target = new HardwareCheckIn(user, equipment, "web");
             target.setStatus(HardwareCheckIn.CheckInStatus.NEEDS_WAIVER);
             target.setAccessGranted(false);
+            target.setRequestedStart(slotStart);
+            target.setRequestedEnd(slotEnd);
             target = checkInRepository.save(target);
         }
         return signWaiver(target.getId(), signatureData, userId, false);

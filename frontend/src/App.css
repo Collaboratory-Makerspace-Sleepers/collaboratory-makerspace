@@ -3585,3 +3585,9 @@ p {
   align-items: flex-start;
   justify-content: center;
 }
+
+.WaiverStatusItem .WaiverSlot {
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 500;
+}

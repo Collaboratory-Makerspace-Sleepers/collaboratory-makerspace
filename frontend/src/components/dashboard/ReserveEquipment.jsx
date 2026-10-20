@@ -116,7 +116,6 @@ export default function ReserveEquipment() {
       }),
       displayTime: selectedSlot,
     };
-    sessionStorage.setItem(`pendingWaiverReservation:${id}`, JSON.stringify(reservationState));
     navigate(
       `/dashboard/rentequipment/${id}/${waiverRequired ? "waiver" : "checkout"}`,
       {

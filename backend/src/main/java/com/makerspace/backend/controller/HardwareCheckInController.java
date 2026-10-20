@@ -178,8 +178,9 @@ public class HardwareCheckInController {
      */
     @GetMapping("/checkins/me/equipment/{equipmentId}")
     public ResponseEntity<HardwareCheckInDTO> myWaiverForEquipment(
-            @PathVariable Long equipmentId, Authentication auth) {
-        return checkInService.getLatestForEquipment(currentUserId(auth), equipmentId)
+            @PathVariable Long equipmentId,
+            @RequestParam(required = false) String start, Authentication auth) {
+        return checkInService.getLatestForEquipment(currentUserId(auth), equipmentId, parseInstant(start))
                 .map(c -> ResponseEntity.ok(new HardwareCheckInDTO(c)))
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
@@ -197,7 +198,8 @@ public class HardwareCheckInController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "equipmentId and signatureData are required");
         }
-        HardwareCheckIn checkIn = checkInService.submitWaiver(currentUserId(auth), equipmentId, signatureData);
+        HardwareCheckIn checkIn = checkInService.submitWaiver(currentUserId(auth), equipmentId,
+                parseInstant(body.get("startTime")), parseInstant(body.get("endTime")), signatureData);
         return ResponseEntity.ok(new HardwareCheckInDTO(checkIn));
     }
 
@@ -221,6 +223,15 @@ public class HardwareCheckInController {
                 .anyMatch(a -> "MANAGE_EQUIPMENT".equals(a.getAuthority()));
         return ResponseEntity.ok(new HardwareCheckInDTO(
                 checkInService.getForUser(checkInId, currentUserId(auth), isStaff)));
+    }
+
+    private java.time.Instant parseInstant(Object value) {
+        if (!(value instanceof String text) || text.isBlank()) return null;
+        try {
+            return java.time.Instant.parse(text);
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid date/time");
+        }
     }
 
     private Long getLongFromBody(Map<String, Object> body, String key) {

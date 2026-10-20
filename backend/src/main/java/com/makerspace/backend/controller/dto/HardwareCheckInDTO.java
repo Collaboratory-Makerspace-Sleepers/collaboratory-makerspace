@@ -23,6 +23,8 @@ public class HardwareCheckInDTO {
     private Long approvedByUserId;
     private String approvedByUserName;
     private Instant approvalTime;
+    private Instant requestedStart;
+    private Instant requestedEnd;
 
     public HardwareCheckInDTO(HardwareCheckIn checkIn) {
         this.id = checkIn.getId();
@@ -43,6 +45,8 @@ public class HardwareCheckInDTO {
         this.waiverApprovedByAdmin = checkIn.getWaiverApprovedByAdmin();
         this.hasSignature = checkIn.getSignatureData() != null && !checkIn.getSignatureData().isBlank();
         this.approvalTime = checkIn.getApprovalTime();
+        this.requestedStart = checkIn.getRequestedStart();
+        this.requestedEnd = checkIn.getRequestedEnd();
         
         if (checkIn.getApprovedByAdmin() != null) {
             this.approvedByUserId = checkIn.getApprovedByAdmin().getId();
@@ -56,6 +60,9 @@ public class HardwareCheckInDTO {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
+    public Instant getRequestedStart() { return requestedStart; }
+    public Instant getRequestedEnd() { return requestedEnd; }
 
     public Boolean getHasSignature() { return hasSignature; }
     public void setHasSignature(Boolean hasSignature) { this.hasSignature = hasSignature; }

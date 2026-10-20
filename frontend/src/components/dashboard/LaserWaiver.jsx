@@ -88,6 +88,17 @@ export default function LaserWaiver() {
         <p>Read the waiver and sign before continuing your reservation.</p>
       </header>
 
+      {status === "WAIVER_SIGNED" && (
+        <div className="waiver-waiting-card" role="status">
+          <div className="waiver-waiting-spinner" aria-hidden="true" />
+          <h2>Waiting for staff approval</h2>
+          <p>
+            Your signed waiver was sent to an admin or staff member. Keep this page open —
+            it updates automatically and unlocks checkout once approved.
+          </p>
+        </div>
+      )}
+
       <article className="laser-waiver-document">
         <div className="laser-waiver-box">
           <p className="laser-waiver-intro">

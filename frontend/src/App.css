@@ -3528,3 +3528,41 @@ p {
 .WaiverStatusItem.pending { border-left: 4px solid #e0a800; }
 .WaiverStatusItem.approved { border-left: 4px solid #2e8b57; }
 .WaiverStatusItem.denied { border-left: 4px solid #c0392b; }
+
+.WaiverStatusItem span:first-child {
+  color: #222;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.WaiverStatusItem .Dash5-sub {
+  color: #555;
+}
+
+.waiver-waiting-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0;
+  padding: 24px;
+  text-align: center;
+  background: #fff8e1;
+  border: 1px solid #e0a800;
+  border-radius: 10px;
+  color: #333;
+}
+
+.waiver-waiting-card h2 { margin: 0; color: #222; }
+.waiver-waiting-card p { margin: 0; color: #555; }
+
+.waiver-waiting-spinner {
+  width: 36px;
+  height: 36px;
+  border: 4px solid #f0d98a;
+  border-top-color: #e0a800;
+  border-radius: 50%;
+  animation: waiver-spin 0.9s linear infinite;
+}
+
+@keyframes waiver-spin { to { transform: rotate(360deg); } }

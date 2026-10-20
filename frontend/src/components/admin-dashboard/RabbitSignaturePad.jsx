@@ -24,8 +24,8 @@ export default function RabbitSignaturePad({ checkInId, submitUrl, extraBody, on
     const ctx = canvas.getContext("2d");
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = "#111";
 
     setContext(ctx);
   }, []);

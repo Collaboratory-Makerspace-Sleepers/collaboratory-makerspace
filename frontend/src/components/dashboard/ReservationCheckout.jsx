@@ -14,7 +14,7 @@ export default function ReservationCheckout() {
   const [errorMsg, setErrorMsg] = useState("");
 
   // Guard: if navigated here directly without state, go back
-  if (!state?.equipmentId) {
+  if (!state?.equipmentId || !state.startTime || !state.endTime) {
     navigate("/dashboard/rentequipment", { replace: true });
     return null;
   }

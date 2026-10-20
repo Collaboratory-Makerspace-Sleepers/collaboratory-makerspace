@@ -39,9 +39,14 @@ export default function WaiverStatusPanel() {
   if (items.length === 0) return null;
 
   function open(item) {
-    navigate(`/dashboard/rentequipment/${item.equipmentId}/waiver`, {
-      state: { equipmentId: item.equipmentId, waiverRequired: true },
-    });
+    const saved = sessionStorage.getItem(`pendingWaiverReservation:${item.equipmentId}`);
+    const reservation = saved ? JSON.parse(saved) : null;
+    if (reservation?.startTime && new Date(reservation.startTime) > new Date()) {
+      navigate(`/dashboard/rentequipment/${item.equipmentId}/waiver`, { state: reservation });
+    } else {
+      // No saved time slot: pick one first; the approved waiver is reused there.
+      navigate(`/dashboard/rentequipment/${item.equipmentId}`);
+    }
   }
 
   return (

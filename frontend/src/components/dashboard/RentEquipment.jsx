@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import WaiverStatusPanel from "./WaiverStatusPanel";
+import { BookingBadge, BookingDetail } from "./BookingStatus";
 import { useAuth } from "../../context/AuthContext";
 import {
   useDashboard,
@@ -90,10 +91,9 @@ export default function RentEquipment() {
 
               <div className="Rent2">
                 <div className="Rent3">
-                  <div className="Rent4">
-                    <p>Available</p>
-                  </div>
+                  <BookingBadge reservations={reservations} equipmentId={item.id} fallback="Available" />
                   <p>{item.name}</p>
+                  <BookingDetail reservations={reservations} equipmentId={item.id} />
                 </div>
 
                 <div className="Rent5">

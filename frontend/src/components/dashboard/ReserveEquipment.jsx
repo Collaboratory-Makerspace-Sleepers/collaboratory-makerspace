@@ -104,21 +104,23 @@ export default function ReserveEquipment() {
     );
     const end = new Date(start.getTime() + 60 * 60 * 1000);
     const waiverRequired = true;
+    const reservationState = {
+      equipmentId: Number(id),
+      equipmentName: item.name,
+      waiverRequired,
+      trainingRequired: item.trainingRequired,
+      startTime: start.toISOString(),
+      endTime: end.toISOString(),
+      displayDate: selectedDate.toLocaleDateString(undefined, {
+        weekday: "long", month: "long", day: "numeric", year: "numeric",
+      }),
+      displayTime: selectedSlot,
+    };
+    sessionStorage.setItem(`pendingWaiverReservation:${id}`, JSON.stringify(reservationState));
     navigate(
       `/dashboard/rentequipment/${id}/${waiverRequired ? "waiver" : "checkout"}`,
       {
-      state: {
-        equipmentId: Number(id),
-        equipmentName: item.name,
-        waiverRequired,
-        trainingRequired: item.trainingRequired,
-        startTime: start.toISOString(),
-        endTime: end.toISOString(),
-        displayDate: selectedDate.toLocaleDateString(undefined, {
-          weekday: "long", month: "long", day: "numeric", year: "numeric",
-        }),
-        displayTime: selectedSlot,
-      },
+        state: reservationState,
       }
     );
   }

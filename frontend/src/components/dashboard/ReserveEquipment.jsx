@@ -63,6 +63,21 @@ export default function ReserveEquipment() {
     return () => { cancelled = true; };
   }, [authFetch, id, selectedDate]);
 
+  const [monthBooked, setMonthBooked] = useState([]);
+
+  // Booked ranges for the visible month, used to colour days on the calendar.
+  useEffect(() => {
+    let cancelled = false;
+    const from = new Date(viewYear, viewMonth, 1);
+    const to = new Date(viewYear, viewMonth + 1, 1);
+    const query = `from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`;
+    authFetch(`/api/v1/reservations/equipment/${id}/booked?${query}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => { if (!cancelled) setMonthBooked(data); })
+      .catch(() => { if (!cancelled) setMonthBooked([]); });
+    return () => { cancelled = true; };
+  }, [authFetch, id, viewYear, viewMonth]);
+
   function goPrevMonth() {
     setViewMonth((m) => {
       if (m === 0) {
@@ -112,6 +127,17 @@ export default function ReserveEquipment() {
     );
     const end = new Date(start.getTime() + 60 * 60 * 1000);
     return booked.some((b) => new Date(b.startTime) < end && new Date(b.endTime) > start);
+  }
+
+  // "full" when every slot that day is taken, "partial" when at least one is.
+  function dayBookingState(day) {
+    const taken = TIME_SLOTS.filter((time) => {
+      const start = new Date(viewYear, viewMonth, day, SLOT_HOURS[time]);
+      const end = new Date(start.getTime() + 60 * 60 * 1000);
+      return monthBooked.some((b) => new Date(b.startTime) < end && new Date(b.endTime) > start);
+    }).length;
+    if (taken === 0) return null;
+    return taken >= TIME_SLOTS.length ? "full" : "partial";
   }
 
   function slotDisabled(time) {
@@ -199,7 +225,7 @@ export default function ReserveEquipment() {
             ) : (
               <button
                 key={day}
-                disabled={isPastDay(day)}
+                disabled={isPastDay(day) || dayBookingState(day) === "full"}
                 className={
                   isPastDay(day)
                     ? "CalendarDay CalendarDayDisabled"
@@ -208,7 +234,14 @@ export default function ReserveEquipment() {
                       selectedDate.getMonth() === viewMonth &&
                       selectedDate.getDate() === day
                     ? "CalendarDay CalendarDaySelected"
-                    : "CalendarDay"
+                    : `CalendarDay${dayBookingState(day) ? ` CalendarDay-${dayBookingState(day)}` : ""}`
+                }
+                title={
+                  dayBookingState(day) === "full"
+                    ? "Fully booked"
+                    : dayBookingState(day) === "partial"
+                    ? "Some times are booked"
+                    : undefined
                 }
                 onClick={() => {
                   setSelectedDate(new Date(viewYear, viewMonth, day));
@@ -219,6 +252,10 @@ export default function ReserveEquipment() {
               </button>
             )
           )}
+        </div>
+        <div className="CalendarLegend">
+          <span className="legend-partial">Some times booked</span>
+          <span className="legend-full">Fully booked</span>
         </div>
       </div>
 

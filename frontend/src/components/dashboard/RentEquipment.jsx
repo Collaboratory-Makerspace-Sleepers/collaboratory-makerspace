@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import WaiverStatusPanel from "./WaiverStatusPanel";
 import { BookingBadge, BookingDetail } from "./BookingStatus";
+import useInUseNow from "../../hooks/useInUseNow";
 import { useAuth } from "../../context/AuthContext";
 import {
   useDashboard,
@@ -15,6 +16,7 @@ export default function RentEquipment() {
   const navigate = useNavigate();
   const { authFetch } = useAuth();
   const { reservations, loading, error } = useDashboard();
+  const inUseNow = useInUseNow();
 
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState("");
@@ -38,7 +40,11 @@ export default function RentEquipment() {
   }, [authFetch]);
 
   const upcoming = upcomingReservations(reservations);
-  const visible = items.filter((item) =>
+  // Only list what can be booked: not in maintenance/retired and not in use right now.
+  const bookable = items.filter(
+    (item) => (!item.status || item.status === "AVAILABLE") && !inUseNow.includes(item.id)
+  );
+  const visible = bookable.filter((item) =>
     item.name.toLowerCase().includes(search.toLowerCase())
   );
 

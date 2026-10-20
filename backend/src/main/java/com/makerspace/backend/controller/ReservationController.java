@@ -38,6 +38,12 @@ public class ReservationController {
                 reservationService.create(userId, req.equipmentId(), req.startTime(), req.endTime()));
     }
 
+    /** IDs of equipment booked by anyone right now, so lists can show only what is free. */
+    @GetMapping("/in-use-now")
+    public List<Long> inUseNow() {
+        return reservationService.findEquipmentIdsInUseNow();
+    }
+
     /** Booked time ranges only (no user details) so every member can see what is taken. */
     @GetMapping("/equipment/{equipmentId}/booked")
     public List<java.util.Map<String, java.time.ZonedDateTime>> bookedSlots(

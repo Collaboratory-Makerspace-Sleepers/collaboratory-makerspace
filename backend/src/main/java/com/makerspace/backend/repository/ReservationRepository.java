@@ -46,4 +46,14 @@ public interface ReservationRepository extends JpaRepository<EquipmentReservatio
             @Param("statuses") Collection<ReservationStatus> statuses,
             @Param("excludeId") Long excludeId
     );
+
+    @Query("""
+            SELECT DISTINCT r.equipmentId FROM EquipmentReservation r
+            WHERE r.status IN :statuses
+              AND r.startTime <= :now
+              AND r.endTime > :now
+            """)
+    List<Long> findEquipmentIdsInUseAt(
+            @Param("statuses") java.util.Collection<ReservationStatus> statuses,
+            @Param("now") ZonedDateTime now);
 }

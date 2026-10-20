@@ -245,6 +245,12 @@ public class ReservationService {
         return reservationRepository.findByEquipmentIdOrderByStartTimeDesc(equipmentId);
     }
 
+    /** Equipment that someone has booked for the current moment. */
+    @Transactional(readOnly = true)
+    public List<Long> findEquipmentIdsInUseNow() {
+        return reservationRepository.findEquipmentIdsInUseAt(BLOCKING_STATUSES, ZonedDateTime.now());
+    }
+
     /** Time ranges already taken (ACTIVE or PENDING) for the equipment within [from, to). */
     @Transactional(readOnly = true)
     public List<EquipmentReservation> findBlocking(Long equipmentId, ZonedDateTime from, ZonedDateTime to) {

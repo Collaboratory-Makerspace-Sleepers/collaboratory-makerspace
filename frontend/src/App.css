@@ -3594,3 +3594,10 @@ p {
 
 .AvailableTimesGrid button:disabled { opacity: 0.55; cursor: not-allowed; }
 .SlotBookedLabel { font-size: 11px; color: #b91c1c; }
+
+.CalendarDay.CalendarDay-partial { background: #fef3c7; border-color: #f59e0b; }
+.CalendarDay.CalendarDay-full { background: #e5e7eb; color: #9ca3af; text-decoration: line-through; }
+.CalendarLegend { display: flex; gap: 16px; margin-top: 8px; font-size: 12px; color: #555; }
+.CalendarLegend span::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 2px; vertical-align: middle; }
+.CalendarLegend .legend-partial::before { background: #fef3c7; border: 1px solid #f59e0b; }
+.CalendarLegend .legend-full::before { background: #e5e7eb; border: 1px solid #9ca3af; }

@@ -109,8 +109,8 @@ function RescheduleCalendar({ reservationId, onConfirm, onCancel, busy }) {
 
 const PENDING_RESERVATION_KEY = "pendingReservationAfterPayment";
 const PENDING_TTL_MS = 2 * 60 * 60 * 1000;
-const RETRY_MS = 2500;
-const MAX_ATTEMPTS = 12;
+const RETRY_MS = 1000;
+const MAX_ATTEMPTS = 8;
 
 function readPendingBooking() {
   try {
@@ -179,7 +179,10 @@ export default function MyReservations() {
       } catch {
         // fall through to the failed state
       }
-      if (!cancelled) setBookingState("failed");
+      if (!cancelled) {
+        sessionStorage.removeItem(PENDING_RESERVATION_KEY);
+        setBookingState("failed");
+      }
     }
 
     attempt(1);

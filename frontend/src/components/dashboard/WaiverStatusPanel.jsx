@@ -60,7 +60,10 @@ export default function WaiverStatusPanel() {
   }
 
   function slotText(item) {
-    if (!item.requestedStart) return null;
+    const fmt = { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" };
+    if (!item.requestedStart) {
+      return item.checkinTime ? `Requested ${new Date(item.checkinTime).toLocaleString(undefined, fmt)}` : null;
+    }
     const start = new Date(item.requestedStart);
     const day = start.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
     const time = (d) => new Date(d).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });

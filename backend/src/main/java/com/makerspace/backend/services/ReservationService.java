@@ -38,6 +38,7 @@ public class ReservationService {
     @Autowired private TrainingTaskRepository trainingTaskRepository;
     @Autowired private TrainingWaiverSignatureRepository trainingWaiverSignatureRepository;
     @Autowired private MembershipService membershipService;
+    @Autowired private com.makerspace.backend.repository.PaymentRecordRepository paymentRecordRepository;
     @Autowired private EmailService emailService;
 
     @Transactional
@@ -55,7 +56,7 @@ public class ReservationService {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sign the equipment waiver before checkout");
             }
 
-            if (!membershipService.hasActiveMembership(userId)) {
+            if (!membershipService.hasActiveMembership(userId) && !hasRecentDayPass(userId)) {
                 throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED,
                     "An active membership is required to reserve equipment");
             }
@@ -251,6 +252,15 @@ public class ReservationService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Equipment not found");
         }
         return reservationRepository.findOverlapping(equipmentId, from, to, BLOCKING_STATUSES, null);
+    }
+
+    /** A successful Day Pass payment in the last 24 hours lets the user book without a membership. */
+    private boolean hasRecentDayPass(Long userId) {
+        ZonedDateTime cutoff = ZonedDateTime.now().minusHours(24);
+        return paymentRecordRepository.findByUserIdOrderByOccurredAtDesc(userId).stream()
+                .anyMatch(p -> p.getKind() == com.makerspace.backend.model.PaymentKind.DAY_PASS
+                        && p.getStatus() == com.makerspace.backend.model.PaymentStatus.SUCCEEDED
+                        && p.getOccurredAt() != null && p.getOccurredAt().isAfter(cutoff));
     }
 
     private boolean hasPermission(UserPrincipal principal, String permission) {

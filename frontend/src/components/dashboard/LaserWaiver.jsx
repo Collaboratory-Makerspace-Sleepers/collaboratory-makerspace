@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import RabbitSignaturePad from "../admin-dashboard/RabbitSignaturePad";
 
 import { WAIVER_SECTIONS } from "./waiverSections";
+
+const POLL_MS = 4000;
 
 export default function LaserWaiver() {
   const { state } = useLocation();
@@ -11,40 +14,67 @@ export default function LaserWaiver() {
   const { authFetch } = useAuth();
   const [signerName, setSignerName] = useState("");
   const [agreed, setAgreed] = useState(false);
-  const [signature, setSignature] = useState(null);
-  const [signing, setSigning] = useState(false);
+  const [showPad, setShowPad] = useState(false);
+  const [request, setRequest] = useState(null);
   const [signError, setSignError] = useState("");
+  const equipmentId = state?.equipmentId;
+  const status = request?.status;
+  const awaitingStaff = status === "WAIVER_SIGNED" || status === "NEEDS_WAIVER";
+
+  const refresh = useCallback(async () => {
+    if (!equipmentId) return;
+    try {
+      const res = await authFetch(`/api/v1/hardware/checkins/me/equipment/${equipmentId}`);
+      if (res.status === 204) setRequest(null);
+      else if (res.ok) setRequest(await res.json());
+    } catch {
+      // the next poll retries
+    }
+  }, [authFetch, equipmentId]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    if (!awaitingStaff) return undefined;
+    const timer = setInterval(() => {
+      if (!document.hidden) refresh();
+    }, POLL_MS);
+    return () => clearInterval(timer);
+  }, [awaitingStaff, refresh]);
 
   if (!state?.equipmentId || !state.waiverRequired) {
     navigate(`/dashboard/rentequipment/${id}`, { replace: true });
     return null;
   }
 
-  async function handleSign(event) {
+  const signed = status === "WAIVER_SIGNED" || status === "WAIVER_APPROVED";
+  const approved = status === "WAIVER_APPROVED";
+  const denied = status === "DENIED";
+  const signature = signed
+    ? { name: signerName.trim() || "Signed", signedAt: new Date().toISOString() }
+    : null;
+
+  async function handleSigned(checkIn) {
+    setShowPad(false);
+    setRequest(checkIn);
+    // Keep the existing training-waiver record so checkout still sees the signature.
+    await authFetch(`/api/v1/training-waivers/${state.equipmentId}/sign`, {
+      method: "POST",
+      body: JSON.stringify({ signerName: signerName.trim() || "Signed with signature pad" }),
+    }).catch(() => {});
+  }
+
+  function handleSign(event) {
     event.preventDefault();
-    const name = signerName.trim();
-    if (!name || !agreed) return;
-    setSigning(true);
+    if (!signerName.trim() || !agreed) return;
     setSignError("");
-    try {
-      const response = await authFetch(`/api/v1/training-waivers/${state.equipmentId}/sign`, {
-        method: "POST",
-        body: JSON.stringify({ signerName: name }),
-      });
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.message || "Could not save your waiver signature.");
-      }
-      setSignature({ name, signedAt: new Date().toISOString() });
-    } catch (err) {
-      setSignError(err.message || "Could not save your waiver signature.");
-    } finally {
-      setSigning(false);
-    }
+    setShowPad(true);
   }
 
   function handleContinueToCheckout() {
-    if (!signature) return;
+    if (!approved) return;
     navigate(`/dashboard/rentequipment/${state.equipmentId}/checkout`, {
       state: { ...state, waiverSigned: true, waiverSignature: signature },
     });
@@ -79,30 +109,52 @@ export default function LaserWaiver() {
             autoComplete="name"
             id="waiver-signer-name"
             onChange={(event) => setSignerName(event.target.value)}
-            readOnly={Boolean(signature)}
+            readOnly={signed}
             required
-            value={signature?.name ?? signerName}
+            value={signerName}
           />
           <label className="laser-waiver-agreement">
             <input
-              checked={agreed}
-              disabled={Boolean(signature)}
+              checked={agreed || signed}
+              disabled={signed}
               onChange={(event) => setAgreed(event.target.checked)}
               type="checkbox"
             />
             <span>I have read and agree to this waiver.</span>
           </label>
-          <button disabled={!signerName.trim() || !agreed || Boolean(signature) || signing} type="submit">
-            {signing ? "Saving signature…" : signature ? "Signed electronically" : "Sign electronically"}
+          <button disabled={!signerName.trim() || !agreed || signed || denied} type="submit">
+            {signed ? "Signed" : "Sign with signature pad"}
           </button>
           {signError && <p className="training-task-error" role="alert">{signError}</p>}
-          {signature && (
+          {status === "WAIVER_SIGNED" && (
             <p className="laser-waiver-signed" role="status">
-              Signed by {signature.name} on {new Date(signature.signedAt).toLocaleString()}.
+              Waiver signed. Waiting for an admin or staff member to approve it — this page
+              updates automatically. You can continue once it is approved.
+            </p>
+          )}
+          {approved && (
+            <p className="laser-waiver-signed" role="status">
+              Approved by staff. You can continue to checkout.
+            </p>
+          )}
+          {denied && (
+            <p className="training-task-error" role="alert">
+              Staff did not approve this waiver. Please see staff for help.
             </p>
           )}
         </form>
       </article>
+
+      {showPad && (
+        <div className="laser-waiver-pad-overlay" role="dialog" aria-modal="true">
+          <RabbitSignaturePad
+            submitUrl="/api/v1/hardware/waiver-requests"
+            extraBody={{ equipmentId: state.equipmentId }}
+            onSignatureSaved={handleSigned}
+            onCancel={() => setShowPad(false)}
+          />
+        </div>
+      )}
 
       <section className="laser-waiver-training">
         <h2>Equipment Training</h2>
@@ -118,10 +170,10 @@ export default function LaserWaiver() {
 
       <button
         className="laser-waiver-finish"
-        disabled={!signature}
+        disabled={!approved}
         onClick={handleContinueToCheckout}
       >
-        Continue to checkout
+        {approved ? "Continue to checkout" : "Waiting for staff approval"}
       </button>
     </div>
   );

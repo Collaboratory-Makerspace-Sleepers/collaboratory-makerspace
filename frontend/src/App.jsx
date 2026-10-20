@@ -23,7 +23,6 @@ import Account from "./components/dashboard/Account";
 import Membership from "./components/dashboard/Membership";
 import MembershipCheckout from "./components/dashboard/MembershipCheckout";
 import MyReservations from "./components/dashboard/MyReservations";
-import HardwareAccess from "./components/dashboard/HardwareAccess";
 import PaymentMethods from "./components/dashboard/PaymentMethods";
 import BillingHistory from "./components/dashboard/BillingHistory";
 import RequireAuth from "./components/RequireAuth";
@@ -56,7 +55,6 @@ function App() {
         <Route path="membership" element={<Membership />} />
         <Route path="membership/checkout" element={<MembershipCheckout />} />
         <Route path="reservations" element={<MyReservations />} />
-        <Route path="hardware-access" element={<HardwareAccess />} />
         <Route
           path="hardware-approvals"
           element={<RequirePermission anyOf={["MANAGE_EQUIPMENT"]}><HardwareCheckIns /></RequirePermission>}

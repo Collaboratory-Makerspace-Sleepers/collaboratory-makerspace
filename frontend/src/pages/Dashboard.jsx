@@ -1,7 +1,5 @@
-import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import useHardwareRequest from "../components/dashboard/useHardwareRequest";
-import "../components/dashboard/HardwareAccess.css";
 
 export function DashboardLanding() {
   const { loadingProfile, hasPermission } = useAuth();
@@ -14,12 +12,8 @@ export function DashboardLanding() {
 }
 
 export default function Dashboard() {
-  const { setToken, hasPermission, authFetch } = useAuth();
+  const { setToken, hasPermission } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const hardware = useHardwareRequest(authFetch, true);
-  const onAccessPage = location.pathname.startsWith("/dashboard/hardware-access");
-  const hwStatus = hardware.current?.status;
 
   function handleSignOut() {
     setToken(null);
@@ -37,7 +31,6 @@ export default function Dashboard() {
             <NavLink to="/dashboard/rentequipment">Rent Equipment</NavLink>
             <NavLink to="/dashboard/bookclasses">Book Classes</NavLink>
             <NavLink to="/dashboard/reservations">My Reservations</NavLink>
-            <NavLink to="/dashboard/hardware-access">Hardware Access</NavLink>
             {hasPermission("MANAGE_EQUIPMENT") && !hasPermission("MANAGE_ROLES") && (
               <NavLink to="/dashboard/hardware-approvals">Approve Hardware</NavLink>
             )}
@@ -66,27 +59,7 @@ export default function Dashboard() {
 
       {/* main screen */}
       <div className="DashMain">
-        {!onAccessPage && (hwStatus === "NEEDS_WAIVER" || hwStatus === "WAIVER_SIGNED") && (
-          <div className="HWBanner" role="status">
-            <span>
-              {hwStatus === "NEEDS_WAIVER"
-                ? `A waiver is required to use ${hardware.current.equipmentName}.`
-                : `Waiting for staff to approve your waiver for ${hardware.current.equipmentName}.`}
-            </span>
-            <NavLink to="/dashboard/hardware-access">
-              {hwStatus === "NEEDS_WAIVER" ? "Sign waiver" : "View status"}
-            </NavLink>
-          </div>
-        )}
-        {!onAccessPage && hardware.justApproved && (
-          <div className="HWBanner approved" role="status">
-            <span>Your waiver for {hardware.current?.equipmentName} was approved.</span>
-            <NavLink to="/dashboard/hardware-access" onClick={hardware.dismissApproved}>
-              Continue
-            </NavLink>
-          </div>
-        )}
-        <Outlet context={{ hardware }} />
+        <Outlet />
       </div>
     </div>
   );

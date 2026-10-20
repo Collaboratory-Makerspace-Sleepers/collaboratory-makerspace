@@ -166,14 +166,32 @@ public class HardwareCheckInController {
     }
 
     /**
-     * GET /api/v1/hardware/checkins/me/current
-     * The signed-in user's latest waiver-related check-in (204 if none).
+     * GET /api/v1/hardware/checkins/me/equipment/{equipmentId}
+     * The signed-in user's latest waiver request for that equipment (204 if none).
      */
-    @GetMapping("/checkins/me/current")
-    public ResponseEntity<HardwareCheckInDTO> myCurrentRequest(Authentication auth) {
-        return checkInService.getCurrentRequest(currentUserId(auth))
+    @GetMapping("/checkins/me/equipment/{equipmentId}")
+    public ResponseEntity<HardwareCheckInDTO> myWaiverForEquipment(
+            @PathVariable Long equipmentId, Authentication auth) {
+        return checkInService.getLatestForEquipment(currentUserId(auth), equipmentId)
                 .map(c -> ResponseEntity.ok(new HardwareCheckInDTO(c)))
                 .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
+    /**
+     * POST /api/v1/hardware/waiver-requests
+     * User signs the equipment waiver during reservation; staff then approve it.
+     */
+    @PostMapping("/waiver-requests")
+    public ResponseEntity<HardwareCheckInDTO> submitWaiver(
+            @RequestBody Map<String, Object> body, Authentication auth) {
+        Long equipmentId = getLongFromBody(body, "equipmentId");
+        Object signature = body.get("signatureData");
+        if (equipmentId == null || !(signature instanceof String signatureData)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "equipmentId and signatureData are required");
+        }
+        HardwareCheckIn checkIn = checkInService.submitWaiver(currentUserId(auth), equipmentId, signatureData);
+        return ResponseEntity.ok(new HardwareCheckInDTO(checkIn));
     }
 
     /**
@@ -191,11 +209,11 @@ public class HardwareCheckInController {
      * Get a specific check-in by ID
      */
     @GetMapping("/checkins/{checkInId}")
-    public ResponseEntity<HardwareCheckInDTO> getCheckIn(@PathVariable Long checkInId) {
-        log.info("Fetching check-in {}", checkInId);
-        
-        // Implementation would fetch from service
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
+    public ResponseEntity<HardwareCheckInDTO> getCheckIn(@PathVariable Long checkInId, Authentication auth) {
+        boolean isStaff = auth.getAuthorities().stream()
+                .anyMatch(a -> "MANAGE_EQUIPMENT".equals(a.getAuthority()));
+        return ResponseEntity.ok(new HardwareCheckInDTO(
+                checkInService.getForUser(checkInId, currentUserId(auth), isStaff)));
     }
 
     private Long getLongFromBody(Map<String, Object> body, String key) {

@@ -7,7 +7,7 @@ import "./RabbitSignaturePad.css";
  * Allows users to draw signatures on a canvas with touch and mouse support.
  * Implements rabbit-style smooth signature drawing.
  */
-export default function RabbitSignaturePad({ checkInId, onSignatureSaved, onCancel }) {
+export default function RabbitSignaturePad({ checkInId, submitUrl, extraBody, onSignatureSaved, onCancel }) {
   const canvasRef = useRef(null);
   const { authFetch } = useAuth();
   const [isDrawing, setIsDrawing] = useState(false);
@@ -75,10 +75,10 @@ export default function RabbitSignaturePad({ checkInId, onSignatureSaved, onCanc
 
     try {
       const response = await authFetch(
-        `/api/v1/hardware/checkins/${checkInId}/sign-waiver`,
+        submitUrl || `/api/v1/hardware/checkins/${checkInId}/sign-waiver`,
         {
           method: "POST",
-          body: JSON.stringify({ signatureData }),
+          body: JSON.stringify({ ...extraBody, signatureData }),
         }
       );
 

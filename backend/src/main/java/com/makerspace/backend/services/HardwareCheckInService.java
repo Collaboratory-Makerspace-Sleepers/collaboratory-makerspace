@@ -24,6 +24,12 @@ public class HardwareCheckInService {
 
     private static final int MAX_SIGNATURE_CHARS = 700_000;
 
+    private static final List<HardwareCheckIn.CheckInStatus> WAIVER_STATUSES = List.of(
+            HardwareCheckIn.CheckInStatus.NEEDS_WAIVER,
+            HardwareCheckIn.CheckInStatus.WAIVER_SIGNED,
+            HardwareCheckIn.CheckInStatus.WAIVER_APPROVED,
+            HardwareCheckIn.CheckInStatus.DENIED);
+
     @Autowired
     private HardwareCheckInRepository checkInRepository;
 
@@ -177,18 +183,55 @@ public class HardwareCheckInService {
     }
 
     /**
-     * The signed-in user's most recent waiver-related check-in from the last 24 hours,
-     * which drives the waiting / approved screens on the user dashboard.
+     * The user's latest waiver request for a piece of equipment (null if none), which
+     * lets the reservation waiver page resume at the waiting or approved step.
      */
     @Transactional(readOnly = true)
-    public java.util.Optional<HardwareCheckIn> getCurrentRequest(Long userId) {
-        return checkInRepository.findFirstByUserIdAndStatusInAndCheckinTimeAfterOrderByCheckinTimeDesc(
-                userId,
-                List.of(HardwareCheckIn.CheckInStatus.NEEDS_WAIVER,
-                        HardwareCheckIn.CheckInStatus.WAIVER_SIGNED,
-                        HardwareCheckIn.CheckInStatus.WAIVER_APPROVED,
-                        HardwareCheckIn.CheckInStatus.DENIED),
-                Instant.now().minus(24, java.time.temporal.ChronoUnit.HOURS));
+    public java.util.Optional<HardwareCheckIn> getLatestForEquipment(Long userId, Long equipmentId) {
+        return checkInRepository.findFirstByUserIdAndEquipmentIdAndStatusInOrderByCheckinTimeDesc(
+                userId, equipmentId, WAIVER_STATUSES);
+    }
+
+    /**
+     * Records a waiver signed from the reservation flow so it shows up for staff on the
+     * hardware dashboard. Reuses an open or approved request instead of duplicating it.
+     */
+    @Transactional
+    public HardwareCheckIn submitWaiver(Long userId, Long equipmentId, String signatureData) {
+        HardwareCheckIn existing = checkInRepository
+                .findFirstByUserIdAndEquipmentIdAndStatusInOrderByCheckinTimeDesc(
+                        userId, equipmentId,
+                        List.of(HardwareCheckIn.CheckInStatus.NEEDS_WAIVER,
+                                HardwareCheckIn.CheckInStatus.WAIVER_SIGNED,
+                                HardwareCheckIn.CheckInStatus.WAIVER_APPROVED))
+                .orElse(null);
+
+        if (existing != null && existing.getStatus() != HardwareCheckIn.CheckInStatus.NEEDS_WAIVER) {
+            return existing;
+        }
+
+        HardwareCheckIn target = existing;
+        if (target == null) {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+            Equipment equipment = equipmentRepository.findById(equipmentId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Equipment not found"));
+            target = new HardwareCheckIn(user, equipment, "web");
+            target.setStatus(HardwareCheckIn.CheckInStatus.NEEDS_WAIVER);
+            target.setAccessGranted(false);
+            target = checkInRepository.save(target);
+        }
+        return signWaiver(target.getId(), signatureData, userId, false);
+    }
+
+    @Transactional(readOnly = true)
+    public HardwareCheckIn getForUser(Long checkInId, Long requesterId, boolean isStaff) {
+        HardwareCheckIn checkIn = checkInRepository.findById(checkInId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Check-in not found"));
+        if (!isStaff && !checkIn.getUser().getId().equals(requesterId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your check-in");
+        }
+        return checkIn;
     }
 
     @Transactional(readOnly = true)

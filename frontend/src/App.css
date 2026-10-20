@@ -3570,3 +3570,18 @@ p {
 .Rent4.booked { background-color: #eff6ff; border-color: #93c5fd; }
 .Rent4.booked p { color: #1d4ed8; }
 .BookingDetail { margin: 4px 0 0; font-size: 12px; color: #444; line-height: 1.4; }
+
+.WaiverStatusGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.WaiverStatusGrid .WaiverStatusItem {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}

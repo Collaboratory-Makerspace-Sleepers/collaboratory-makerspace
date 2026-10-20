@@ -52,6 +52,7 @@ export default function WaiverStatusPanel() {
   return (
     <div className="Dash3 WaiverStatusPanel">
       <p>Waiver Status</p>
+      <div className="WaiverStatusGrid">
       {items.map((item) => {
         const label = LABELS[item.status] ?? { text: item.status, cls: "pending" };
         return (
@@ -66,6 +67,7 @@ export default function WaiverStatusPanel() {
           </button>
         );
       })}
+      </div>
     </div>
   );
 }

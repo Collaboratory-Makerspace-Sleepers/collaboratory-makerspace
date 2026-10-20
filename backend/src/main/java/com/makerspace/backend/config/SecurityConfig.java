@@ -189,6 +189,19 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // Raspberry Pi readers POST check-ins without a user JWT; everything else
+    // under /hardware needs a JWT (fine-grained rules live on the controller).
+    @Bean @Order(9)
+    public SecurityFilterChain hardwareChain(HttpSecurity http) throws Exception {
+        applyShared(http)
+                .securityMatcher("/api/v1/hardware/**")
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(POST, "/api/v1/hardware/checkin").permitAll()
+                        .anyRequest().authenticated()
+                );
+        return http.build();
+    }
+
     // -------------------------------------------------------------------------
     // Order 100 — Fallback
     // -------------------------------------------------------------------------

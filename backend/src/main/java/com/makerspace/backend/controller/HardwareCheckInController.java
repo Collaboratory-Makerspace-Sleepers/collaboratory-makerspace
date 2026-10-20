@@ -149,7 +149,8 @@ public class HardwareCheckInController {
     @PostMapping("/checkins/{checkInId}/sign-waiver")
     public ResponseEntity<HardwareCheckInDTO> signWaiver(
             @PathVariable Long checkInId,
-            @RequestBody Map<String, String> body) {
+            @RequestBody Map<String, String> body,
+            Authentication auth) {
         
         String signatureData = body.get("signatureData");
         if (signatureData == null) {
@@ -158,8 +159,21 @@ public class HardwareCheckInController {
         
         log.info("Signing waiver for check-in {}", checkInId);
         
-        HardwareCheckIn checkIn = checkInService.signWaiver(checkInId, signatureData);
+        boolean isStaff = auth.getAuthorities().stream()
+                .anyMatch(a -> "MANAGE_EQUIPMENT".equals(a.getAuthority()));
+        HardwareCheckIn checkIn = checkInService.signWaiver(checkInId, signatureData, currentUserId(auth), isStaff);
         return ResponseEntity.ok(new HardwareCheckInDTO(checkIn));
+    }
+
+    /**
+     * GET /api/v1/hardware/checkins/me/current
+     * The signed-in user's latest waiver-related check-in (204 if none).
+     */
+    @GetMapping("/checkins/me/current")
+    public ResponseEntity<HardwareCheckInDTO> myCurrentRequest(Authentication auth) {
+        return checkInService.getCurrentRequest(currentUserId(auth))
+                .map(c -> ResponseEntity.ok(new HardwareCheckInDTO(c)))
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     /**

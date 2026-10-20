@@ -31,4 +31,7 @@ public interface HardwareCheckInRepository extends JpaRepository<HardwareCheckIn
     Page<HardwareCheckIn> findPendingWaivers(Pageable pageable);
 
     Optional<HardwareCheckIn> findByDeviceIdAndUserIdOrderByCheckinTimeDesc(String deviceId, Long userId);
+
+    Optional<HardwareCheckIn> findFirstByUserIdAndStatusInAndCheckinTimeAfterOrderByCheckinTimeDesc(
+            Long userId, java.util.Collection<HardwareCheckIn.CheckInStatus> statuses, java.time.Instant after);
 }

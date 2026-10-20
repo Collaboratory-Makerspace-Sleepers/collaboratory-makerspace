@@ -151,10 +151,16 @@ public class HardwareCheckInService {
      * Mark waiver as signed with rabbit signature
      */
     @Transactional
-    public HardwareCheckIn signWaiver(Long checkInId, String signatureData) {
+    public HardwareCheckIn signWaiver(Long checkInId, String signatureData, Long requesterId, boolean isStaff) {
         HardwareCheckIn checkIn = checkInRepository.findById(checkInId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Check-in not found"));
 
+        if (!isStaff && !checkIn.getUser().getId().equals(requesterId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only sign your own waiver");
+        }
+        if (checkIn.getStatus() == HardwareCheckIn.CheckInStatus.DENIED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Access was denied for this check-in");
+        }
         if (!signatureData.startsWith("data:image/png;base64,") || signatureData.length() > MAX_SIGNATURE_CHARS) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid signature image");
         }
@@ -168,6 +174,21 @@ public class HardwareCheckInService {
 
         log.info("Waiver signed for check-in {} with rabbit signature", checkInId);
         return checkInRepository.save(checkIn);
+    }
+
+    /**
+     * The signed-in user's most recent waiver-related check-in from the last 24 hours,
+     * which drives the waiting / approved screens on the user dashboard.
+     */
+    @Transactional(readOnly = true)
+    public java.util.Optional<HardwareCheckIn> getCurrentRequest(Long userId) {
+        return checkInRepository.findFirstByUserIdAndStatusInAndCheckinTimeAfterOrderByCheckinTimeDesc(
+                userId,
+                List.of(HardwareCheckIn.CheckInStatus.NEEDS_WAIVER,
+                        HardwareCheckIn.CheckInStatus.WAIVER_SIGNED,
+                        HardwareCheckIn.CheckInStatus.WAIVER_APPROVED,
+                        HardwareCheckIn.CheckInStatus.DENIED),
+                Instant.now().minus(24, java.time.temporal.ChronoUnit.HOURS));
     }
 
     @Transactional(readOnly = true)

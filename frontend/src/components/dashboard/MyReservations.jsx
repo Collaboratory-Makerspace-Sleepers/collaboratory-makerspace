@@ -107,6 +107,23 @@ function RescheduleCalendar({ reservationId, onConfirm, onCancel, busy }) {
   );
 }
 
+const PENDING_RESERVATION_KEY = "pendingReservationAfterPayment";
+const PENDING_TTL_MS = 2 * 60 * 60 * 1000;
+const RETRY_MS = 2500;
+const MAX_ATTEMPTS = 12;
+
+function readPendingBooking() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(PENDING_RESERVATION_KEY));
+    const r = saved?.reservation;
+    if (!r?.equipmentId || !r.startTime || !r.endTime) return null;
+    if (Date.now() - saved.savedAt > PENDING_TTL_MS) return null;
+    return r;
+  } catch {
+    return null;
+  }
+}
+
 export default function MyReservations() {
   const { authFetch } = useAuth();
   const [reservations, setReservations] = useState([]);
@@ -127,6 +144,50 @@ export default function MyReservations() {
   }, [authFetch]);
 
   useEffect(() => { loadReservations(); }, [loadReservations]);
+
+  // Finish a booking that was waiting on payment. Membership activation is webhook-driven,
+  // so a 402 is retried for a while before asking the user to try again.
+  const [pendingBooking] = useState(readPendingBooking);
+  const [bookingState, setBookingState] = useState(pendingBooking ? "booking" : "none");
+
+  useEffect(() => {
+    if (!pendingBooking) return undefined;
+    let cancelled = false;
+    let timer;
+
+    async function attempt(n) {
+      try {
+        const res = await authFetch("/api/v1/reservations", {
+          method: "POST",
+          body: JSON.stringify({
+            equipmentId: pendingBooking.equipmentId,
+            startTime: pendingBooking.startTime,
+            endTime: pendingBooking.endTime,
+          }),
+        });
+        if (cancelled) return;
+        if (res.ok || res.status === 409) {
+          sessionStorage.removeItem(PENDING_RESERVATION_KEY);
+          setBookingState(res.ok ? "done" : "conflict");
+          loadReservations();
+          return;
+        }
+        if (res.status === 402 && n < MAX_ATTEMPTS) {
+          timer = setTimeout(() => attempt(n + 1), RETRY_MS);
+          return;
+        }
+      } catch {
+        // fall through to the failed state
+      }
+      if (!cancelled) setBookingState("failed");
+    }
+
+    attempt(1);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [authFetch, pendingBooking, loadReservations]);
 
   async function handleCancel(id) {
     setActionError("");
@@ -173,6 +234,27 @@ export default function MyReservations() {
         <p>View, reschedule, or cancel your upcoming bookings.</p>
       </div>
 
+      {bookingState === "booking" && (
+        <div className="waiver-waiting-card" role="status">
+          <div className="waiver-waiting-spinner" aria-hidden="true" />
+          <h2>Finalizing your booking…</h2>
+          <p>
+            Payment received. We're confirming your {pendingBooking?.equipmentName ?? "reservation"}{" "}
+            booking and it will appear below shortly.
+          </p>
+        </div>
+      )}
+      {bookingState === "conflict" && (
+        <p style={{ color: "red" }}>
+          That time slot is no longer available. Please pick a different time.
+        </p>
+      )}
+      {bookingState === "failed" && (
+        <p style={{ color: "red" }}>
+          We couldn't finish booking automatically. Your payment went through — please reserve again
+          from Rent Equipment.
+        </p>
+      )}
       {error && <p>{error}</p>}
       {actionError && <p style={{ color: "red" }}>{actionError}</p>}
       {loading && <p>Loading…</p>}

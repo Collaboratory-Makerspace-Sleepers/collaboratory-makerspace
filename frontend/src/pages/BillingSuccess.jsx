@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 
 const PENDING_RESERVATION_KEY = "pendingReservationAfterPayment";
 const PENDING_RESERVATION_TTL_MS = 2 * 60 * 60 * 1000;
@@ -38,65 +37,23 @@ const CONTENT = {
   },
 };
 
-const RETRY_MS = 2500;
-const MAX_ATTEMPTS = 8;
-
 export default function BillingSuccess() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const { authFetch } = useAuth();
   const type = params.get("type");
   const [pendingReservation] = useState(() =>
     ["membership", "daypass"].includes(type) ? readPendingReservation() : null
   );
-  const [booking, setBooking] = useState(pendingReservation ? "booking" : "none");
 
-  // Create the reservation as soon as payment lands. Membership activation is
-  // webhook-driven, so a 402 is retried for a short while before giving up.
+  // Go straight to My Reservations; it finishes the booking once the membership is active.
   useEffect(() => {
-    if (!pendingReservation) return undefined;
-    let cancelled = false;
-    let timer;
-
-    async function attempt(n) {
-      try {
-        const res = await authFetch("/api/v1/reservations", {
-          method: "POST",
-          body: JSON.stringify({
-            equipmentId: pendingReservation.equipmentId,
-            startTime: pendingReservation.startTime,
-            endTime: pendingReservation.endTime,
-          }),
-        });
-        if (cancelled) return;
-        if (res.ok) {
-          sessionStorage.removeItem(PENDING_RESERVATION_KEY);
-          navigate("/dashboard/reservations", { replace: true });
-          return;
-        }
-        if (res.status === 402 && n < MAX_ATTEMPTS) {
-          timer = setTimeout(() => attempt(n + 1), RETRY_MS);
-          return;
-        }
-      } catch {
-        // fall through to the manual option
-      }
-      if (!cancelled) setBooking("failed");
-    }
-
-    attempt(1);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [authFetch, navigate, pendingReservation]);
+    if (pendingReservation) navigate("/dashboard/reservations", { replace: true });
+  }, [navigate, pendingReservation]);
 
   const content = pendingReservation
     ? {
         title: "Payment received",
-        subtitle: booking === "booking"
-          ? `Booking ${pendingReservation.equipmentName ?? "your reservation"}… you'll be taken to My Reservations.`
-          : "We couldn't finish booking automatically. Continue to confirm your reservation.",
+        subtitle: "Taking you to My Reservations…",
         link: `/dashboard/rentequipment/${pendingReservation.equipmentId}/checkout`,
         label: "Continue reservation",
       }
@@ -115,7 +72,7 @@ export default function BillingSuccess() {
           <p className="signin-subtitle">{content.subtitle}</p>
         </div>
         <div className="sign-in">
-          {booking !== "booking" && (
+          {!pendingReservation && (
           <Link
             to={content.link}
             onClick={() => {

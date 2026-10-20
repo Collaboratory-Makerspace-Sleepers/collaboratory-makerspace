@@ -297,8 +297,10 @@ public class BillingService {
                 .setName(profile.getFirstName() + " " + profile.getLastName())
                 .setEmail(user.getEmail())
                 .build();
+        // Include the parameters in the key: Stripe rejects a reused key with different params.
+        int paramsHash = java.util.Objects.hash(params.getName(), params.getEmail());
         RequestOptions options = RequestOptions.builder()
-                .setIdempotencyKey("cust-create-" + userId)
+                .setIdempotencyKey("cust-create-" + userId + "-" + Integer.toHexString(paramsHash))
                 .build();
         Customer customer = stripeClient.v1().customers().create(params, options);
         user.setStripeCustomerId(customer.getId());

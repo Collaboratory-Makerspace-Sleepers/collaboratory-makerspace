@@ -192,6 +192,19 @@ public class HardwareCheckInService {
                 userId, equipmentId, WAIVER_STATUSES);
     }
 
+    /** The user's most recent waiver request per equipment from the last 7 days, newest first. */
+    @Transactional(readOnly = true)
+    public List<HardwareCheckIn> getMyWaiverRequests(Long userId) {
+        java.util.Map<Long, HardwareCheckIn> latest = new java.util.LinkedHashMap<>();
+        for (HardwareCheckIn c : checkInRepository
+                .findByUserIdAndStatusInAndCheckinTimeAfterOrderByCheckinTimeDesc(
+                        userId, WAIVER_STATUSES,
+                        Instant.now().minus(7, java.time.temporal.ChronoUnit.DAYS))) {
+            latest.putIfAbsent(c.getEquipment().getId(), c);
+        }
+        return new java.util.ArrayList<>(latest.values());
+    }
+
     /**
      * Records a waiver signed from the reservation flow so it shows up for staff on the
      * hardware dashboard. Reuses an open or approved request instead of duplicating it.

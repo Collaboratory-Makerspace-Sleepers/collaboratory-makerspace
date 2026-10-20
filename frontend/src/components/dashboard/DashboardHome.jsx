@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Makerspacecarousel from "../Makerspacecarousel";
 import TrainingTasks from "./TrainingTasks";
+import WaiverStatusPanel from "./WaiverStatusPanel";
 import { useAuth } from "../../context/AuthContext";
 import {
   useDashboard,
@@ -41,6 +42,8 @@ export default function DashboardHome() {
           Welcome back. {todaySentence()} {!loading && !error && reservationSentence(reservations)}
         </p>
       </div>
+
+      <WaiverStatusPanel />
 
       <div className="Dash3">
         <p>Upcoming Reservations</p>

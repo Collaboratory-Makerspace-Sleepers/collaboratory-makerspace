@@ -3516,3 +3516,15 @@ p {
   max-width: 560px;
   width: 92%;
 }
+
+.WaiverStatusItem {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid #ddd;
+  background: #fff;
+}
+
+.WaiverStatusItem.pending { border-left: 4px solid #e0a800; }
+.WaiverStatusItem.approved { border-left: 4px solid #2e8b57; }
+.WaiverStatusItem.denied { border-left: 4px solid #c0392b; }

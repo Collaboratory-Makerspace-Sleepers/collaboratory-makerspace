@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import WaiverStatusPanel from "./WaiverStatusPanel";
 import { useAuth } from "../../context/AuthContext";
 import {
   useDashboard,
@@ -49,6 +50,8 @@ export default function BookClasses() {
           {!loading && !error && reservationSentence(reservations)}
         </p>
       </div>
+
+      <WaiverStatusPanel />
 
       <div className="Dash3">
         <p>Upcoming Classes</p>

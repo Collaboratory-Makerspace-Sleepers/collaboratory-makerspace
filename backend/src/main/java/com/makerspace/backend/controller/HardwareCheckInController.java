@@ -165,6 +165,13 @@ public class HardwareCheckInController {
         return ResponseEntity.ok(new HardwareCheckInDTO(checkIn));
     }
 
+    /** GET /api/v1/hardware/checkins/me/waivers - latest waiver request per equipment. */
+    @GetMapping("/checkins/me/waivers")
+    public ResponseEntity<java.util.List<HardwareCheckInDTO>> myWaivers(Authentication auth) {
+        return ResponseEntity.ok(checkInService.getMyWaiverRequests(currentUserId(auth)).stream()
+                .map(HardwareCheckInDTO::new).toList());
+    }
+
     /**
      * GET /api/v1/hardware/checkins/me/equipment/{equipmentId}
      * The signed-in user's latest waiver request for that equipment (204 if none).

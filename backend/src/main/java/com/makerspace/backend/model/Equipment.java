@@ -36,6 +36,9 @@ public class Equipment {
     @Column(name = "training_required", nullable = false)
     private boolean trainingRequired;
 
+    @Column(name = "requires_waiver", nullable = false)
+    private boolean requiresWaiver = false;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private EquipmentStatus status = EquipmentStatus.AVAILABLE;

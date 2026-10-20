@@ -12,6 +12,7 @@ import AdminUsers from "./components/admin-dashboard/AdminUsers";
 import AdminRentEquipment from "./components/admin-dashboard/AdminRentEquipment";
 import AdminBookClasses from "./components/admin-dashboard/AdminBookClasses";
 import AdminAccount from "./components/admin-dashboard/AdminAccount";
+import HardwareCheckIns from "./components/admin-dashboard/HardwareCheckIns";
 import DashboardHome from "./components/dashboard/DashboardHome";
 import RentEquipment from "./components/dashboard/RentEquipment";
 import ReserveEquipment from "./components/dashboard/ReserveEquipment";
@@ -73,6 +74,7 @@ function App() {
         <Route path="rentequipment" element={<AdminRentEquipment />} />
         <Route path="bookclasses" element={<AdminBookClasses />} />
         <Route path="account" element={<AdminAccount />} />
+        <Route path="hardware" element={<HardwareCheckIns />} />
       </Route>
     </Routes>
   );

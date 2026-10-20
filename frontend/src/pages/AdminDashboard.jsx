@@ -20,7 +20,7 @@ export default function AdminDashboard() {
             <NavLink to="/admin-dashboard/user">Users</NavLink>
             <NavLink to="/admin-dashboard/rentequipment">Rent Equipment</NavLink>
             <NavLink to="/admin-dashboard/bookclasses">Classes</NavLink>
-            
+            <NavLink to="/admin-dashboard/hardware">Hardware Access</NavLink>
           </div>
         </div>
 

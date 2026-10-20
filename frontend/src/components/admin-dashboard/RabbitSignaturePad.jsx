@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 import "./RabbitSignaturePad.css";
 
 /**
@@ -8,6 +9,7 @@ import "./RabbitSignaturePad.css";
  */
 export default function RabbitSignaturePad({ checkInId, onSignatureSaved, onCancel }) {
   const canvasRef = useRef(null);
+  const { authFetch } = useAuth();
   const [isDrawing, setIsDrawing] = useState(false);
   const [context, setContext] = useState(null);
 
@@ -72,14 +74,10 @@ export default function RabbitSignaturePad({ checkInId, onSignatureSaved, onCanc
     const signatureData = canvas.toDataURL("image/png");
 
     try {
-      const response = await fetch(
+      const response = await authFetch(
         `/api/v1/hardware/checkins/${checkInId}/sign-waiver`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
-          },
           body: JSON.stringify({ signatureData }),
         }
       );

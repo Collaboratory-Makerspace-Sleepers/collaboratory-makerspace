@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
 import "./HardwareCheckIns.css";
 
 export default function HardwareCheckIns() {
+  const { authFetch } = useAuth();
   const [checkIns, setCheckIns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -19,13 +21,10 @@ export default function HardwareCheckIns() {
         ? `/api/v1/hardware/checkins/pending-waivers?page=${page}&size=20`
         : `/api/v1/hardware/checkins/recent?page=${page}&size=20`;
 
-      const response = await fetch(endpoint, {
-        headers: {
-          "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
-        },
-      });
+      const response = await authFetch(endpoint);
 
-      if (!response.ok) throw new Error("Failed to fetch check-ins");
+      if (!response.ok) throw new Error(`Failed to fetch check-ins (HTTP ${response.status})`);
+      setError(null);
       
       const data = await response.json();
       setCheckIns(data.content || []);
@@ -39,11 +38,8 @@ export default function HardwareCheckIns() {
 
   const approveWaiver = async (checkInId) => {
     try {
-      const response = await fetch(`/api/v1/hardware/checkins/${checkInId}/approve-waiver`, {
+      const response = await authFetch(`/api/v1/hardware/checkins/${checkInId}/approve-waiver`, {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
-        },
       });
 
       if (!response.ok) throw new Error("Failed to approve waiver");
@@ -61,12 +57,8 @@ export default function HardwareCheckIns() {
     if (!reason) return;
 
     try {
-      const response = await fetch(`/api/v1/hardware/checkins/${checkInId}/deny`, {
+      const response = await authFetch(`/api/v1/hardware/checkins/${checkInId}/deny`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
-        },
         body: JSON.stringify({ reason }),
       });
 

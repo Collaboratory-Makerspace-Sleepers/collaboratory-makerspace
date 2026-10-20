@@ -244,6 +244,15 @@ public class ReservationService {
         return reservationRepository.findByEquipmentIdOrderByStartTimeDesc(equipmentId);
     }
 
+    /** Time ranges already taken (ACTIVE or PENDING) for the equipment within [from, to). */
+    @Transactional(readOnly = true)
+    public List<EquipmentReservation> findBlocking(Long equipmentId, ZonedDateTime from, ZonedDateTime to) {
+        if (!equipmentRepository.existsById(equipmentId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Equipment not found");
+        }
+        return reservationRepository.findOverlapping(equipmentId, from, to, BLOCKING_STATUSES, null);
+    }
+
     private boolean hasPermission(UserPrincipal principal, String permission) {
         return principal.authorities().stream()
                 .anyMatch(a -> a.getAuthority().equals(permission));

@@ -47,6 +47,22 @@ export default function ReserveEquipment() {
     };
   }, [authFetch, id]);
 
+  const [booked, setBooked] = useState([]);
+
+  // Load what other members already booked on the chosen day so those slots are blocked.
+  useEffect(() => {
+    if (!selectedDate) return undefined;
+    let cancelled = false;
+    const from = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+    const to = new Date(from.getTime() + 24 * 60 * 60 * 1000);
+    const query = `from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`;
+    authFetch(`/api/v1/reservations/equipment/${id}/booked?${query}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => { if (!cancelled) setBooked(data); })
+      .catch(() => { if (!cancelled) setBooked([]); });
+    return () => { cancelled = true; };
+  }, [authFetch, id, selectedDate]);
+
   function goPrevMonth() {
     setViewMonth((m) => {
       if (m === 0) {
@@ -89,8 +105,17 @@ export default function ReserveEquipment() {
     );
   }
 
+  function slotBooked(time) {
+    if (!selectedDate) return false;
+    const start = new Date(
+      selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), SLOT_HOURS[time]
+    );
+    const end = new Date(start.getTime() + 60 * 60 * 1000);
+    return booked.some((b) => new Date(b.startTime) < end && new Date(b.endTime) > start);
+  }
+
   function slotDisabled(time) {
-    return isTodaySelected() && SLOT_HOURS[time] <= today.getHours();
+    return (isTodaySelected() && SLOT_HOURS[time] <= today.getHours()) || slotBooked(time);
   }
 
   function handleReserve() {
@@ -216,6 +241,7 @@ export default function ReserveEquipment() {
                 }}
               >
                 {time}
+                {slotBooked(time) && <span className="SlotBookedLabel"> · Booked</span>}
               </button>
             ))}
           </div>

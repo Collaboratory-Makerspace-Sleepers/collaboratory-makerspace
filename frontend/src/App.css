@@ -3591,3 +3591,6 @@ p {
   font-size: 12px;
   font-weight: 500;
 }
+
+.AvailableTimesGrid button:disabled { opacity: 0.55; cursor: not-allowed; }
+.SlotBookedLabel { font-size: 11px; color: #b91c1c; }

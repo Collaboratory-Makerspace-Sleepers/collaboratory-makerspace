@@ -3601,3 +3601,15 @@ p {
 .CalendarLegend span::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 2px; vertical-align: middle; }
 .CalendarLegend .legend-partial::before { background: #fef3c7; border: 1px solid #f59e0b; }
 .CalendarLegend .legend-full::before { background: #e5e7eb; border: 1px solid #9ca3af; }
+
+.laser-waiver-rabbitsign {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: #f76902;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+.laser-waiver-hint { margin: 0 0 12px; color: #666; font-size: 0.9rem; }

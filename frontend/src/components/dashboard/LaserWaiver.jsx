@@ -5,6 +5,9 @@ import { useAuth } from "../../context/AuthContext";
 import { WAIVER_SECTIONS } from "./waiverSections";
 
 const POLL_MS = 4000;
+const RABBITSIGN_URL =
+  import.meta.env.VITE_RABBITSIGN_WAIVER_URL ||
+  "https://www.rabbitsign.com/template/link/SzNLl1tmVh80eu086cmInx";
 
 export default function LaserWaiver() {
   const { state } = useLocation();
@@ -133,6 +136,17 @@ export default function LaserWaiver() {
         </div>
 
         <form className="laser-waiver-signature" onSubmit={handleSign}>
+          <a
+            className="laser-waiver-rabbitsign"
+            href={RABBITSIGN_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open the waiver in RabbitSign ↗
+          </a>
+          <p className="laser-waiver-hint">
+            Sign the document in RabbitSign, then type your name below to confirm and notify staff.
+          </p>
           <label htmlFor="waiver-signer-name">Full legal name</label>
           <input
             autoComplete="name"

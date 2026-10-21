@@ -39,7 +39,7 @@ function describeAvailability(equipment, reservations, now) {
   return { label: "Available for walk-ins", reservation: null };
 }
 
-export default function AllEquipment() {
+export default function AllEquipment({ refreshKey = 0 }) {
   const { authFetch } = useAuth();
   const [equipment, setEquipment] = useState([]);
   const [reservations, setReservations] = useState([]);
@@ -84,7 +84,7 @@ export default function AllEquipment() {
 
   useEffect(() => {
     load();
-  }, [load]);
+  }, [load, refreshKey]);
 
   const rows = useMemo(() => {
     const now = new Date();

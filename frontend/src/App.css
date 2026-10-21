@@ -3660,3 +3660,4 @@ p {
 .nu-actions button[type="submit"]:disabled { opacity: 0.6; cursor: default; }
 .nu-actions .nu-cancel { border: 1px solid #d4d4d4; background: #fff; color: #333; }
 .nu-actions .nu-cancel:hover { background: #f5f5f5; }
+.nu-check { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: #333; }

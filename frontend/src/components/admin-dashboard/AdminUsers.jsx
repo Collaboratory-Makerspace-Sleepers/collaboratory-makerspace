@@ -42,7 +42,7 @@ export default function AdminUsers() {
       setMessage(
         data.inviteSent
           ? `Account created. A sign-in code was emailed to ${form.email}.`
-          : `Account created for ${form.email}, but the email could not be delivered. They can still sign in by entering their email on the sign-in page.`
+          : `Account created for ${form.email}, but the email could not be delivered (the mail provider rejected it; with a Mailtrap demo account only the account owner's address works). They can still sign in by entering their email on the sign-in page and the code will be shown/sent the same way.`
       );
       setForm({ fullName: "", email: "" });
       setUsersVersion((v) => v + 1);

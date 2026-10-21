@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 8;
 
 function formatCreatedAt(value) {
   if (!value) return "—";
@@ -18,47 +18,56 @@ const TableIcon = () => (
   </svg>
 );
 
+const TYPE_LABELS = {
+  RESERVATION: "Booked",
+  RESERVATION_CANCELLED: "Cancelled booking",
+  WAIVER: "Waiver",
+  PAYMENT: "Payment",
+  CARD_TAP: "Card tap",
+};
+
+const REFRESH_MS = 15000;
+
 export default function RecentActivity() {
   const { authFetch } = useAuth();
-  const [users, setUsers] = useState([]);
+  const [items, setItems] = useState([]);
   const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedUser, setSelectedUser] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
-    authFetch(`/api/v1/users/activity?page=${page}&size=${PAGE_SIZE}&sort=createdAt,desc`)
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Could not load recent user activity.");
-        return response.json();
-      })
-      .then((result) => {
-        if (cancelled) return;
-        setUsers(Array.isArray(result.content) ? result.content : []);
-        setTotalPages(Number.isInteger(result.totalPages) ? result.totalPages : 0);
-      })
-      .catch((loadError) => {
-        if (!cancelled) setError(loadError.message || "Could not load recent user activity.");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
+    const load = () =>
+      authFetch("/api/v1/users/activity/feed?limit=60")
+        .then(async (response) => {
+          if (!response.ok) throw new Error("Could not load recent user activity.");
+          return response.json();
+        })
+        .then((result) => {
+          if (cancelled) return;
+          setItems(Array.isArray(result) ? result : []);
+          setError("");
+        })
+        .catch((loadError) => {
+          if (!cancelled) setError(loadError.message || "Could not load recent user activity.");
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    load();
+    const timer = setInterval(() => {
+      if (!document.hidden) load();
+    }, REFRESH_MS);
     return () => {
       cancelled = true;
+      clearInterval(timer);
     };
-  }, [authFetch, page]);
+  }, [authFetch]);
 
-  function navigatePage(nextPage) {
-    setError("");
-    setLoading(true);
-    setPage(nextPage);
-  }
-
-  const previousPage = () => navigatePage(Math.max(0, page - 1));
-  const nextPage = () => navigatePage(Math.min(totalPages - 1, page + 1));
+  const totalPages = Math.ceil(items.length / PAGE_SIZE);
+  const visible = items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const previousPage = () => setPage((p) => Math.max(0, p - 1));
+  const nextPage = () => setPage((p) => Math.min(totalPages - 1, p + 1));
 
   return (
     <div className="ra-wrapper">
@@ -93,71 +102,38 @@ export default function RecentActivity() {
         </div>
 
         {loading ? (
-          <p className="ra-state" role="status">Loading users…</p>
+          <p className="ra-state" role="status">Loading activity…</p>
         ) : error ? (
           <p className="ra-state ra-error" role="alert">{error}</p>
-        ) : users.length === 0 ? (
+        ) : items.length === 0 ? (
           <p className="ra-state">No recent activity.</p>
         ) : (
           <div className="ra-table-scroll">
             <table className="ra-table">
               <thead>
                 <tr>
-                  <th>Name</th>
+                  <th>Member</th>
+                  <th>Activity</th>
+                  <th>Details</th>
                   <th>Time</th>
-                  <th>Membership</th>
-                  <th>Allowed</th>
-                  <th>Waiver</th>
-                  <th>Actions</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => {
-                  return (
-                    <tr key={user.id}>
-                      <td>{user.name || user.email || "Unknown user"}</td>
-                      <td>{formatCreatedAt(user.createdAt)}</td>
-                      <td>{user.membership || "None"}</td>
-                      <td>{user.allowed || "Not allowed"}</td>
-                      <td>{user.waiverSigned ? "Signed" : "Not signed"}</td>
-                      <td>
-                        <button className="ra-link" onClick={() => setSelectedUser(user)}>
-                          View Profile
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {visible.map((item, index) => (
+                  <tr key={`${item.type}-${item.time}-${index}`}>
+                    <td>{item.userName || item.userEmail || "Unknown"}</td>
+                    <td>{TYPE_LABELS[item.type] || item.type}</td>
+                    <td>{item.detail}</td>
+                    <td>{formatCreatedAt(item.time)}</td>
+                    <td>{item.status}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         )}
       </div>
-
-      {selectedUser && (
-        <div className="ra-profile-backdrop" onClick={() => setSelectedUser(null)}>
-          <section
-            aria-labelledby="ra-profile-title"
-            aria-modal="true"
-            className="ra-profile-dialog"
-            onClick={(event) => event.stopPropagation()}
-            role="dialog"
-          >
-            <header className="ra-profile-header">
-              <h3 id="ra-profile-title">User Profile</h3>
-              <button onClick={() => setSelectedUser(null)}>Close</button>
-            </header>
-            <dl className="ra-profile-details">
-              <div><dt>Name</dt><dd>{selectedUser.name || "Unknown user"}</dd></div>
-              <div><dt>Email</dt><dd>{selectedUser.email}</dd></div>
-              <div><dt>Membership</dt><dd>{selectedUser.membership || "None"}</dd></div>
-              <div><dt>Allowed</dt><dd>{selectedUser.allowed || "Not allowed"}</dd></div>
-              <div><dt>Waiver</dt><dd>{selectedUser.waiverSigned ? "Signed" : "Not signed"}</dd></div>
-              <div><dt>Joined</dt><dd>{formatCreatedAt(selectedUser.createdAt)}</dd></div>
-            </dl>
-          </section>
-        </div>
-      )}
     </div>
   );
 }

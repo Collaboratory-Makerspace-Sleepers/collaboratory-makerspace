@@ -1,4 +1,5 @@
 import AllEquipment from "./AllEquipment";
+import ReservationsTable from "./ReservationsTable";
 export default function AdminRentEquipment() {
   return (
     <div className="AdUser">
@@ -16,6 +17,10 @@ export default function AdminRentEquipment() {
 
       <div className="AdAct">
         <AllEquipment />
+      </div>
+
+      <div className="AdAct">
+        <ReservationsTable isClass={false} title="Equipment Reservations" />
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import AllClasses from "./AllClasses";
+import ReservationsTable from "./ReservationsTable";
 export default function AdminBookClasses() {
  return (
      <div className="AdUser">
@@ -16,6 +17,10 @@ export default function AdminBookClasses() {
  
        <div className="AdAct">
          <AllClasses />
+       </div>
+
+       <div className="AdAct">
+         <ReservationsTable isClass title="Class Reservations" />
        </div>
      </div>
  )

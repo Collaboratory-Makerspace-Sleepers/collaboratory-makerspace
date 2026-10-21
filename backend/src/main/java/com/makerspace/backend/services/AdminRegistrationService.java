@@ -25,19 +25,29 @@ import java.util.stream.Collectors;
 @Service
 public class AdminRegistrationService {
 
+    private static final Set<String> NON_ELEVATED = Set.of("MEMBER", "GUEST", "STUDENT", "RENTEE");
+
     @Autowired private UserRepository userRepository;
     @Autowired private AppRoleRepository roleRepository;
     @Autowired private RegistrationInviteRepository inviteRepository;
     @Autowired private InviteTokenService inviteTokenService;
     @Autowired private EmailService emailService;
+    @Autowired private OtpService otpService;
 
     @Transactional
-    public PreRegisterResponse preRegister(PreRegisterRequest req, Long adminUserId) {
+    public PreRegisterResponse preRegister(PreRegisterRequest req, Long adminUserId, boolean canAssignElevated) {
         String email = req.email().toLowerCase().strip();
 
         if (userRepository.existsByEmailIncludingDeleted(email)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "An account with this email already exists");
+        }
+
+        Set<AppRole> roles = resolveRoles(req.roleCodes());
+        boolean elevated = roles.stream().anyMatch(r -> !NON_ELEVATED.contains(r.getCode()));
+        if (elevated && !canAssignElevated) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Only administrators can create staff, instructor or admin accounts");
         }
 
         UserProfile profile = new UserProfile();
@@ -50,13 +60,12 @@ public class AdminRegistrationService {
         user.setProfile(profile);
         user.setAccountStatus(AccountStatus.PRE_REGISTERED);
         user.setAuth0Subject(null);
-        user.setRoles(resolveRoles(req.roleCodes()));
+        user.setRoles(roles);
         userRepository.save(user);
 
         boolean invited = false;
         if (req.sendInvite()) {
-            issueAndSendInvite(user, adminUserId);
-            invited = true;
+            invited = issueAndSendInvite(user, adminUserId);
         }
 
         log.info("Pre-registered user {} (id={}) by admin id={}, invite={}", email, user.getId(), adminUserId, invited);
@@ -70,25 +79,29 @@ public class AdminRegistrationService {
         if (user.getAccountStatus() != AccountStatus.PRE_REGISTERED) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Account is already active");
         }
-        issueAndSendInvite(user, adminUserId);
+        if (!issueAndSendInvite(user, adminUserId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "The email could not be sent");
+        }
         log.info("Resent invite for user {} (id={}) by admin id={}", user.getEmail(), userId, adminUserId);
     }
 
-    private void issueAndSendInvite(User user, Long adminUserId) {
-        InviteTokenService.Issued issued = inviteTokenService.issue();
-
-        RegistrationInvite invite = new RegistrationInvite();
-        invite.setUserId(user.getId());
-        invite.setTokenHash(issued.tokenHash());
-        invite.setIntendedEmail(user.getEmail());
-        invite.setExpiresAt(issued.expiresAt());
-        invite.setCreatedBy(adminUserId);
-        inviteRepository.save(invite);
-
+    private boolean issueAndSendInvite(User user, Long adminUserId) {
         String fullName = user.getProfile() != null
-                ? (user.getProfile().getFirstName() + " " + user.getProfile().getLastName()).strip()
+                ? ((user.getProfile().getFirstName() == null ? "" : user.getProfile().getFirstName()) + " "
+                        + (user.getProfile().getLastName() == null ? "" : user.getProfile().getLastName())).strip()
                 : user.getEmail();
-        emailService.sendRegistrationInvite(user.getEmail(), fullName, issued.rawToken());
+        String roleLabel = user.getRoles().stream().map(AppRole::getCode).sorted()
+                .map(c -> c.charAt(0) + c.substring(1).toLowerCase()).collect(Collectors.joining(" / "));
+        if (roleLabel.isBlank()) roleLabel = "member";
+        String code = otpService.issueInviteCode(user.getEmail());
+        try {
+            emailService.sendAccountInvite(user.getEmail(), fullName, roleLabel, code);
+        } catch (RuntimeException e) {
+            // The account exists either way; staff can resend the invite.
+            log.warn("Could not email invite to {}: {}", user.getEmail(), e.getMessage());
+            return false;
+        }
+        return true;
     }
 
     /** Resolves a set of role code strings to AppRole entities, validating each exists. */

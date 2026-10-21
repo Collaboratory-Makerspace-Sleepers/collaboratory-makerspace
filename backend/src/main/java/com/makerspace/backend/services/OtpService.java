@@ -57,6 +57,17 @@ public class OtpService {
     }
 
     /**
+     * Issues a sign-in code for a newly created account. It lives 24h so the person has time to
+     * open the email, and the usual resend cooldown still applies afterwards.
+     */
+    public String issueInviteCode(String email) {
+        String code = String.format("%06d", random.nextInt(1_000_000));
+        redis.opsForValue().set(codeKey(email), code, 24, TimeUnit.HOURS);
+        redis.opsForValue().set(cooldownKey(email), "1", RESEND_COOLDOWN_SECONDS, TimeUnit.SECONDS);
+        return code;
+    }
+
+    /**
      * Returns true and consumes the code if it matches; false otherwise.
      * Consumed codes cannot be reused.
      */

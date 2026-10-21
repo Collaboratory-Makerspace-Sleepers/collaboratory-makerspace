@@ -47,6 +47,11 @@ public class StubEmailService implements EmailService {
     }
 
     @Override
+    public void sendAccountInvite(String toEmail, String fullName, String roleLabel, String code) {
+        log.warn("[STUB] Account invite for {} <{}> as {} — sign-in code: {}", fullName, toEmail, roleLabel, code);
+    }
+
+    @Override
     public void sendPaymentReceipt(String toEmail, String fullName,
             String description, int amountCents, String currency) {
         log.warn("[STUB] Payment receipt for {} <{}> — {}{} for {}",

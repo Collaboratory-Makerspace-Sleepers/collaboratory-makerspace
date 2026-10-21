@@ -102,6 +102,20 @@ public class SmtpEmailService implements EmailService {
     }
 
     @Override
+    public void sendAccountInvite(String toEmail, String fullName, String roleLabel, String code) {
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom(fromAddress);
+        msg.setTo(toEmail);
+        msg.setSubject("You've been added to Collaboratory Makerspace");
+        msg.setText("Hi " + fullName + ",\n\nAn administrator created a " + roleLabel
+                + " account for you.\n\nSign in at " + frontendBaseUrl + "/signin with this email address and the code:\n\n    "
+                + code + "\n\nThe code is valid for 24 hours. After that, enter your email on the sign-in page and we'll send a new one.\n\n"
+                + "— The Collaboratory Makerspace");
+        mailSender.send(msg);
+        log.info("Account invite sent to <{}>", toEmail);
+    }
+
+    @Override
     public void sendPaymentReceipt(String toEmail, String fullName,
             String description, int amountCents, String currency) {
         String amount = String.format("$%.2f %s", amountCents / 100.0, currency.toUpperCase());

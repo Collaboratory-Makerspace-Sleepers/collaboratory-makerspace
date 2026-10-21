@@ -20,16 +20,17 @@ public class AdminRegistrationController {
     @Autowired private UserSecurity userSecurity;
 
     @PostMapping
-    @PreAuthorize("hasRole('STAFF')")
+    @PreAuthorize("hasAuthority('REGISTER_USERS')")
     public ResponseEntity<PreRegisterResponse> preRegister(
             @Valid @RequestBody PreRegisterRequest req,
             Authentication auth) {
-        PreRegisterResponse res = registrationService.preRegister(req, userSecurity.getUserId(auth));
+        PreRegisterResponse res = registrationService.preRegister(req, userSecurity.getUserId(auth),
+                auth.getAuthorities().stream().anyMatch(a -> "MANAGE_ROLES".equals(a.getAuthority())));
         return ResponseEntity.status(HttpStatus.CREATED).body(res);
     }
 
     @PostMapping("/{userId}/resend-invite")
-    @PreAuthorize("hasRole('STAFF')")
+    @PreAuthorize("hasAuthority('REGISTER_USERS')")
     public ResponseEntity<Void> resendInvite(@PathVariable Long userId, Authentication auth) {
         registrationService.resendInvite(userId, userSecurity.getUserId(auth));
         return ResponseEntity.noContent().build();

@@ -26,6 +26,8 @@ public interface EmailService {
     void sendWaiverSigned(String toEmail, String fullName, String equipmentName,
             String signedName, byte[] pdf);
 
+    void sendAccountInvite(String toEmail, String fullName, String roleLabel, String code);
+
     void sendPaymentReceipt(String toEmail, String fullName,
             String description, int amountCents, String currency);
 }

@@ -3661,3 +3661,10 @@ p {
 .nu-actions .nu-cancel { border: 1px solid #d4d4d4; background: #fff; color: #333; }
 .nu-actions .nu-cancel:hover { background: #f5f5f5; }
 .nu-check { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: #333; }
+
+/* Wide Actions column so View Profile / Resend / Delete are not clipped */
+.au-table { min-width: 1000px; }
+.au-table th:last-child { width: 300px; }
+.au-table td:last-child { overflow: visible; }
+.au-table td:last-child .ra-link + .ra-link { margin-left: 12px; }
+.au-table td:last-child .ra-link:last-child { color: #d93025; }

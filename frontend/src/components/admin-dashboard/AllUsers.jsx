@@ -152,7 +152,7 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
         ) : (
           <div className="ra-table-scroll">
             {resendNote && <p className="ra-state" role="status">{resendNote}</p>}
-            <table className="ra-table">
+            <table className="ra-table au-table">
               <thead>
                 <tr>
                   <th>Name</th>

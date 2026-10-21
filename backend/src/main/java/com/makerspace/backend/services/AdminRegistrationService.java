@@ -76,9 +76,6 @@ public class AdminRegistrationService {
     public void resendInvite(Long userId, Long adminUserId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-        if (user.getAccountStatus() != AccountStatus.PRE_REGISTERED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Account is already active");
-        }
         if (!issueAndSendInvite(user, adminUserId)) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "The email could not be sent");
         }

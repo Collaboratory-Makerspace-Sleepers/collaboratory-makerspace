@@ -16,6 +16,7 @@ export default function AdminUsers() {
   const [form, setForm] = useState({ fullName: "", email: "" });
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [createdId, setCreatedId] = useState(null);
   const [usersVersion, setUsersVersion] = useState(0);
   const { authFetch, hasPermission } = useAuth();
   const canAssignElevated = hasPermission("MANAGE_ROLES");
@@ -25,6 +26,21 @@ export default function AdminUsers() {
     setInvite({ role });
     setForm({ fullName: "", email: "" });
     setMessage("");
+  };
+
+  const resend = async () => {
+    setBusy(true);
+    try {
+      const res = await authFetch(`/api/v1/admin/registrations/${createdId.id}/resend-invite`, { method: "POST" });
+      if (res.ok) {
+        setMessage(`Sign-in code emailed to ${createdId.email}.`);
+        setCreatedId(null);
+      } else {
+        setMessage(`Still could not email ${createdId.email}. Check the mail settings, then press Resend again.`);
+      }
+    } finally {
+      setBusy(false);
+    }
   };
 
   const sendInvite = async (event) => {
@@ -44,6 +60,7 @@ export default function AdminUsers() {
           ? `Account created. A sign-in code was emailed to ${form.email}.`
           : `Account created for ${form.email}, but the email could not be delivered (the mail provider rejected it; with a Mailtrap demo account only the account owner's address works). They can still sign in by entering their email on the sign-in page and the code will be shown/sent the same way.`
       );
+      setCreatedId(data.inviteSent ? null : { id: data.id, email: form.email });
       setForm({ fullName: "", email: "" });
       setUsersVersion((v) => v + 1);
     } catch (err) {

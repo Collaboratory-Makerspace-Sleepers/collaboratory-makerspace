@@ -315,6 +315,24 @@ export default function AllEquipment({ refreshKey = 0 }) {
                 <dd><input value={editing.description || ""} onChange={setField("description")} /></dd>
               </div>
               <div>
+                <dt>Image URL</dt>
+                <dd><input value={editing.imageUrl || ""} onChange={setField("imageUrl")} /></dd>
+              </div>
+              <div>
+                <dt>Requires waiver</dt>
+                <dd>
+                  <input type="checkbox" checked={!!editing.requiresWaiver}
+                    onChange={(e) => setEditing((p) => ({ ...p, requiresWaiver: e.target.checked }))} />
+                </dd>
+              </div>
+              <div>
+                <dt>Requires training</dt>
+                <dd>
+                  <input type="checkbox" checked={!!editing.trainingRequired}
+                    onChange={(e) => setEditing((p) => ({ ...p, trainingRequired: e.target.checked }))} />
+                </dd>
+              </div>
+              <div>
                 <dt>Status</dt>
                 <dd>
                   <select value={editing.status} onChange={setField("status")}>

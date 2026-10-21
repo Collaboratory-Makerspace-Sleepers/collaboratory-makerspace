@@ -25,6 +25,24 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
   const [error, setError] = useState("");
   const [resendNote, setResendNote] = useState("");
 
+  const deleteUser = async (user) => {
+    const label = user.email || fullName(user);
+    if (!window.confirm(`Delete ${label}? They will lose access to the makerspace.`)) return;
+    setResendNote("");
+    try {
+      const res = await authFetch(`/api/v1/users/${user.id}`, { method: "DELETE" });
+      if (res.ok) {
+        setUsers((prev) => prev.filter((u) => u.id !== user.id));
+        setResendNote(`Deleted ${label}.`);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setResendNote(data.message || `Could not delete ${label}.`);
+      }
+    } catch {
+      setResendNote("Could not delete the user.");
+    }
+  };
+
   const resendCode = async (user) => {
     setResendNote("");
     try {
@@ -159,6 +177,9 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
                       </button>{" "}
                       <button className="ra-link" onClick={() => resendCode(user)}>
                         Resend code
+                      </button>{" "}
+                      <button className="ra-link" onClick={() => deleteUser(user)}>
+                        Delete
                       </button>
                     </td>
                   </tr>

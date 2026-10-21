@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
-/** IDs of equipment/classes that someone has booked for right now; refreshed every minute. */
+/** IDs of equipment/classes that someone has booked for right now; refreshed every 15 seconds. */
 export default function useInUseNow() {
   const { authFetch } = useAuth();
   const [ids, setIds] = useState([]);
@@ -14,7 +14,7 @@ export default function useInUseNow() {
         .then((data) => { if (!cancelled) setIds(data); })
         .catch(() => {});
     load();
-    const timer = setInterval(load, 60000);
+    const timer = setInterval(load, 15000);
     return () => { cancelled = true; clearInterval(timer); };
   }, [authFetch]);
 

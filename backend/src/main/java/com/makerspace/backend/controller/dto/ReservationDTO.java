@@ -26,9 +26,18 @@ public record ReservationDTO(
                 r.getEquipment().getCategory(),
                 r.getStartTime(),
                 r.getEndTime(),
-                r.getStatus(),
+                effectiveStatus(r),
                 r.getCreatedAt(),
                 r.getCancelledAt()
         );
+    }
+
+    /** A booking whose end time has passed is shown as COMPLETED so the slot reads as finished. */
+    private static ReservationStatus effectiveStatus(EquipmentReservation r) {
+        if (r.getStatus() == ReservationStatus.ACTIVE && r.getEndTime() != null
+                && r.getEndTime().isBefore(ZonedDateTime.now())) {
+            return ReservationStatus.COMPLETED;
+        }
+        return r.getStatus();
     }
 }

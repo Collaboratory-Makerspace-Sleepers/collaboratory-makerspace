@@ -193,10 +193,10 @@ public class HardwareCheckInController {
     public ResponseEntity<HardwareCheckInDTO> submitWaiver(
             @RequestBody Map<String, Object> body, Authentication auth) {
         Long equipmentId = getLongFromBody(body, "equipmentId");
-        Object signature = body.get("signedName");
-        if (equipmentId == null || !(signature instanceof String signedName)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "equipmentId and signedName are required");
+        // The signer defaults to the member's own account name when none is typed.
+        String signedName = body.get("signedName") instanceof String n ? n : null;
+        if (equipmentId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "equipmentId is required");
         }
         HardwareCheckIn checkIn = checkInService.submitWaiver(currentUserId(auth), equipmentId,
                 parseInstant(body.get("startTime")), parseInstant(body.get("endTime")), signedName);

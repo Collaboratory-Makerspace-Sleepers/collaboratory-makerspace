@@ -285,6 +285,9 @@ public class HardwareCheckInService {
             target.setRequestedEnd(slotEnd);
             target = checkInRepository.save(target);
         }
+        if (signedName == null || signedName.isBlank()) {
+            signedName = CardService.displayName(target.getUser());
+        }
         return signWaiver(target.getId(), signedName, userId, false);
     }
 

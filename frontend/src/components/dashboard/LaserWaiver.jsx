@@ -14,8 +14,6 @@ export default function LaserWaiver() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { authFetch } = useAuth();
-  const [signerName, setSignerName] = useState("");
-  const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [request, setRequest] = useState(null);
   const [signError, setSignError] = useState("");
@@ -58,14 +56,15 @@ export default function LaserWaiver() {
   const approved = status === "WAIVER_APPROVED";
   const denied = status === "DENIED";
   const signature = signed
-    ? { name: signerName.trim() || "Signed", signedAt: new Date().toISOString() }
+    ? { name: request?.signedName || "RabbitSign", signedAt: request?.signedAt }
     : null;
 
-  async function handleSign(event) {
-    event.preventDefault();
-    if (!signerName.trim() || !agreed || submitting) return;
+  async function handleOpenRabbitSign() {
+    if (submitting) return;
     setSignError("");
     setSubmitting(true);
+    // Open synchronously so the browser doesn't block the popup.
+    window.open(RABBITSIGN_URL, "_blank", "noopener,noreferrer");
     try {
       const res = await authFetch("/api/v1/hardware/waiver-requests", {
         method: "POST",
@@ -73,19 +72,18 @@ export default function LaserWaiver() {
           equipmentId: state.equipmentId,
           startTime: state.startTime,
           endTime: state.endTime,
-          signedName: signerName.trim(),
         }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setSignError(data.message || "Could not sign the waiver. Please try again.");
+        setSignError(data.message || "Could not submit the waiver. Please try again.");
         return;
       }
       setRequest(await res.json());
       // Keep the existing training-waiver record so checkout still sees the signature.
       await authFetch(`/api/v1/training-waivers/${state.equipmentId}/sign`, {
         method: "POST",
-        body: JSON.stringify({ signerName: signerName.trim() }),
+        body: JSON.stringify({ signerName: "RabbitSign" }),
       }).catch(() => {});
     } catch {
       setSignError("Could not reach the server. Please try again.");
@@ -135,44 +133,27 @@ export default function LaserWaiver() {
           </ol>
         </div>
 
-        <form className="laser-waiver-signature" onSubmit={handleSign}>
-          <a
-            className="laser-waiver-rabbitsign"
-            href={RABBITSIGN_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Open the waiver in RabbitSign ↗
-          </a>
+        <div className="laser-waiver-signature">
           <p className="laser-waiver-hint">
-            Sign the document in RabbitSign, then type your name below to confirm and notify staff.
+            {state.equipmentName}
+            {state.displayDate ? ` · ${state.displayDate}` : ""}
+            {state.displayTime ? ` · ${state.displayTime}` : ""}
           </p>
-          <label htmlFor="waiver-signer-name">Full legal name</label>
-          <input
-            autoComplete="name"
-            id="waiver-signer-name"
-            onChange={(event) => setSignerName(event.target.value)}
-            readOnly={signed}
-            required
-            value={signed && request?.signedName ? request.signedName : signerName}
-          />
-          <label className="laser-waiver-agreement">
-            <input
-              checked={agreed || signed}
-              disabled={signed}
-              onChange={(event) => setAgreed(event.target.checked)}
-              type="checkbox"
-            />
-            <span>I have read and agree to this waiver.</span>
-          </label>
-          <button disabled={!signerName.trim() || !agreed || signed || denied || submitting} type="submit">
-            {signed ? "Signed" : submitting ? "Signing…" : "Sign with RabbitSign"}
-          </button>
+          {!signed && !denied && (
+            <button
+              className="laser-waiver-rabbitsign"
+              disabled={submitting}
+              onClick={handleOpenRabbitSign}
+              type="button"
+            >
+              {submitting ? "Opening…" : "Open the waiver in RabbitSign ↗"}
+            </button>
+          )}
           {signError && <p className="training-task-error" role="alert">{signError}</p>}
           {status === "WAIVER_SIGNED" && (
             <p className="laser-waiver-signed" role="status">
-              Waiver signed. Waiting for an admin or staff member to approve it — this page
-              updates automatically. You can continue once it is approved.
+              Pending staff review. Finish signing in the RabbitSign tab if you haven't —
+              this page updates automatically once staff approve.
             </p>
           )}
           {approved && (
@@ -185,7 +166,7 @@ export default function LaserWaiver() {
               Staff did not approve this waiver. Please see staff for help.
             </p>
           )}
-        </form>
+        </div>
       </article>
 
       <section className="laser-waiver-training">

@@ -3613,3 +3613,50 @@ p {
   text-decoration: none;
 }
 .laser-waiver-hint { margin: 0 0 12px; color: #666; font-size: 0.9rem; }
+
+/* Create user / staff dialog */
+.nu-dialog {
+  width: min(100%, 460px);
+  padding: 28px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.nu-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.nu-header h3 { margin: 0 0 6px; font-size: 1.25rem; color: #1f1f1f; }
+.nu-header p { margin: 0; color: #666; font-size: 0.9rem; line-height: 1.4; }
+.nu-dialog .nu-close {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #f1f1f1;
+  color: #444;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.nu-dialog .nu-close:hover { background: #e2e2e2; }
+.nu-field { display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; font-weight: 600; color: #333; }
+.nu-field input,
+.nu-field select {
+  padding: 10px 12px;
+  border: 1px solid #d4d4d4;
+  border-radius: 8px;
+  background: #fff;
+  color: #1f1f1f;
+  font-size: 1rem;
+  font-weight: 400;
+}
+.nu-field input:focus,
+.nu-field select:focus { outline: 2px solid #f76902; border-color: #f76902; }
+.nu-message { margin: 0; padding: 10px 12px; border-radius: 8px; background: #fff4ec; color: #7a3300; font-size: 0.9rem; }
+.nu-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+.nu-actions button { padding: 10px 18px; border-radius: 8px; font-size: 0.95rem; cursor: pointer; }
+.nu-actions button[type="submit"] { border: none; background: #f76902; color: #fff; font-weight: 600; }
+.nu-actions button[type="submit"]:disabled { opacity: 0.6; cursor: default; }
+.nu-actions .nu-cancel { border: 1px solid #d4d4d4; background: #fff; color: #333; }
+.nu-actions .nu-cancel:hover { background: #f5f5f5; }

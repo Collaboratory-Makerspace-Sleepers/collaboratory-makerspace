@@ -197,6 +197,7 @@ public class SecurityConfig {
                 .securityMatcher("/api/v1/hardware/**")
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(POST, "/api/v1/hardware/checkin").permitAll()
+                        .requestMatchers(POST, "/api/v1/hardware/card-scan").permitAll()
                         .anyRequest().authenticated()
                 );
         return http.build();

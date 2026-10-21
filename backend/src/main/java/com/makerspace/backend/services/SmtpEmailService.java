@@ -79,6 +79,29 @@ public class SmtpEmailService implements EmailService {
     }
 
     @Override
+    public void sendWaiverSigned(String toEmail, String fullName, String equipmentName,
+            String signedName, byte[] pdf) {
+        try {
+            jakarta.mail.internet.MimeMessage msg = mailSender.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper =
+                    new org.springframework.mail.javamail.MimeMessageHelper(msg, true, "UTF-8");
+            helper.setFrom(fromAddress);
+            helper.setTo(toEmail);
+            helper.setSubject("Your signed waiver — " + equipmentName);
+            helper.setText("Hi " + fullName + ",\n\nThanks for signing the waiver for " + equipmentName
+                    + " (signed as " + signedName + "). A copy is attached as a PDF.\n\n"
+                    + "Staff will review it shortly; you'll be able to continue once it's approved.\n\n"
+                    + "— The Collaboratory Makerspace");
+            helper.addAttachment("signed-waiver.pdf",
+                    new org.springframework.core.io.ByteArrayResource(pdf), "application/pdf");
+            mailSender.send(msg);
+        } catch (jakarta.mail.MessagingException e) {
+            throw new IllegalStateException("Could not build waiver email", e);
+        }
+        log.info("Signed waiver PDF sent to <{}>", toEmail);
+    }
+
+    @Override
     public void sendPaymentReceipt(String toEmail, String fullName,
             String description, int amountCents, String currency) {
         String amount = String.format("$%.2f %s", amountCents / 100.0, currency.toUpperCase());

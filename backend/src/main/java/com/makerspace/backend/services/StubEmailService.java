@@ -40,6 +40,13 @@ public class StubEmailService implements EmailService {
     }
 
     @Override
+    public void sendWaiverSigned(String toEmail, String fullName, String equipmentName,
+            String signedName, byte[] pdf) {
+        log.warn("[STUB] Signed waiver PDF ({} bytes) for {} <{}> — {} signed by {}",
+                pdf.length, fullName, toEmail, equipmentName, signedName);
+    }
+
+    @Override
     public void sendPaymentReceipt(String toEmail, String fullName,
             String description, int amountCents, String currency) {
         log.warn("[STUB] Payment receipt for {} <{}> — {}{} for {}",

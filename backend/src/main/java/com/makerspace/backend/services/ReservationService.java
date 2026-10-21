@@ -261,7 +261,7 @@ public class ReservationService {
     }
 
     /** A successful Day Pass payment in the last 24 hours lets the user book without a membership. */
-    private boolean hasRecentDayPass(Long userId) {
+    public boolean hasRecentDayPass(Long userId) {
         ZonedDateTime cutoff = ZonedDateTime.now().minusHours(24);
         return paymentRecordRepository.findByUserIdOrderByOccurredAtDesc(userId).stream()
                 .anyMatch(p -> p.getKind() == com.makerspace.backend.model.PaymentKind.DAY_PASS

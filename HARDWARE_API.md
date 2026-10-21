@@ -341,5 +341,26 @@ curl -X POST http://localhost:8080/api/v1/hardware/checkins/1/approve-waiver \
 4. **Email Notifications:** Notify users of approval/denial
 5. **Device Dashboard:** Show real-time check-in stats on device
 6. **QR Code Generation:** Generate QR codes for equipment quick access
+
+## Card scans (Raspberry Pi)
+
+Each card UID is linked to a member in the admin **Hardware → Cards** tab (or via **Assign card** on an
+unknown tap in **Card taps**). The Pi only sends the UID; membership, training, waiver and permissions are
+evaluated live on every scan, so staff changes apply without rescanning.
+
+```bash
+curl -X POST http://localhost:8080/api/v1/hardware/card-scan \
+  -H 'Content-Type: application/json' \
+  -H 'X-Device-Key: <app.hardware.device-key, if configured>' \
+  -d '{"cardUid":"04:A3:2B:1C","deviceId":"pi-front-door","equipmentId":3}'
+# {"approved":true,"status":"APPROVED","message":"Access granted","memberName":"Zhijun Liang"}
+# {"approved":false,"status":"DENIED","message":"Card not registered","memberName":null}
+```
+
+`equipmentId` is optional (omit for door access). `X-Device-Key` is only enforced when
+`app.hardware.device-key` is set. Staff endpoints (`MANAGE_EQUIPMENT`): `GET/POST /hardware/cards`,
+`PATCH/DELETE /hardware/cards/{id}`, `GET /hardware/card-scans/recent`, `GET /hardware/cards/members?q=`.
+
+Waivers are now signed by typing the member's name (`signedName`), and a PDF copy is emailed to the member.
 7. **API Key Management:** Device authentication via API keys
 8. **Rate Limiting:** Prevent abuse of check-in endpoint

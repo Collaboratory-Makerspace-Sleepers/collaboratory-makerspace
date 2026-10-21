@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import RabbitSignaturePad from "../admin-dashboard/RabbitSignaturePad";
 
 import { WAIVER_SECTIONS } from "./waiverSections";
 
@@ -14,7 +13,7 @@ export default function LaserWaiver() {
   const { authFetch } = useAuth();
   const [signerName, setSignerName] = useState("");
   const [agreed, setAgreed] = useState(false);
-  const [showPad, setShowPad] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [request, setRequest] = useState(null);
   const [signError, setSignError] = useState("");
   const equipmentId = state?.equipmentId;
@@ -59,21 +58,37 @@ export default function LaserWaiver() {
     ? { name: signerName.trim() || "Signed", signedAt: new Date().toISOString() }
     : null;
 
-  async function handleSigned(checkIn) {
-    setShowPad(false);
-    setRequest(checkIn);
-    // Keep the existing training-waiver record so checkout still sees the signature.
-    await authFetch(`/api/v1/training-waivers/${state.equipmentId}/sign`, {
-      method: "POST",
-      body: JSON.stringify({ signerName: signerName.trim() || "Signed with signature pad" }),
-    }).catch(() => {});
-  }
-
-  function handleSign(event) {
+  async function handleSign(event) {
     event.preventDefault();
-    if (!signerName.trim() || !agreed) return;
+    if (!signerName.trim() || !agreed || submitting) return;
     setSignError("");
-    setShowPad(true);
+    setSubmitting(true);
+    try {
+      const res = await authFetch("/api/v1/hardware/waiver-requests", {
+        method: "POST",
+        body: JSON.stringify({
+          equipmentId: state.equipmentId,
+          startTime: state.startTime,
+          endTime: state.endTime,
+          signedName: signerName.trim(),
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setSignError(data.message || "Could not sign the waiver. Please try again.");
+        return;
+      }
+      setRequest(await res.json());
+      // Keep the existing training-waiver record so checkout still sees the signature.
+      await authFetch(`/api/v1/training-waivers/${state.equipmentId}/sign`, {
+        method: "POST",
+        body: JSON.stringify({ signerName: signerName.trim() }),
+      }).catch(() => {});
+    } catch {
+      setSignError("Could not reach the server. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleContinueToCheckout() {
@@ -125,7 +140,7 @@ export default function LaserWaiver() {
             onChange={(event) => setSignerName(event.target.value)}
             readOnly={signed}
             required
-            value={signerName}
+            value={signed && request?.signedName ? request.signedName : signerName}
           />
           <label className="laser-waiver-agreement">
             <input
@@ -136,8 +151,8 @@ export default function LaserWaiver() {
             />
             <span>I have read and agree to this waiver.</span>
           </label>
-          <button disabled={!signerName.trim() || !agreed || signed || denied} type="submit">
-            {signed ? "Signed" : "Sign with signature pad"}
+          <button disabled={!signerName.trim() || !agreed || signed || denied || submitting} type="submit">
+            {signed ? "Signed" : submitting ? "Signing…" : "Sign with RabbitSign"}
           </button>
           {signError && <p className="training-task-error" role="alert">{signError}</p>}
           {status === "WAIVER_SIGNED" && (
@@ -158,21 +173,6 @@ export default function LaserWaiver() {
           )}
         </form>
       </article>
-
-      {showPad && (
-        <div className="laser-waiver-pad-overlay" role="dialog" aria-modal="true">
-          <RabbitSignaturePad
-            submitUrl="/api/v1/hardware/waiver-requests"
-            extraBody={{
-              equipmentId: state.equipmentId,
-              startTime: state.startTime,
-              endTime: state.endTime,
-            }}
-            onSignatureSaved={handleSigned}
-            onCancel={() => setShowPad(false)}
-          />
-        </div>
-      )}
 
       <section className="laser-waiver-training">
         <h2>Equipment Training</h2>

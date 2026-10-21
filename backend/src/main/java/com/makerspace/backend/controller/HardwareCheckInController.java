@@ -152,16 +152,16 @@ public class HardwareCheckInController {
             @RequestBody Map<String, String> body,
             Authentication auth) {
         
-        String signatureData = body.get("signatureData");
-        if (signatureData == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "signatureData is required");
+        String signedName = body.get("signedName");
+        if (signedName == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "signedName is required");
         }
         
         log.info("Signing waiver for check-in {}", checkInId);
         
         boolean isStaff = auth.getAuthorities().stream()
                 .anyMatch(a -> "MANAGE_EQUIPMENT".equals(a.getAuthority()));
-        HardwareCheckIn checkIn = checkInService.signWaiver(checkInId, signatureData, currentUserId(auth), isStaff);
+        HardwareCheckIn checkIn = checkInService.signWaiver(checkInId, signedName, currentUserId(auth), isStaff);
         return ResponseEntity.ok(new HardwareCheckInDTO(checkIn));
     }
 
@@ -193,13 +193,13 @@ public class HardwareCheckInController {
     public ResponseEntity<HardwareCheckInDTO> submitWaiver(
             @RequestBody Map<String, Object> body, Authentication auth) {
         Long equipmentId = getLongFromBody(body, "equipmentId");
-        Object signature = body.get("signatureData");
-        if (equipmentId == null || !(signature instanceof String signatureData)) {
+        Object signature = body.get("signedName");
+        if (equipmentId == null || !(signature instanceof String signedName)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "equipmentId and signatureData are required");
+                    "equipmentId and signedName are required");
         }
         HardwareCheckIn checkIn = checkInService.submitWaiver(currentUserId(auth), equipmentId,
-                parseInstant(body.get("startTime")), parseInstant(body.get("endTime")), signatureData);
+                parseInstant(body.get("startTime")), parseInstant(body.get("endTime")), signedName);
         return ResponseEntity.ok(new HardwareCheckInDTO(checkIn));
     }
 
@@ -209,8 +209,13 @@ public class HardwareCheckInController {
      */
     @GetMapping("/checkins/{checkInId}/signature")
     @PreAuthorize("hasAuthority('MANAGE_EQUIPMENT')")
-    public ResponseEntity<Map<String, String>> getSignature(@PathVariable Long checkInId) {
-        return ResponseEntity.ok(Map.of("signatureData", checkInService.getSignature(checkInId)));
+    public ResponseEntity<Map<String, Object>> getSignature(@PathVariable Long checkInId) {
+        HardwareCheckIn c = checkInService.getSignature(checkInId);
+        Map<String, Object> out = new java.util.HashMap<>();
+        out.put("signedName", c.getSignedName());
+        out.put("signedAt", c.getSignedAt());
+        out.put("signatureData", c.getSignatureData());
+        return ResponseEntity.ok(out);
     }
 
     /**

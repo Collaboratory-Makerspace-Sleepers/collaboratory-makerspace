@@ -44,6 +44,12 @@ public class HardwareCheckIn {
     @Column(name = "signature_data", columnDefinition = "TEXT")
     private String signatureData;
 
+    @Column(name = "signed_name", length = 120)
+    private String signedName;
+
+    @Column(name = "signed_at")
+    private Instant signedAt;
+
     @Column(name = "requested_start")
     private Instant requestedStart;
 
@@ -160,6 +166,22 @@ public class HardwareCheckIn {
 
     public Boolean getWaiverApprovedByAdmin() {
         return waiverApprovedByAdmin;
+    }
+
+    public String getSignedName() {
+        return signedName;
+    }
+
+    public void setSignedName(String signedName) {
+        this.signedName = signedName;
+    }
+
+    public Instant getSignedAt() {
+        return signedAt;
+    }
+
+    public void setSignedAt(Instant signedAt) {
+        this.signedAt = signedAt;
     }
 
     public Instant getRequestedStart() {

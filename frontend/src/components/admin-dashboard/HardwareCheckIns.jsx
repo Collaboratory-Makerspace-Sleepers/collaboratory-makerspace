@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
-import RabbitSignaturePad from "./RabbitSignaturePad";
+import CardScansLive from "./CardScansLive";
+import CardManager from "./CardManager";
 import "./HardwareCheckIns.css";
 
-export default function HardwareCheckIns() {
+function CheckInLog() {
   const { authFetch } = useAuth();
   const [signingId, setSigningId] = useState(null);
   const [viewSignature, setViewSignature] = useState(null);
+  const [signName, setSignName] = useState("");
+  const [signBusy, setSignBusy] = useState(false);
   const [checkIns, setCheckIns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -79,9 +82,29 @@ export default function HardwareCheckIns() {
       const response = await authFetch(`/api/v1/hardware/checkins/${checkInId}/signature`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
-      setViewSignature(data.signatureData);
+      setViewSignature(data);
     } catch (err) {
       alert("Failed to load signature: " + err.message);
+    }
+  };
+
+  const submitSign = async (event) => {
+    event.preventDefault();
+    if (signName.trim().length < 2 || signBusy) return;
+    setSignBusy(true);
+    try {
+      const response = await authFetch(`/api/v1/hardware/checkins/${signingId}/sign-waiver`, {
+        method: "POST",
+        body: JSON.stringify({ signedName: signName.trim() }),
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      setSigningId(null);
+      setSignName("");
+      fetchCheckIns();
+    } catch (err) {
+      alert("Failed to sign waiver: " + err.message);
+    } finally {
+      setSignBusy(false);
     }
   };
 
@@ -248,11 +271,23 @@ export default function HardwareCheckIns() {
       {signingId !== null && (
         <div className="HWModalOverlay">
           <div className="HWModal">
-            <RabbitSignaturePad
-              checkInId={signingId}
-              onCancel={() => setSigningId(null)}
-              onSignatureSaved={() => { setSigningId(null); fetchCheckIns(); }}
-            />
+            <form onSubmit={submitSign}>
+              <h3>Sign waiver</h3>
+              <p>Type the member's full name to sign with RabbitSign.</p>
+              <input
+                className="HWNameInput"
+                autoFocus
+                value={signName}
+                onChange={(e) => setSignName(e.target.value)}
+                placeholder="Full name"
+              />
+              <div className="HWModalActions">
+                <button type="button" className="ViewBtn" onClick={() => setSigningId(null)}>Cancel</button>
+                <button type="submit" className="ViewBtn" disabled={signName.trim().length < 2 || signBusy}>
+                  {signBusy ? "Signing…" : "Sign"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -261,11 +296,51 @@ export default function HardwareCheckIns() {
         <div className="HWModalOverlay" onClick={() => setViewSignature(null)}>
           <div className="HWModal" onClick={(e) => e.stopPropagation()}>
             <h3>Signature</h3>
-            <img className="HWSignatureImg" src={viewSignature} alt="Signed waiver" />
+            {viewSignature.signedName ? (
+              <div className="HWSignatureName">
+                <span className="HWSignatureScript">{viewSignature.signedName}</span>
+                <small>
+                  Signed with RabbitSign
+                  {viewSignature.signedAt ? ` · ${new Date(viewSignature.signedAt).toLocaleString()}` : ""}
+                </small>
+              </div>
+            ) : (
+              <img className="HWSignatureImg" src={viewSignature.signatureData} alt="Signed waiver" />
+            )}
             <button className="ViewBtn" onClick={() => setViewSignature(null)}>Close</button>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+const TABS = [
+  { id: "taps", label: "Card taps" },
+  { id: "cards", label: "Cards" },
+  { id: "log", label: "Waivers & check-ins" },
+];
+
+export default function HardwareCheckIns() {
+  const [tab, setTab] = useState("taps");
+  return (
+    <div className="HardwareTabs">
+      <div className="HWTabBar" role="tablist">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            role="tab"
+            aria-selected={tab === t.id}
+            className={`HWTab ${tab === t.id ? "active" : ""}`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {tab === "taps" && <CardScansLive onAssigned={() => setTab("cards")} />}
+      {tab === "cards" && <CardManager />}
+      {tab === "log" && <CheckInLog />}
     </div>
   );
 }

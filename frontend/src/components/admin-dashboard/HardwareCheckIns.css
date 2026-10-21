@@ -373,3 +373,64 @@
     width: 100%;
   }
 }
+
+.HWSignatureName {
+  background: #000;
+  border-radius: 6px;
+  padding: 24px 16px;
+  margin: 12px 0;
+  text-align: center;
+  color: #fff;
+}
+.HWSignatureScript {
+  display: block;
+  font-family: "Brush Script MT", "Snell Roundhand", "Segoe Script", cursive;
+  font-size: 2.4rem;
+  line-height: 1.2;
+  word-break: break-word;
+}
+.HWSignatureName small { display: block; margin-top: 10px; color: #bbb; }
+.HWNameInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  margin: 8px 0 12px;
+  font-size: 1rem;
+}
+.HWModalActions { display: flex; gap: 8px; justify-content: flex-end; }
+
+.HWTabBar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.HWTab {
+  padding: 8px 16px;
+  border: 1px solid #ccc;
+  border-radius: 999px;
+  background: #fff;
+  color: #222;
+  cursor: pointer;
+  font-weight: 600;
+}
+.HWTab.active { background: #f76902; border-color: #f76902; color: #fff; }
+
+.CardTapBanner {
+  border-radius: 12px;
+  padding: 28px 20px;
+  text-align: center;
+  color: #fff;
+  margin-bottom: 16px;
+  transition: background 0.2s;
+}
+.CardTapBanner.idle { background: #444; }
+.CardTapBanner.ok { background: #1e9e4a; }
+.CardTapBanner.denied { background: #c62828; }
+.CardTapBanner h2 { margin: 0 0 6px; font-size: 2rem; color: #fff; }
+.CardTapBanner p { margin: 0; font-size: 1.1rem; color: #fff; }
+
+.CardTable { width: 100%; border-collapse: collapse; }
+.CardTable th, .CardTable td { text-align: left; padding: 8px; border-bottom: 1px solid #e3e3e3; }
+.CardTable tr.ok td:first-child { border-left: 4px solid #1e9e4a; }
+.CardTable tr.denied td:first-child { border-left: 4px solid #c62828; }
+.CardUid { font-family: ui-monospace, Menlo, monospace; }
+.CardForm { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+.CardForm input, .CardForm select { padding: 8px; }
+.CardMuted { color: #777; }
+.CardActions { display: flex; gap: 6px; flex-wrap: wrap; }

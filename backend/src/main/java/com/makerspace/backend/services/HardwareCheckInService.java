@@ -22,7 +22,6 @@ import java.util.List;
 @Service
 public class HardwareCheckInService {
 
-    private static final int MAX_SIGNATURE_CHARS = 700_000;
 
     private static final List<HardwareCheckIn.CheckInStatus> WAIVER_STATUSES = List.of(
             HardwareCheckIn.CheckInStatus.NEEDS_WAIVER,
@@ -35,6 +34,18 @@ public class HardwareCheckInService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private MembershipService membershipService;
+
+    @Autowired
+    private ReservationService reservationService;
+
+    @Autowired
+    private WaiverPdfService waiverPdfService;
+
+    @Autowired
+    private EmailService emailService;
 
     @Autowired
     private EquipmentRepository equipmentRepository;
@@ -72,8 +83,7 @@ public class HardwareCheckInService {
         }
 
         // Check user permissions via user roles
-        boolean hasAccess = user.getRoles().stream()
-                .anyMatch(role -> role.getCode().equals("ADMIN") || role.getCode().equals("MEMBER"));
+        boolean hasAccess = hasFacilityAccess(user);
 
         checkIn.setStatus(hasAccess ? HardwareCheckIn.CheckInStatus.SUCCESS : HardwareCheckIn.CheckInStatus.FAILED);
         checkIn.setAccessGranted(hasAccess);
@@ -86,6 +96,15 @@ public class HardwareCheckInService {
         }
 
         return checkInRepository.save(checkIn);
+    }
+
+    /** Staff, legacy ADMIN/MEMBER roles, an active membership, or a Day Pass in the last 24h. */
+    public boolean hasFacilityAccess(User user) {
+        boolean roleOk = user.getRoles().stream()
+                .anyMatch(r -> r.getCode().equals("ADMIN") || r.getCode().equals("MEMBER"))
+                || user.effectivePermissions().contains("MANAGE_EQUIPMENT");
+        return roleOk || membershipService.hasActiveMembership(user.getId())
+                || reservationService.hasRecentDayPass(user.getId());
     }
 
     /**
@@ -157,7 +176,7 @@ public class HardwareCheckInService {
      * Mark waiver as signed with rabbit signature
      */
     @Transactional
-    public HardwareCheckIn signWaiver(Long checkInId, String signatureData, Long requesterId, boolean isStaff) {
+    public HardwareCheckIn signWaiver(Long checkInId, String signedNameInput, Long requesterId, boolean isStaff) {
         HardwareCheckIn checkIn = checkInRepository.findById(checkInId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Check-in not found"));
 
@@ -167,19 +186,43 @@ public class HardwareCheckInService {
         if (checkIn.getStatus() == HardwareCheckIn.CheckInStatus.DENIED) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Access was denied for this check-in");
         }
-        if (!signatureData.startsWith("data:image/png;base64,") || signatureData.length() > MAX_SIGNATURE_CHARS) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid signature image");
+        String signedName = signedNameInput == null ? "" : signedNameInput.trim().replaceAll("\\s+", " ");
+        if (signedName.length() < 2 || signedName.length() > 100) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Enter your full name to sign");
         }
         if (Boolean.TRUE.equals(checkIn.getWaiverApprovedByAdmin())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Waiver already approved");
         }
 
-        checkIn.setSignatureData(signatureData);
+        checkIn.setSignedName(signedName);
+        checkIn.setSignedAt(Instant.now());
         checkIn.setWaiverSigned(true);
         checkIn.setStatus(HardwareCheckIn.CheckInStatus.WAIVER_SIGNED);
 
-        log.info("Waiver signed for check-in {} with rabbit signature", checkInId);
-        return checkInRepository.save(checkIn);
+        log.info("Waiver signed for check-in {} by name", checkInId);
+        HardwareCheckIn saved = checkInRepository.save(checkIn);
+        emailSignedWaiver(saved);
+        return saved;
+    }
+
+    /** Emails the signed-waiver PDF in the background; mail problems never block signing. */
+    private void emailSignedWaiver(HardwareCheckIn c) {
+        User user = c.getUser();
+        String email = user.getEmail();
+        String memberName = user.getProfile() != null
+                ? (user.getProfile().getFirstName() + " " + user.getProfile().getLastName()).trim()
+                : email;
+        String equipment = c.getEquipment().getName();
+        String signedName = c.getSignedName();
+        java.time.ZonedDateTime when = c.getSignedAt().atZone(java.time.ZoneId.systemDefault());
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                byte[] pdf = waiverPdfService.build(memberName, email, equipment, signedName, when);
+                emailService.sendWaiverSigned(email, memberName, equipment, signedName, pdf);
+            } catch (Exception e) {
+                log.warn("Could not email signed waiver for check-in {}: {}", c.getId(), e.getMessage());
+            }
+        });
     }
 
     /**
@@ -220,7 +263,7 @@ public class HardwareCheckInService {
      */
     @Transactional
     public HardwareCheckIn submitWaiver(Long userId, Long equipmentId, Instant slotStart,
-                                        Instant slotEnd, String signatureData) {
+                                        Instant slotEnd, String signedName) {
         HardwareCheckIn existing = getLatestForEquipment(userId, equipmentId, slotStart)
                 .filter(c -> c.getStatus() != HardwareCheckIn.CheckInStatus.DENIED)
                 .orElse(null);
@@ -242,7 +285,7 @@ public class HardwareCheckInService {
             target.setRequestedEnd(slotEnd);
             target = checkInRepository.save(target);
         }
-        return signWaiver(target.getId(), signatureData, userId, false);
+        return signWaiver(target.getId(), signedName, userId, false);
     }
 
     @Transactional(readOnly = true)
@@ -256,12 +299,12 @@ public class HardwareCheckInService {
     }
 
     @Transactional(readOnly = true)
-    public String getSignature(Long checkInId) {
+    public HardwareCheckIn getSignature(Long checkInId) {
         HardwareCheckIn checkIn = checkInRepository.findById(checkInId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Check-in not found"));
-        if (checkIn.getSignatureData() == null) {
+        if (checkIn.getSignedName() == null && checkIn.getSignatureData() == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No signature on file");
         }
-        return checkIn.getSignatureData();
+        return checkIn;
     }
 }

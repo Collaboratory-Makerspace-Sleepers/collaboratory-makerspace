@@ -276,7 +276,7 @@ export default function MyReservations() {
               {new Date(r.endTime).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
             </p>
             {r.status === "PENDING" && (
-              <p style={{ color: "#d95a00" }}>
+              <p style={{ color: "#e75710" }}>
                 Pending — watch the training video and check the box in your account to confirm this reservation.
               </p>
             )}

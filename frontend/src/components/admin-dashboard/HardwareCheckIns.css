@@ -163,8 +163,8 @@
 }
 
 .Badge.badge-warning {
-  background: #ffe5cc;
-  color: #cc4400;
+  background: #fcd8b6;
+  color: #a51200;
 }
 
 .Badge.badge-info {
@@ -409,7 +409,7 @@
   cursor: pointer;
   font-weight: 600;
 }
-.HWTab.active { background: #f76902; border-color: #f76902; color: #fff; }
+.HWTab.active { background: #e75710; border-color: #e75710; color: #fff; }
 
 .CardTapBanner {
   border-radius: 12px;

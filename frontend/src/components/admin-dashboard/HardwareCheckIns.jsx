@@ -328,25 +328,12 @@ function CheckInLog() {
         <div className="HWModalOverlay" onClick={() => setViewSignature(null)}>
           <div className="HWModal" onClick={(e) => e.stopPropagation()}>
             <h3>Signature</h3>
-            {viewSignature.signedName ? (
-              <div className="HWSignatureName">
-                <span className="HWSignatureScript">{viewSignature.signedName}</span>
-                <small>
-                  Signed with RabbitSign
-                  {viewSignature.signedAt ? ` · ${new Date(viewSignature.signedAt).toLocaleString()}` : ""}
-                </small>
-              </div>
-            ) : (
-              <img className="HWSignatureImg" src={viewSignature.signatureData} alt="Signed waiver" />
-            )}
             <div className="HWSignedDoc">
-              {viewSignature.hasDocument ? (
+              {viewSignature.hasDocument && (
                 <button className="ViewBtn" onClick={openSignedPdf}>Open signed RabbitSign PDF</button>
-              ) : (
-                <small>No signed PDF attached yet. Download it from RabbitSign and upload it here.</small>
               )}
               <label className="ViewBtn HWUploadBtn">
-                {viewSignature.hasDocument ? "Replace PDF" : "Upload signed PDF"}
+                Upload signed PDF
                 <input type="file" accept="application/pdf" hidden onChange={uploadSignedPdf} />
               </label>
             </div>

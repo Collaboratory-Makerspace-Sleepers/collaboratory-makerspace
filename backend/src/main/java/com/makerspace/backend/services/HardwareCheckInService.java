@@ -310,4 +310,50 @@ public class HardwareCheckInService {
         }
         return checkIn;
     }
+
+    private static final long MAX_DOCUMENT_BYTES = 10L * 1024 * 1024;
+
+    @Autowired
+    private com.makerspace.backend.repository.WaiverDocumentRepository waiverDocumentRepository;
+
+    @Transactional
+    public void attachSignedDocument(Long checkInId, org.springframework.web.multipart.MultipartFile file, Long staffId) {
+        checkInRepository.findById(checkInId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Check-in not found"));
+        if (file == null || file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Choose a PDF to upload");
+        }
+        if (file.getSize() > MAX_DOCUMENT_BYTES) {
+            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "The PDF must be 10 MB or smaller");
+        }
+        byte[] data;
+        try {
+            data = file.getBytes();
+        } catch (java.io.IOException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Could not read the file");
+        }
+        boolean pdf = data.length > 4 && data[0] == '%' && data[1] == 'P' && data[2] == 'D' && data[3] == 'F';
+        if (!pdf) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only PDF files are accepted");
+        }
+        com.makerspace.backend.model.WaiverDocument doc = new com.makerspace.backend.model.WaiverDocument();
+        doc.setCheckInId(checkInId);
+        String name = file.getOriginalFilename() == null ? "waiver.pdf" : file.getOriginalFilename();
+        doc.setFilename(name.replaceAll("[^A-Za-z0-9._ -]", "_"));
+        doc.setContentType("application/pdf");
+        doc.setData(data);
+        doc.setUploadedByUserId(staffId);
+        waiverDocumentRepository.save(doc);
+    }
+
+    @Transactional(readOnly = true)
+    public com.makerspace.backend.model.WaiverDocument getSignedDocument(Long checkInId) {
+        return waiverDocumentRepository.findById(checkInId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No signed document on file"));
+    }
+
+    @Transactional(readOnly = true)
+    public boolean hasSignedDocument(Long checkInId) {
+        return waiverDocumentRepository.existsByCheckInId(checkInId);
+    }
 }

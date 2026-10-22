@@ -3668,3 +3668,6 @@ p {
 .au-table td:last-child { overflow: visible; }
 .au-table td:last-child .ra-link + .ra-link { margin-left: 12px; }
 .au-table td:last-child .ra-link:last-child { color: #d93025; }
+
+.HWSignedDoc { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; margin: 12px 0; }
+.HWUploadBtn { display: inline-block; cursor: pointer; }

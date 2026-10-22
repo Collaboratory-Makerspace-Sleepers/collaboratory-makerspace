@@ -215,7 +215,29 @@ public class HardwareCheckInController {
         out.put("signedName", c.getSignedName());
         out.put("signedAt", c.getSignedAt());
         out.put("signatureData", c.getSignatureData());
+        out.put("hasDocument", checkInService.hasSignedDocument(checkInId));
         return ResponseEntity.ok(out);
+    }
+
+    /** Staff attach the completed RabbitSign PDF to a waiver request. */
+    @PostMapping(value = "/checkins/{checkInId}/signed-document", consumes = "multipart/form-data")
+    @PreAuthorize("hasAuthority('MANAGE_EQUIPMENT')")
+    public ResponseEntity<Void> uploadSignedDocument(
+            @PathVariable Long checkInId,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+            Authentication auth) {
+        checkInService.attachSignedDocument(checkInId, file, currentUserId(auth));
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/checkins/{checkInId}/signed-document")
+    @PreAuthorize("hasAuthority('MANAGE_EQUIPMENT')")
+    public ResponseEntity<byte[]> downloadSignedDocument(@PathVariable Long checkInId) {
+        var doc = checkInService.getSignedDocument(checkInId);
+        return ResponseEntity.ok()
+                .header("Content-Type", doc.getContentType())
+                .header("Content-Disposition", "inline; filename=\"" + doc.getFilename() + "\"")
+                .body(doc.getData());
     }
 
     /**

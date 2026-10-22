@@ -82,9 +82,41 @@ function CheckInLog() {
       const response = await authFetch(`/api/v1/hardware/checkins/${checkInId}/signature`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
-      setViewSignature(data);
+      setViewSignature({ ...data, checkInId });
     } catch (err) {
       alert("Failed to load signature: " + err.message);
+    }
+  };
+
+  const openSignedPdf = async () => {
+    try {
+      const response = await authFetch(`/api/v1/hardware/checkins/${viewSignature.checkInId}/signed-document`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      window.open(URL.createObjectURL(blob), "_blank", "noopener");
+    } catch (err) {
+      alert("Failed to open the signed PDF: " + err.message);
+    }
+  };
+
+  const uploadSignedPdf = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const body = new FormData();
+    body.append("file", file);
+    try {
+      const response = await authFetch(
+        `/api/v1/hardware/checkins/${viewSignature.checkInId}/signed-document`,
+        { method: "POST", body }
+      );
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || `HTTP ${response.status}`);
+      }
+      setViewSignature((prev) => ({ ...prev, hasDocument: true }));
+    } catch (err) {
+      alert("Failed to upload the PDF: " + err.message);
     }
   };
 
@@ -307,6 +339,17 @@ function CheckInLog() {
             ) : (
               <img className="HWSignatureImg" src={viewSignature.signatureData} alt="Signed waiver" />
             )}
+            <div className="HWSignedDoc">
+              {viewSignature.hasDocument ? (
+                <button className="ViewBtn" onClick={openSignedPdf}>Open signed RabbitSign PDF</button>
+              ) : (
+                <small>No signed PDF attached yet. Download it from RabbitSign and upload it here.</small>
+              )}
+              <label className="ViewBtn HWUploadBtn">
+                {viewSignature.hasDocument ? "Replace PDF" : "Upload signed PDF"}
+                <input type="file" accept="application/pdf" hidden onChange={uploadSignedPdf} />
+              </label>
+            </div>
             <button className="ViewBtn" onClick={() => setViewSignature(null)}>Close</button>
           </div>
         </div>

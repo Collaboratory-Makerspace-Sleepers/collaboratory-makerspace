@@ -1,5 +1,6 @@
 package com.makerspace.backend.services;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -10,6 +11,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Service
 public class OtpService {
 
@@ -45,7 +47,24 @@ public class OtpService {
         redis.opsForValue().set(codeKey(email), code, OTP_TTL_MINUTES, TimeUnit.MINUTES);
         redis.opsForValue().set(cooldownKey(email), "1", RESEND_COOLDOWN_SECONDS, TimeUnit.SECONDS);
 
-        emailService.sendOtp(email, code);
+        try {
+            emailService.sendOtp(email, code);
+        } catch (RuntimeException e) {
+            // With a dev code configured, a failed email must not block local sign-in.
+            if (devCode.isBlank()) throw e;
+            log.warn("OTP email to {} failed; dev code is active: {}", email, e.getMessage());
+        }
+    }
+
+    /**
+     * Issues a sign-in code for a newly created account. It lives 24h so the person has time to
+     * open the email, and the usual resend cooldown still applies afterwards.
+     */
+    public String issueInviteCode(String email) {
+        String code = String.format("%06d", random.nextInt(1_000_000));
+        redis.opsForValue().set(codeKey(email), code, 24, TimeUnit.HOURS);
+        redis.opsForValue().set(cooldownKey(email), "1", RESEND_COOLDOWN_SECONDS, TimeUnit.SECONDS);
+        return code;
     }
 
     /**

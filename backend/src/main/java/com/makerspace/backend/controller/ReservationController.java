@@ -39,6 +39,23 @@ public class ReservationController {
                         req.waiverSignatureId()));
     }
 
+    /** IDs of equipment booked by anyone right now, so lists can show only what is free. */
+    @GetMapping("/in-use-now")
+    public List<Long> inUseNow() {
+        return reservationService.findEquipmentIdsInUseNow();
+    }
+
+    /** Booked time ranges only (no user details) so every member can see what is taken. */
+    @GetMapping("/equipment/{equipmentId}/booked")
+    public List<java.util.Map<String, java.time.ZonedDateTime>> bookedSlots(
+            @PathVariable Long equipmentId,
+            @RequestParam java.time.ZonedDateTime from,
+            @RequestParam java.time.ZonedDateTime to) {
+        return reservationService.findBlocking(equipmentId, from, to).stream()
+                .map(r -> java.util.Map.of("startTime", r.getStartTime(), "endTime", r.getEndTime()))
+                .toList();
+    }
+
     @GetMapping("/me")
     public List<ReservationDTO> myReservations(Authentication auth) {
         return reservationService.findByUser(userSecurity.getUserId(auth))

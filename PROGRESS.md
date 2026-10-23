@@ -4,7 +4,7 @@ Status of every feature area across backend and frontend.
 
 Legend: Done · Partial · Not started
 
-Last updated: 2026-10-18 · Tests passing: 121 / 121
+Last updated: 2026-10-23 · Tests passing: 124 / 124
 
 ---
 
@@ -18,9 +18,9 @@ Last updated: 2026-10-18 · Tests passing: 121 / 121
 | Microsoft OAuth | Done | Done | Secret in env |
 | Apple OAuth | Done | Done | Secret in env |
 | JWT issuance + refresh | Done | Done | |
-| Soft-delete account | Done | Not started | Endpoint exists, no "Delete account" UI |
-| Admin invite / claim registration | Done | Not started | In-person flow backend done; no frontend |
-| RBAC (roles + permissions) | Done | Not started | Full backend; no admin UI |
+| Soft-delete account | Done | Done | Admin panel: Disable/Enable Member wired to DELETE/{id} and POST/{id}/restore |
+| Admin invite / claim registration | Done | Done | `AdminRegistrationController` + `AdminUsers.jsx` create dialog; OTP invite flow |
+| RBAC (roles + permissions) | Done | Done | Role picker in create-user dialog; `UserInformation.jsx` role checkboxes |
 
 ---
 
@@ -31,8 +31,8 @@ Last updated: 2026-10-18 · Tests passing: 121 / 121
 | View own profile | Done | Done | Account page |
 | Edit name | Done | Done | Account page |
 | Change profile image | Not started | Partial | Button renders but is a no-op |
-| Admin: list all users | Done | Not started | |
-| Admin: update user role | Done | Not started | |
+| Admin: list all users | Done | Done | `AllUsers.jsx` — list, search, delete, resend OTP |
+| Admin: update user role | Done | Done | `UserInformation.jsx` role checkboxes → PATCH /{id}/role |
 
 ---
 
@@ -45,9 +45,9 @@ Last updated: 2026-10-18 · Tests passing: 121 / 121
 | Equipment detail | Done | Done | ReserveEquipment reads from API |
 | Display live hourly rate | Done | Done | `RentEquipment`, `ReserveEquipment`, `ReservationCheckout` all use `hourlyRateCents` from API |
 | Server-side search | Done | Partial | Endpoint exists; frontend does client-side filter |
-| Real-time availability (time slots) | Not started | Partial | No "available slots" endpoint; calendar shows all slots |
-| Admin: create/edit/delete equipment | Done | Not started | |
-| Admin: update equipment status | Done | Not started | |
+| Real-time availability (time slots) | Done | Done | `GET /reservations/equipment/{id}/booked` + `ReserveEquipment.jsx` greys out conflicting slots |
+| Admin: create/edit/delete equipment | Done | Done | `AdminRentEquipment.jsx`, `AllEquipment.jsx` — create/edit dialog + delete |
+| Admin: update equipment status | Done | Done | Edit dialog in `AllEquipment.jsx` |
 
 ---
 
@@ -63,7 +63,7 @@ Last updated: 2026-10-18 · Tests passing: 121 / 121
 | Cancel reservation | Done | Done | MyReservations page |
 | Reschedule reservation | Done | Done | MyReservations page |
 | Staff: extend reservation | Done | Not started | |
-| Admin: view all reservations | Done | Not started | |
+| Admin: view all reservations | Done | Done | `ReservationsTable.jsx` → `GET /reservations/admin/all` |
 | Cost snapshot (quotedRate, estimatedCost) | Done | Done | Displayed from API; `estimatedCostCents` used for checkout total |
 | Training prerequisite (TRAINING_PENDING) | Done | Done | `TrainingAttestCard` in `MyReservations`; video link + checkbox + attest button |
 | Training attestation endpoint | Done | Done | `POST /{id}/training-attest` connected in `MyReservations.jsx` |
@@ -114,23 +114,38 @@ Last updated: 2026-10-18 · Tests passing: 121 / 121
 | TRAINING_PENDING status on first booking | Done | Done | `TrainingAttestCard` UI in `MyReservations.jsx` |
 | Online video attestation endpoint | Done | Done | `POST /{id}/training-attest` connected; checkbox + button |
 | Subsequent bookings skip TRAINING_PENDING | Done | — | Checked via training_completion table |
-| Training waiver signing (per reservation) | Done | Done | `LaserWaiver.jsx` → sign → `waiverSignatureId` → checkout; version + time validation in backend |
+| Training waiver signing (per reservation) | Done | Done | `LaserWaiver.jsx` → RabbitSign staff-approval flow → poll status → `waiverSignatureId` → checkout |
 | Waiver versioning (`currentWaiverVersion`) | Done | Done | V13 migration; Equipment model; version checked on sign + booking |
 
 ---
 
 ## Admin Panel
 
-No frontend exists for any admin/staff operations.
-
 | Feature | Backend | Frontend |
 |---|---|---|
-| User management | Done | Not started |
-| Role/permission management | Done | Not started |
-| Equipment management | Done | Not started |
-| Reservation oversight | Done | Not started |
-| In-person registration | Done | Not started |
+| User management | Done | Done — `AllUsers.jsx` delete/resend; `AdminUsers.jsx` create dialog |
+| Role/permission management | Done | Done — role picker in create-user dialog; `UserInformation.jsx` checkboxes |
+| Equipment management | Done | Done — `AdminRentEquipment.jsx` create/edit/delete; `AllEquipment.jsx` |
+| Reservation oversight | Done | Done — `ReservationsTable.jsx` (`GET /reservations/admin/all`) |
+| In-person registration | Done | Done — `AdminUsers.jsx` create dialog with OTP invite flow |
+| Hardware access / NFC | Done | Done — `HardwareCheckIns.jsx`, `CardManager.jsx`, `CardScansLive.jsx` |
+| Waiver approval workflow | Done | Done — `HardwareCheckIns.jsx` + `WaiverStatusPanel.jsx` |
+| Activity feed | Done | Done — `RecentActivity.jsx` → `GET /users/activity/feed` |
 | Refund processing | Not started | Not started |
+
+---
+
+## Hardware & NFC Access
+
+| Sub-feature | Backend | Frontend | Notes |
+|---|---|---|---|
+| NFC check-in endpoint | Done | — | `POST /hardware/checkin` via `X-Device-Key`; writes `hardware_checkins` row |
+| Waiver-required workflow | Done | Done | `HardwareCheckInController` + `HardwareCheckInService`; RabbitSign staff approval |
+| Waiver PDF generation + email | Done | — | `WaiverPdfService` (OpenPDF); emailed to member on sign |
+| Member card assignment | Done | Done | `CardController`; `CardManager.jsx` in admin panel |
+| Live card-scan feed | Done | Done | `CardScansLive.jsx` polls `GET /hardware/card-scans/recent` |
+| Staff waiver approval | Done | Done | `HardwareCheckIns.jsx` approve/deny; `WaiverStatusPanel.jsx` for member |
+| Signed document upload | Done | — | `POST /hardware/checkin/{id}/document` accepts multipart PDF |
 
 ---
 
@@ -138,7 +153,7 @@ No frontend exists for any admin/staff operations.
 
 | Item | Status | Notes |
 |---|---|---|
-| Flyway migrations (V1, V3–V10, V12–V15) | Done | V13: waiver versioning + video URL; V14: Stripe ID corrections; V15: nfc_card_id + access_events |
+| Flyway migrations (V1–V22) | Done | V19: class_sessions; V20: hardware_checkins; V21: member_cards; V22: waiver_documents |
 | PostgreSQL (RDS) | Done | Connection in application.properties |
 | Redis (OTP) | Done (config) | `REDIS_HOST` must be set in prod |
 | AWS Lambda event consumers | Done | Deployed in lambdas/ directory |

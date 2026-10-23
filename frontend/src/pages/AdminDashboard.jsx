@@ -2,8 +2,11 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function AdminDashboard() {
-  const { setToken } = useAuth();
+  const { setToken, permissions } = useAuth();
   const navigate = useNavigate();
+
+  const canManageRoles = permissions.includes("MANAGE_ROLES");
+  const canManageClasses = permissions.includes("MANAGE_CLASSES");
 
   function handleSignOut() {
     setToken(null);
@@ -16,11 +19,11 @@ export default function AdminDashboard() {
         <div className="DashNav">
           <p>Menu</p>
           <div className="DashNav1">
-            <NavLink to="/admin-dashboard/home">Home</NavLink>
-            <NavLink to="/admin-dashboard/user">Users</NavLink>
-            <NavLink to="/admin-dashboard/rentequipment">Rent Equipment</NavLink>
-            <NavLink to="/admin-dashboard/bookclasses">Classes</NavLink>
-            
+            {canManageRoles && <NavLink to="/admin-dashboard/home">Home</NavLink>}
+            {canManageRoles && <NavLink to="/admin-dashboard/user">Users</NavLink>}
+            {canManageRoles && <NavLink to="/admin-dashboard/rentequipment">Rent Equipment</NavLink>}
+            {canManageClasses && <NavLink to="/admin-dashboard/bookclasses">Classes</NavLink>}
+            {canManageRoles && <NavLink to="/admin-dashboard/hardware">Hardware Access</NavLink>}
           </div>
         </div>
 
@@ -28,8 +31,6 @@ export default function AdminDashboard() {
           <p>General</p>
           <div className="DashNav1">
             <NavLink to="/admin-dashboard/account">Account</NavLink>
-         
-           
             <button onClick={handleSignOut}>Sign Out</button>
           </div>
         </div>

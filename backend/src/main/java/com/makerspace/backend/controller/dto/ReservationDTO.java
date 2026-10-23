@@ -10,6 +10,7 @@ public record ReservationDTO(
         Long userId,
         Long equipmentId,
         String equipmentName,
+        String equipmentCategory,
         ZonedDateTime startTime,
         ZonedDateTime endTime,
         ReservationStatus status,
@@ -25,14 +26,24 @@ public record ReservationDTO(
                 r.getUserId(),
                 r.getEquipmentId(),
                 r.getEquipment().getName(),
+                r.getEquipment().getCategory(),
                 r.getStartTime(),
                 r.getEndTime(),
-                r.getStatus(),
+                effectiveStatus(r),
                 r.getCreatedAt(),
                 r.getCancelledAt(),
                 r.getQuotedRateCents(),
                 r.getEstimatedCostCents(),
                 r.getEquipment().getTrainingVideoUrl()
         );
+    }
+
+    /** A booking whose end time has passed is shown as COMPLETED so the slot reads as finished. */
+    private static ReservationStatus effectiveStatus(EquipmentReservation r) {
+        if (r.getStatus() == ReservationStatus.ACTIVE && r.getEndTime() != null
+                && r.getEndTime().isBefore(ZonedDateTime.now())) {
+            return ReservationStatus.COMPLETED;
+        }
+        return r.getStatus();
     }
 }

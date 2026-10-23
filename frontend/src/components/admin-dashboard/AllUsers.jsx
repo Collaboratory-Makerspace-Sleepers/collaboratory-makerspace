@@ -16,34 +16,76 @@ function fullName(user) {
   return user.name || "";
 }
 
-export default function AllUsers({ onViewProfile, selectedId }) {
+export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) {
   const { authFetch } = useAuth();
   const [users, setUsers] = useState([]);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [resendNote, setResendNote] = useState("");
+
+  const deleteUser = async (user) => {
+    const label = user.email || fullName(user);
+    if (!window.confirm(`Delete ${label}? They will lose access to the makerspace.`)) return;
+    setResendNote("");
+    try {
+      const res = await authFetch(`/api/v1/users/${user.id}`, { method: "DELETE" });
+      if (res.ok) {
+        setUsers((prev) => prev.filter((u) => u.id !== user.id));
+        setResendNote(`Deleted ${label}.`);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setResendNote(data.message || `Could not delete ${label}.`);
+      }
+    } catch {
+      setResendNote("Could not delete the user.");
+    }
+  };
+
+  const resendCode = async (user) => {
+    setResendNote("");
+    try {
+      const res = await authFetch(`/api/v1/admin/registrations/${user.id}/resend-invite`, { method: "POST" });
+      setResendNote(
+        res.ok
+          ? `Sign-in code emailed to ${user.email || fullName(user)}.`
+          : `Could not send the email to ${user.email || fullName(user)}. Check the mail settings and try again.`
+      );
+    } catch {
+      setResendNote("Could not send the email.");
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
-    authFetch(`/api/v1/users/activity?page=0&size=${FETCH_SIZE}&sort=createdAt,desc`)
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Could not load users.");
-        return response.json();
-      })
-      .then((result) => {
-        if (!cancelled) setUsers(Array.isArray(result.content) ? result.content : []);
-      })
-      .catch((loadError) => {
-        if (!cancelled) setError(loadError.message || "Could not load users.");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    const load = () =>
+      authFetch(`/api/v1/users/activity?page=0&size=${FETCH_SIZE}&sort=createdAt,desc`)
+        .then(async (response) => {
+          if (!response.ok) throw new Error("Could not load users.");
+          return response.json();
+        })
+        .then((result) => {
+          if (cancelled) return;
+          setUsers(Array.isArray(result.content) ? result.content : []);
+          setError("");
+        })
+        .catch((loadError) => {
+          if (!cancelled) setError(loadError.message || "Could not load users.");
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    load();
+    // Poll so people who sign in or get created show up without a manual reload.
+    const timer = setInterval(() => {
+      if (!document.hidden) load();
+    }, 10000);
     return () => {
       cancelled = true;
+      clearInterval(timer);
     };
-  }, [authFetch]);
+  }, [authFetch, refreshKey]);
 
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -109,7 +151,8 @@ export default function AllUsers({ onViewProfile, selectedId }) {
           <p className="ra-state">{query ? "No users match your search." : "No users yet."}</p>
         ) : (
           <div className="ra-table-scroll">
-            <table className="ra-table">
+            {resendNote && <p className="ra-state" role="status">{resendNote}</p>}
+            <table className="ra-table au-table">
               <thead>
                 <tr>
                   <th>Name</th>
@@ -131,6 +174,12 @@ export default function AllUsers({ onViewProfile, selectedId }) {
                     <td>
                       <button className="ra-link" onClick={() => onViewProfile(user)}>
                         View Profile
+                      </button>{" "}
+                      <button className="ra-link" onClick={() => resendCode(user)}>
+                        Resend code
+                      </button>{" "}
+                      <button className="ra-link" onClick={() => deleteUser(user)}>
+                        Delete
                       </button>
                     </td>
                   </tr>

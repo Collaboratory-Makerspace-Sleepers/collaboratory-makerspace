@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Makerspacecarousel from "../Makerspacecarousel";
 import TrainingTasks from "./TrainingTasks";
+import WaiverStatusPanel from "./WaiverStatusPanel";
+import { BookingBadge, BookingDetail } from "./BookingStatus";
 import { useAuth } from "../../context/AuthContext";
 import {
   useDashboard,
@@ -42,6 +44,8 @@ export default function DashboardHome() {
         </p>
       </div>
 
+      <WaiverStatusPanel />
+
       <div className="Dash3">
         <p>Upcoming Reservations</p>
         {loading && <p>Loading…</p>}
@@ -81,10 +85,13 @@ export default function DashboardHome() {
                 </div>
                 <div className="Rent2">
                   <div className="Rent3">
-                    <div className="Rent4">
-                      <p>{item.status === "AVAILABLE" ? "Available" : item.status}</p>
-                    </div>
+                    <BookingBadge
+                      reservations={reservations}
+                      equipmentId={item.id}
+                      fallback={item.status === "AVAILABLE" ? "Available" : item.status}
+                    />
                     <p>{item.name}</p>
+                    <BookingDetail reservations={reservations} equipmentId={item.id} />
                   </div>
                   <div className="Rent5">
                     <p>$7/hr</p>

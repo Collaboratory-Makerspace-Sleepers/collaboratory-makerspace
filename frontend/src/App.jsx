@@ -12,12 +12,15 @@ import AdminUsers from "./components/admin-dashboard/AdminUsers";
 import AdminRentEquipment from "./components/admin-dashboard/AdminRentEquipment";
 import AdminBookClasses from "./components/admin-dashboard/AdminBookClasses";
 import AdminAccount from "./components/admin-dashboard/AdminAccount";
+import HardwareCheckIns from "./components/admin-dashboard/HardwareCheckIns";
 import DashboardHome from "./components/dashboard/DashboardHome";
 import RentEquipment from "./components/dashboard/RentEquipment";
+import EquipmentCategoryPage from "./components/dashboard/EquipmentCategoryPage";
 import ReserveEquipment from "./components/dashboard/ReserveEquipment";
 import ReservationCheckout from "./components/dashboard/ReservationCheckout";
 import LaserWaiver from "./components/dashboard/LaserWaiver";
 import BookClasses from "./components/dashboard/BookClasses";
+import ClassSessionDetail from "./components/dashboard/ClassSessionDetail";
 import Account from "./components/dashboard/Account";
 import Membership from "./components/dashboard/Membership";
 import MembershipCheckout from "./components/dashboard/MembershipCheckout";
@@ -46,22 +49,29 @@ function App() {
         <Route index element={<DashboardLanding />} />
         <Route path="home" element={<DashboardHome />} />
         <Route path="rentequipment" element={<RentEquipment />} />
+        <Route path="rentequipment/category/:category" element={<EquipmentCategoryPage />} />
         <Route path="rentequipment/:id" element={<ReserveEquipment />} />
         <Route path="rentequipment/:id/waiver" element={<LaserWaiver />} />
         <Route path="rentequipment/:id/checkout" element={<ReservationCheckout />} />
         <Route path="bookclasses" element={<BookClasses />} />
+        <Route path="bookclasses/session/:id" element={<ClassSessionDetail />} />
         <Route path="account" element={<Account />} />
         <Route path="membership" element={<Membership />} />
         <Route path="membership/checkout" element={<MembershipCheckout />} />
         <Route path="reservations" element={<MyReservations />} />
         <Route path="payment-methods" element={<PaymentMethods />} />
         <Route path="billing-history" element={<BillingHistory />} />
+        <Route path="hardware-approvals" element={
+          <RequirePermission anyOf={["MANAGE_EQUIPMENT"]}>
+            <HardwareCheckIns />
+          </RequirePermission>
+        } />
       </Route>
       <Route
         path="/admin-dashboard"
         element={
           <RequireAuth>
-            <RequirePermission anyOf={["MANAGE_ROLES"]}>
+            <RequirePermission anyOf={["MANAGE_ROLES", "MANAGE_CLASSES"]}>
               <AdminDashboard />
             </RequirePermission>
           </RequireAuth>
@@ -73,6 +83,7 @@ function App() {
         <Route path="rentequipment" element={<AdminRentEquipment />} />
         <Route path="bookclasses" element={<AdminBookClasses />} />
         <Route path="account" element={<AdminAccount />} />
+        <Route path="hardware" element={<HardwareCheckIns />} />
       </Route>
     </Routes>
   );

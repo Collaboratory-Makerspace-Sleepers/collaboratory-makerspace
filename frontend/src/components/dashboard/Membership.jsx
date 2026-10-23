@@ -106,8 +106,10 @@ const STATUS_COLORS = {
 };
 
 export default function Membership() {
-  const { authFetch } = useAuth();
+  const { authFetch, user } = useAuth();
   const { reservations, loading, error } = useDashboard();
+
+  const isStudentEligible = user?.email?.toLowerCase().endsWith(".edu") ?? false;
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -276,6 +278,7 @@ export default function Membership() {
         {plans.map((catalogPlan) => {
           const details = PLAN_DETAILS[catalogPlan.code];
           if (!details) return null;
+          if (catalogPlan.code === "STUDENT" && !isStudentEligible) return null;
           const plan = {
             ...catalogPlan,
             ...details,

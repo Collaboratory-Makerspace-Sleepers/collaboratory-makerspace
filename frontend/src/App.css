@@ -58,7 +58,7 @@ p {
 .NavBar .logo {
   font-weight: 600;
   font-size: 16px;
-  color: #1a1a1a;
+  color: #450b00;
   margin: 0;
 }
 
@@ -73,7 +73,7 @@ p {
 
 .nav-link {
   text-decoration: none;
-  color: #1a1a1a;
+  color: #450b00;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -82,7 +82,7 @@ p {
 
 .nav-link:hover,
 .nav-link.active {
-  color: #ff530e;
+  color: #e75710;
   font-weight: 600;
 }
 
@@ -100,7 +100,7 @@ p {
 
 .nav-btn:hover {
   border-color: #cbd5e1;
-  color: #1a1a1a;
+  color: #450b00;
   background-color: #f8fafc;
 }
 
@@ -123,25 +123,25 @@ p {
 }
 
 .btn-primary {
-  background-color: #ff530e;
+  background-color: #e75710;
   color: #ffffff;
 }
 
 .btn-primary:hover {
-  background-color: #e04500;
-  border-color: #e04500;
+  background-color: #a51200;
+  border-color: #a51200;
 }
 
 .btn-secondary {
   background-color: #ffffff;
-  color: #1a1a1a;
+  color: #450b00;
   border-color: #cbd5e1;
 }
 
 .btn-secondary:hover {
   background-color: #f1f5f9;
   border-color: #94a3b8;
-  color: #1a1a1a;
+  color: #450b00;
 }
 
 /* ========================================
@@ -161,7 +161,7 @@ p {
 .hero-subtext {
   font-size: 11px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: #450b00;
   letter-spacing: -0.2px;
   margin: 0;
 }
@@ -194,7 +194,7 @@ p {
 ======================================== */
 
 .OrangeDiv {
-  background-color: #ff530e;
+  background-color: #e75710;
   width: 100%;
   padding: 48px;
   border-radius: 16px;
@@ -391,7 +391,7 @@ p {
 }
 
 .FootDivGrid a {
-  color: #1a1a1a;
+  color: #450b00;
   text-decoration: none;
   font-size: 13px;
   font-weight: 500;
@@ -399,7 +399,7 @@ p {
 }
 
 .FootDivGrid a:hover {
-  color: #ff530e;
+  color: #e75710;
 }
 
 /* Bottom Row */
@@ -421,7 +421,7 @@ p {
 }
 
 .FootDiv3 a:hover {
-  color: #ff530e;
+  color: #e75710;
 }
 
 /* ========================================
@@ -499,7 +499,7 @@ p {
 .signin-title {
   font-size: 22px;
   font-weight: 600;
-  color: #111111;
+  color: #450b00;
 }
 
 .signin-subtitle {
@@ -639,9 +639,9 @@ p {
 .SignIn input[type="text"]:focus,
 .SignIn input[type="email"]:focus,
 .SignIn input[type="password"]:focus {
-  border-color: #ff530e;
+  border-color: #e75710;
 
-  box-shadow: 0 0 0 2px rgba(255, 83, 14, 0.12);
+  box-shadow: 0 0 0 2px rgba(231, 87, 16, 0.12);
 }
 
 .SignIn input::placeholder {
@@ -672,14 +672,14 @@ p {
 
 .forgot a {
   font-size: 12px;
-  color: #ff530e;
+  color: #e75710;
 
   text-decoration: underline;
   font-weight: 500;
 }
 
 .forgot a:hover {
-  color: #e0460a;
+  color: #a51200;
 }
 
 /* ========================================
@@ -703,7 +703,7 @@ p {
   border: none;
   border-radius: 6px;
 
-  background-color: #ff530e;
+  background-color: #e75710;
 
   color: #ffffff;
 
@@ -716,11 +716,11 @@ p {
 }
 
 .signButton:hover {
-  background-color: #e0460a;
+  background-color: #a51200;
 }
 
 .signButton:disabled {
-  background-color: #ff9a78;
+  background-color: #fb8239;
   cursor: not-allowed;
 }
 
@@ -755,7 +755,7 @@ p {
 .otp-back {
   background: none;
   border: none;
-  color: #ff530e;
+  color: #e75710;
   font-size: 12px;
   cursor: pointer;
   text-align: left;
@@ -764,7 +764,7 @@ p {
 }
 
 .otp-back:hover {
-  color: #e0460a;
+  color: #a51200;
 }
 
 .error-text {
@@ -804,7 +804,7 @@ p {
   border-radius: 3px;
   border: 1px solid #cccccc;
   cursor: pointer;
-  accent-color: #ff530e;
+  accent-color: #e75710;
 }
 
 /* ========================================
@@ -886,8 +886,8 @@ p {
 
 .DashNav1 a:hover,
 .DashNav1 a.active {
-  background-color: #fff4f0;
-  color: #ff530e;
+  background-color: #fcd8b6;
+  color: #e75710;
 }
 
 .DashNav1 button {
@@ -907,7 +907,7 @@ p {
 }
 
 .DashNav1 button:hover {
-  background-color: #fff4f0;
+  background-color: #fcd8b6;
   color: #e53e3e;
   border-color: transparent;
 }
@@ -939,7 +939,7 @@ p {
 .Dash2 p:first-child {
   font-size: 22px;
   font-weight: 600;
-  color: #111111;
+  color: #450b00;
   margin: 0;
 }
 
@@ -962,7 +962,7 @@ p {
 .Dash3 > p:first-child {
   font-size: 14px;
   font-weight: 600;
-  color: #111111;
+  color: #450b00;
   margin: 0;
 }
 
@@ -1018,14 +1018,14 @@ p {
 }
 
 .checkout-actions .checkout-primary-button {
-  border-color: #c94716;
-  background: #c94716;
+  border-color: #a51200;
+  background: #a51200;
   color: #ffffff;
 }
 
 .checkout-actions .checkout-primary-button:hover:not(:disabled) {
-  border-color: #a93810;
-  background: #a93810;
+  border-color: #a51200;
+  background: #a51200;
 }
 
 .checkout-actions .checkout-secondary-button:hover:not(:disabled) {
@@ -1054,7 +1054,7 @@ p {
 .Dash7 > p {
   font-size: 14px;
   font-weight: 600;
-  color: #111111;
+  color: #450b00;
   margin: 0;
 }
 
@@ -1098,7 +1098,7 @@ p {
 .Rent3 > p {
   font-size: 13px;
   font-weight: 600;
-  color: #111111;
+  color: #450b00;
   margin: 0;
 }
 
@@ -1129,7 +1129,7 @@ p {
 .Rent5 > p {
   font-size: 13px;
   font-weight: 600;
-  color: #111111;
+  color: #450b00;
   margin: 0;
 }
 
@@ -1137,13 +1137,13 @@ p {
   font-size: 12px;
   padding: 6px 14px;
   height: auto;
-  background-color: #ff530e;
+  background-color: #e75710;
   color: #ffffff;
   border: none;
 }
 
 .Rent5 button:hover {
-  background-color: #e0460a;
+  background-color: #a51200;
   border-color: transparent;
 }
 
@@ -1167,7 +1167,7 @@ p {
 .AccountD1 p:first-child {
   font-size: 22px;
   font-weight: 600;
-  color: #111111;
+  color: #450b00;
   margin: 0;
 }
 
@@ -1193,7 +1193,7 @@ p {
 .AccountD3 > p:first-child {
   font-size: 15px;
   font-weight: 600;
-  color: #111111;
+  color: #450b00;
   margin: 0;
 }
 
@@ -1209,7 +1209,7 @@ p {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background-color: #ff530e;
+  background-color: #e75710;
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -1222,7 +1222,7 @@ p {
 .AccountD4 p:nth-child(2) {
   font-size: 15px;
   font-weight: 600;
-  color: #111111;
+  color: #450b00;
   margin: 0;
 }
 
@@ -1288,8 +1288,8 @@ p {
 }
 
 .AccountD3 form input[type="text"]:focus {
-  border-color: #ff530e;
-  box-shadow: 0 0 0 2px rgba(255, 83, 14, 0.12);
+  border-color: #e75710;
+  box-shadow: 0 0 0 2px rgba(231, 87, 16, 0.12);
 }
 
 .AccountD3 form input:disabled {
@@ -1300,7 +1300,7 @@ p {
 
 .AccountD3 form > button[type="submit"] {
   margin-top: 4px;
-  background-color: #ff530e;
+  background-color: #e75710;
   color: #ffffff;
   border: none;
   border-radius: 6px;
@@ -1311,12 +1311,12 @@ p {
 }
 
 .AccountD3 form > button[type="submit"]:hover {
-  background-color: #e0460a;
+  background-color: #a51200;
   border-color: transparent;
 }
 
 .AccountD3 form > button[type="submit"]:disabled {
-  background-color: #ff9a78;
+  background-color: #fb8239;
   cursor: not-allowed;
 }
 
@@ -1434,7 +1434,7 @@ p {
 .colla4 p:first-child {
   font-size: 15px;
   font-weight: 600;
-  color: #111111;
+  color: #450b00;
   margin: 0;
 }
 
@@ -1463,14 +1463,14 @@ p {
   content: "•";
   position: absolute;
   left: 0;
-  color: #ff530e;
+  color: #e75710;
 }
 
 .colla6 > button {
   width: 100%;
   height: 38px;
   border-radius: 6px;
-  background-color: #ff530e;
+  background-color: #e75710;
   color: #ffffff;
   border: none;
   font-size: 13px;
@@ -1480,7 +1480,7 @@ p {
 }
 
 .colla6 > button:hover:not(:disabled) {
-  background-color: #e0460a;
+  background-color: #a51200;
   border-color: transparent;
 }
 
@@ -1514,15 +1514,15 @@ p {
 }
 
 .ReserveHeader > button:hover {
-  border-color: #ff530e;
-  color: #ff530e;
+  border-color: #e75710;
+  color: #e75710;
   background: none;
 }
 
 .ReserveHeader > p:nth-child(2) {
   font-size: 22px;
   font-weight: 600;
-  color: #111111;
+  color: #450b00;
   margin: 0;
 }
 
@@ -1558,7 +1558,7 @@ p {
 
 .laser-waiver-header h1 {
   margin: 0;
-  color: #111111;
+  color: #450b00;
   font-size: 28px;
   line-height: 1.2;
 }
@@ -1651,7 +1651,7 @@ p {
   width: 16px;
   height: 16px;
   margin: 1px 0 0;
-  accent-color: #f76902;
+  accent-color: #e75710;
 }
 
 .laser-waiver-signature button {
@@ -1681,18 +1681,18 @@ p {
   min-height: 48px;
   border: none;
   border-radius: 4px;
-  background: #f76902;
+  background: #e75710;
   color: #ffffff;
   font-size: 15px;
   cursor: pointer;
 }
 
 .laser-waiver-finish:hover:not(:disabled) {
-  background: #d95a00;
+  background: #e75710;
 }
 
 .laser-waiver-finish:disabled {
-  background: #f9c9a6;
+  background: #fcd8b6;
   cursor: not-allowed;
 }
 
@@ -1723,7 +1723,7 @@ p {
 
 .training-tasks-heading > span,
 .training-task-pending {
-  color: #8a3b1d;
+  color: #450b00;
   font-size: 12px;
   font-weight: 600;
 }
@@ -1764,9 +1764,9 @@ p {
   align-self: flex-start;
   min-height: 40px;
   padding: 8px 14px;
-  border: 1px solid #d94b16;
+  border: 1px solid #a51200;
   border-radius: 4px;
-  background: #d94b16;
+  background: #a51200;
   color: #ffffff;
   font-size: 13px;
   font-weight: 600;
@@ -1803,7 +1803,7 @@ p {
 .CalendarHeader > p {
   font-size: 14px;
   font-weight: 600;
-  color: #111111;
+  color: #450b00;
   margin: 0;
 }
 
@@ -1824,8 +1824,8 @@ p {
 }
 
 .CalendarArrows button:hover {
-  border-color: #ff530e;
-  color: #ff530e;
+  border-color: #e75710;
+  color: #e75710;
   background: none;
 }
 
@@ -1868,15 +1868,15 @@ p {
 }
 
 .CalendarDay:hover:not(:disabled) {
-  background-color: #fff4f0;
-  border-color: #ff530e;
-  color: #ff530e;
+  background-color: #fcd8b6;
+  border-color: #e75710;
+  color: #e75710;
 }
 
 .CalendarDaySelected {
-  background-color: #ff530e !important;
+  background-color: #e75710 !important;
   color: #ffffff !important;
-  border-color: #ff530e !important;
+  border-color: #e75710 !important;
 }
 
 .CalendarDayDisabled {
@@ -1894,7 +1894,7 @@ p {
 .AvailableTimesWrap > p {
   font-size: 13px;
   font-weight: 600;
-  color: #111111;
+  color: #450b00;
   margin: 0;
 }
 
@@ -1918,15 +1918,15 @@ p {
 }
 
 .TimeSlotButton:hover:not(:disabled) {
-  border-color: #ff530e;
-  color: #ff530e;
-  background-color: #fff4f0;
+  border-color: #e75710;
+  color: #e75710;
+  background-color: #fcd8b6;
 }
 
 .TimeSlotSelected {
-  background-color: #ff530e !important;
+  background-color: #e75710 !important;
   color: #ffffff !important;
-  border-color: #ff530e !important;
+  border-color: #e75710 !important;
 }
 
 .TimeSlotButton:disabled {
@@ -1955,7 +1955,7 @@ p {
 .ReserveSummaryTop > p {
   font-size: 13px;
   font-weight: 600;
-  color: #111111;
+  color: #450b00;
   margin: 0;
 }
 
@@ -1974,7 +1974,7 @@ p {
 }
 
 .ReserveSummaryBottom > button {
-  background-color: #ff530e;
+  background-color: #e75710;
   color: #ffffff;
   border: none;
   border-radius: 6px;
@@ -1988,12 +1988,12 @@ p {
 }
 
 .ReserveSummaryBottom > button:hover:not(:disabled) {
-  background-color: #e0460a;
+  background-color: #a51200;
   border-color: transparent;
 }
 
 .ReserveSummaryBottom > button:disabled {
-  background-color: #ff9a78;
+  background-color: #fb8239;
   cursor: not-allowed;
 }
 
@@ -2011,7 +2011,7 @@ p {
 .AdminTitle {
   font-size: 26px;
   font-weight: 700;
-  color: #111111;
+  color: #450b00;
   margin: 0;
 }
 
@@ -2033,9 +2033,9 @@ p {
 }
 
 .AdminTab.active {
-  color: #111111;
+  color: #450b00;
   font-weight: 600;
-  border-bottom-color: #ff530e;
+  border-bottom-color: #e75710;
 }
 
 .AdminSection {
@@ -2054,7 +2054,7 @@ p {
 .AdminSectionHead h2 {
   font-size: 17px;
   font-weight: 600;
-  color: #111111;
+  color: #450b00;
   margin: 0;
 }
 
@@ -2106,7 +2106,7 @@ p {
 .AdminTable td {
   padding: 12px;
   border-bottom: 1px solid #f0f0f0;
-  color: #111111;
+  color: #450b00;
   vertical-align: middle;
 }
 
@@ -2125,7 +2125,7 @@ p {
   margin-left: 8px;
   padding: 2px 8px;
   border-radius: 999px;
-  background-color: #ff530e;
+  background-color: #e75710;
   color: #ffffff;
   font-size: 11px;
   font-weight: 500;
@@ -2137,7 +2137,7 @@ p {
   border-radius: 6px;
   background-color: #ffffff;
   font-size: 13px;
-  color: #111111;
+  color: #450b00;
 }
 
 .AdminSelect:disabled {
@@ -2150,7 +2150,7 @@ p {
   padding: 0 16px;
   border: none;
   border-radius: 6px;
-  background-color: #ff530e;
+  background-color: #e75710;
   color: #ffffff;
   font-size: 13px;
   font-weight: 500;
@@ -2246,7 +2246,7 @@ p {
 .AdminDenied h2 {
   font-size: 20px;
   font-weight: 600;
-  color: #111111;
+  color: #450b00;
   margin: 0;
 }
 
@@ -2272,7 +2272,7 @@ p {
 
 .AdHome button {
   align-self: flex-start;
-  background: #f76902;
+  background: #e75710;
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -2282,7 +2282,7 @@ p {
 }
 
 .AdHome button:hover {
-  background: #d95a00;
+  background: #e75710;
 }
 
 .AdRow {
@@ -2336,12 +2336,12 @@ p {
 }
 
 .AdminCalendarControls button:hover {
-  border-color: #ff530e;
-  color: #ff530e;
+  border-color: #e75710;
+  color: #e75710;
 }
 
 .AdminCalendarControls button:focus-visible {
-  outline: 2px solid #ff530e;
+  outline: 2px solid #e75710;
   outline-offset: 2px;
 }
 
@@ -2382,7 +2382,7 @@ p {
 }
 
 .AdminCalendarToday {
-  background: #ff530e;
+  background: #e75710;
   color: #ffffff;
   font-weight: 700;
 }
@@ -2392,7 +2392,7 @@ p {
   width: 100%;
   min-width: 0;
   padding: 20px;
-  background-color: grey;
+  background-color: #fcd8b6;
   border-radius: 12px;
 }
 
@@ -2424,7 +2424,7 @@ p {
 .AdCol button {
   flex: 0 0 auto;
   margin-left: auto;
-  background: #f76902;
+  background: #e75710;
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -2434,7 +2434,7 @@ p {
 }
 
 .AdCol button:hover {
-  background: #d95a00;
+  background: #e75710;
 }
 
 .Ad1 {
@@ -2461,11 +2461,11 @@ p {
 
 /* grids */
 .ra-wrapper {
-  --ra-bg: #f4f4f4;
+  --ra-bg: #fcd8b6;
   --ra-card: #ffffff;
   --ra-border: #ececec;
   --ra-text: #3f3f3f;
-  --ra-heading: #111111;
+  --ra-heading: #450b00;
   --ra-muted-btn: #f4f4f4;
  
   font-family: "Poppins", sans-serif;
@@ -2522,7 +2522,7 @@ p {
   height: 38px;
   border: none;
   border-radius: 6px;
-  background: #f76902;
+  background: #e75710;
   color: #ffffff;
   display: grid;
   place-items: center;
@@ -2531,7 +2531,7 @@ p {
 }
  
 .ra-page-btn:hover:not(:disabled) {
-  background: #d95a00;
+  background: #e75710;
 }
  
 .ra-page-btn:disabled {
@@ -2692,21 +2692,21 @@ p {
   padding: 6px 10px;
   border: none;
   border-radius: 4px;
-  background: #f76902;
+  background: #e75710;
   color: #ffffff;
   cursor: pointer;
 }
 
 .ra-profile-header button:hover,
 .ra-profile-dialog button[type="submit"]:hover {
-  background: #d95a00;
+  background: #e75710;
 }
 
 .ra-profile-dialog button[type="submit"] {
   padding: 8px 16px;
   border: none;
   border-radius: 4px;
-  background: #f76902;
+  background: #e75710;
   color: #ffffff;
   cursor: pointer;
 }
@@ -2758,7 +2758,7 @@ p {
 }
 
 .AdUser2 button {
-  background: #f76902;
+  background: #e75710;
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -2768,7 +2768,7 @@ p {
 }
 
 .AdUser2 button:hover {
-  background: #d95a00;
+  background: #e75710;
 }
 
 .AdUser3{
@@ -2779,12 +2779,12 @@ p {
 
 /* admin account */
 .account {
-  --orange: #ff5a1f;
-  --orange-hover: #e84e15;
-  --text: #111111;
+  --orange: #e75710;
+  --orange-hover: #a51200;
+  --text: #450b00;
   --text-muted: #6b6b6b;
   --placeholder: #b5b5b5;
-  --card-bg: #f4f4f4;
+  --card-bg: #fcd8b6;
   --border: #ececec;
   --white: #ffffff;
   --radius-card: 16px;
@@ -2959,7 +2959,7 @@ p {
  
 .field__input:focus {
   border-color: var(--orange);
-  box-shadow: 0 0 0 3px rgba(255, 90, 31, 0.15);
+  box-shadow: 0 0 0 3px rgba(231, 87, 16, 0.15);
 }
  
 .card > .btn--block {
@@ -2982,11 +2982,11 @@ p {
 
 /* admin user view profile */
 .user-panel {
-  --orange: #ff5a1f;
-  --orange-hover: #e84e15;
-  --text: #111111;
+  --orange: #e75710;
+  --orange-hover: #a51200;
+  --text: #450b00;
   --text-muted: #6b6b6b;
-  --panel-bg: #f4f4f4;
+  --panel-bg: #fcd8b6;
   --divider: #e6e6e6;
   --border: #ececec;
   --white: #ffffff;
@@ -3163,7 +3163,7 @@ p {
  
 .user-panel__textarea:focus {
   border-color: var(--orange);
-  box-shadow: 0 0 0 3px rgba(255, 90, 31, 0.15);
+  box-shadow: 0 0 0 3px rgba(231, 87, 16, 0.15);
 }
  
 .user-panel__composer-buttons {
@@ -3272,7 +3272,7 @@ p {
 }
 
 .ra-table tr.au-selected td {
-  background: #fff1e8;
+  background: #fcd8b6;
 }
 
 
@@ -3298,7 +3298,7 @@ p {
 .TermsSection h2 {
   font-size: 20px;
   font-weight: 700;
-  color: #111111;
+  color: #450b00;
   margin: 0;
 }
 
@@ -3325,7 +3325,7 @@ p {
 
 .TermsNotice {
   background-color: #fffbe3;
-  border-left: 4px solid #ff530e;
+  border-left: 4px solid #e75710;
   padding: 16px;
   border-radius: 6px;
   font-size: 14px;
@@ -3359,7 +3359,7 @@ p {
 .WaiverSection h2 {
   font-size: 20px;
   font-weight: 600;
-  color: #111111;
+  color: #450b00;
   margin: 0;
 }
 
@@ -3381,7 +3381,7 @@ p {
 .WaiverForm .inputColumn label {
   font-size: 13px;
   font-weight: 600;
-  color: #111111;
+  color: #450b00;
 }
 
 .WaiverForm input[type="text"] {
@@ -3398,8 +3398,8 @@ p {
 }
 
 .WaiverForm input[type="text"]:focus {
-  border-color: #ff530e;
-  box-shadow: 0 0 0 2px rgba(255, 83, 14, 0.12);
+  border-color: #e75710;
+  box-shadow: 0 0 0 2px rgba(231, 87, 16, 0.12);
 }
 
 .WaiverButtons {
@@ -3437,7 +3437,7 @@ p {
   height: 40px;
   border-radius: 6px;
   border: none;
-  background-color: #ff530e;
+  background-color: #e75710;
   color: #ffffff;
   font-size: 13px;
   font-weight: 500;
@@ -3446,7 +3446,7 @@ p {
 }
 
 .WaiverButtons .btn-primary:hover:not(:disabled) {
-  background-color: #e0460a;
+  background-color: #a51200;
 }
 
 .WaiverButtons .btn-primary:disabled {
@@ -3490,12 +3490,184 @@ p {
   padding: 8px 16px;
   border: none;
   border-radius: 4px;
-  background: #f76902;
+  background: #e75710;
   color: #ffffff;
   font-size: 14px;
   cursor: pointer;
 }
 
 .change-image-btn:hover {
-  background: #d95a00;
+  background: #e75710;
 }
+
+.laser-waiver-pad-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.laser-waiver-pad-overlay > * {
+  background: #fff;
+  border-radius: 8px;
+  max-width: 560px;
+  width: 92%;
+}
+
+.WaiverStatusItem {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid #ddd;
+  background: #fff;
+}
+
+.WaiverStatusItem.pending { border-left: 4px solid #e0a800; }
+.WaiverStatusItem.approved { border-left: 4px solid #2e8b57; }
+.WaiverStatusItem.denied { border-left: 4px solid #c0392b; }
+
+.WaiverStatusItem span:first-child {
+  color: #222;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.WaiverStatusItem .Dash5-sub {
+  color: #555;
+}
+
+.waiver-waiting-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0;
+  padding: 24px;
+  text-align: center;
+  background: #fff8e1;
+  border: 1px solid #e0a800;
+  border-radius: 10px;
+  color: #333;
+}
+
+.waiver-waiting-card h2 { margin: 0; color: #222; }
+.waiver-waiting-card p { margin: 0; color: #555; }
+
+.waiver-waiting-spinner {
+  width: 36px;
+  height: 36px;
+  border: 4px solid #f0d98a;
+  border-top-color: #e0a800;
+  border-radius: 50%;
+  animation: waiver-spin 0.9s linear infinite;
+}
+
+@keyframes waiver-spin { to { transform: rotate(360deg); } }
+
+.Rent4.booked { background-color: #eff6ff; border-color: #93c5fd; }
+.Rent4.booked p { color: #1d4ed8; }
+.BookingDetail { margin: 4px 0 0; font-size: 12px; color: #444; line-height: 1.4; }
+
+.WaiverStatusGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.WaiverStatusGrid .WaiverStatusItem {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.WaiverStatusItem .WaiverSlot {
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.AvailableTimesGrid button:disabled { opacity: 0.55; cursor: not-allowed; }
+.SlotBookedLabel { font-size: 11px; color: #b91c1c; }
+
+.CalendarDay.CalendarDay-partial { background: #fef3c7; border-color: #f59e0b; }
+.CalendarDay.CalendarDay-full { background: #e5e7eb; color: #9ca3af; text-decoration: line-through; }
+.CalendarLegend { display: flex; gap: 16px; margin-top: 8px; font-size: 12px; color: #555; }
+.CalendarLegend span::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 2px; vertical-align: middle; }
+.CalendarLegend .legend-partial::before { background: #fef3c7; border: 1px solid #f59e0b; }
+.CalendarLegend .legend-full::before { background: #e5e7eb; border: 1px solid #9ca3af; }
+
+.laser-waiver-rabbitsign {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: #e75710;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+.laser-waiver-hint { margin: 0 0 12px; color: #666; font-size: 0.9rem; }
+
+/* Create user / staff dialog */
+.nu-dialog {
+  width: min(100%, 460px);
+  padding: 28px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.nu-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.nu-header h3 { margin: 0 0 6px; font-size: 1.25rem; color: #1f1f1f; }
+.nu-header p { margin: 0; color: #666; font-size: 0.9rem; line-height: 1.4; }
+.nu-dialog .nu-close {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #f1f1f1;
+  color: #444;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.nu-dialog .nu-close:hover { background: #e2e2e2; }
+.nu-field { display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; font-weight: 600; color: #333; }
+.nu-field input,
+.nu-field select {
+  padding: 10px 12px;
+  border: 1px solid #d4d4d4;
+  border-radius: 8px;
+  background: #fff;
+  color: #1f1f1f;
+  font-size: 1rem;
+  font-weight: 400;
+}
+.nu-field input:focus,
+.nu-field select:focus { outline: 2px solid #e75710; border-color: #e75710; }
+.nu-message { margin: 0; padding: 10px 12px; border-radius: 8px; background: #fcd8b6; color: #450b00; font-size: 0.9rem; }
+.nu-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+.nu-actions button { padding: 10px 18px; border-radius: 8px; font-size: 0.95rem; cursor: pointer; }
+.nu-actions button[type="submit"] { border: none; background: #e75710; color: #fff; font-weight: 600; }
+.nu-actions button[type="submit"]:disabled { opacity: 0.6; cursor: default; }
+.nu-actions .nu-cancel { border: 1px solid #d4d4d4; background: #fff; color: #333; }
+.nu-actions .nu-cancel:hover { background: #f5f5f5; }
+.nu-check { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: #333; }
+
+/* Wide Actions column so View Profile / Resend / Delete are not clipped */
+.au-table { min-width: 1000px; }
+.au-table th:last-child { width: 300px; }
+.au-table td:last-child { overflow: visible; }
+.au-table td:last-child .ra-link + .ra-link { margin-left: 12px; }
+.au-table td:last-child .ra-link:last-child { color: #d93025; }
+
+.HWSignedDoc { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; margin: 12px 0; }
+.HWUploadBtn { display: inline-block; cursor: pointer; }

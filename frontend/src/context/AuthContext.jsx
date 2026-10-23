@@ -35,7 +35,7 @@ export function AuthProvider({ children }) {
       ...options,
       credentials: 'include',
       headers: {
-        'Content-Type': 'application/json',
+        ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
         ...options.headers,
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },

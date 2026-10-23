@@ -9,8 +9,10 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 /**
  * Real SMTP email service — activated when spring.mail.host is configured to a non-empty value.
@@ -34,6 +36,21 @@ public class SmtpEmailService implements EmailService {
 
     @Value("${app.mail.from:noreply@makerspace.local}")
     private String fromAddress;
+
+    private static final ZoneId NY = ZoneId.of("America/New_York");
+
+    private static final Map<String, String> CATEGORY_LABELS = Map.ofEntries(
+            Map.entry("3D_PRINTER",    "3D Printer"),
+            Map.entry("LASER",         "Laser Cutter"),
+            Map.entry("CNC_LARGE",     "CNC Router (Large)"),
+            Map.entry("CNC_SMALL",     "CNC Router (Small)"),
+            Map.entry("METAL_LATHE",   "Metal Lathe"),
+            Map.entry("WOOD_LATHE",    "Wood Lathe"),
+            Map.entry("STUDIO_SMALL",  "Small Studio"),
+            Map.entry("STUDIO_MEDIUM", "Medium Studio"),
+            Map.entry("STUDIO_LARGE",  "Large Studio"),
+            Map.entry("CLASS",         "Class")
+    );
 
     @Override
     public void sendRegistrationInvite(String toEmail, String fullName, String rawToken) {
@@ -61,21 +78,60 @@ public class SmtpEmailService implements EmailService {
 
     @Override
     public void sendReservationConfirmation(String toEmail, String fullName,
-            String equipmentName, ZonedDateTime startTime, ZonedDateTime endTime) {
+            String equipmentName, String equipmentCategory,
+            ZonedDateTime startTime, ZonedDateTime endTime) {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("EEE, MMM d yyyy 'at' h:mm a z");
+        String typeLabel = CATEGORY_LABELS.getOrDefault(equipmentCategory, equipmentCategory);
         SimpleMailMessage msg = new SimpleMailMessage();
         msg.setFrom(fromAddress);
         msg.setTo(toEmail);
         msg.setSubject("Reservation confirmed — " + equipmentName);
         msg.setText("Hi " + fullName + ",\n\n"
                 + "Your reservation has been confirmed.\n\n"
-                + "Equipment: " + equipmentName + "\n"
-                + "Start:     " + startTime.format(fmt) + "\n"
-                + "End:       " + endTime.format(fmt) + "\n\n"
+                + "Equipment: " + equipmentName + " (" + typeLabel + ")\n"
+                + "Start:     " + startTime.withZoneSameInstant(NY).format(fmt) + "\n"
+                + "End:       " + endTime.withZoneSameInstant(NY).format(fmt) + "\n\n"
                 + "View or manage your reservations at: " + frontendBaseUrl + "/dashboard/reservations\n\n"
                 + "— The Collaboratory Makerspace");
         mailSender.send(msg);
         log.info("Reservation confirmation sent to <{}>", toEmail);
+    }
+
+    @Override
+    public void sendWaiverSigned(String toEmail, String fullName, String equipmentName,
+            String signedName, byte[] pdf) {
+        try {
+            jakarta.mail.internet.MimeMessage msg = mailSender.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper =
+                    new org.springframework.mail.javamail.MimeMessageHelper(msg, true, "UTF-8");
+            helper.setFrom(fromAddress);
+            helper.setTo(toEmail);
+            helper.setSubject("Your signed waiver — " + equipmentName);
+            helper.setText("Hi " + fullName + ",\n\nThanks for signing the waiver for " + equipmentName
+                    + " (signed as " + signedName + "). A copy is attached as a PDF.\n\n"
+                    + "Staff will review it shortly; you'll be able to continue once it's approved.\n\n"
+                    + "— The Collaboratory Makerspace");
+            helper.addAttachment("signed-waiver.pdf",
+                    new org.springframework.core.io.ByteArrayResource(pdf), "application/pdf");
+            mailSender.send(msg);
+        } catch (jakarta.mail.MessagingException e) {
+            throw new IllegalStateException("Could not build waiver email", e);
+        }
+        log.info("Signed waiver PDF sent to <{}>", toEmail);
+    }
+
+    @Override
+    public void sendAccountInvite(String toEmail, String fullName, String roleLabel, String code) {
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom(fromAddress);
+        msg.setTo(toEmail);
+        msg.setSubject("You've been added to Collaboratory Makerspace");
+        msg.setText("Hi " + fullName + ",\n\nAn administrator created a " + roleLabel
+                + " account for you.\n\nSign in at " + frontendBaseUrl + "/signin with this email address and the code:\n\n    "
+                + code + "\n\nThe code is valid for 24 hours. After that, enter your email on the sign-in page and we'll send a new one.\n\n"
+                + "— The Collaboratory Makerspace");
+        mailSender.send(msg);
+        log.info("Account invite sent to <{}>", toEmail);
     }
 
     @Override

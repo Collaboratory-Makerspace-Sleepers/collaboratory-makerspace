@@ -11,7 +11,7 @@ export function useDashboard() {
   useEffect(() => {
     let cancelled = false;
 
-    Promise.all([
+    const load = () => Promise.all([
       authFetch("/api/v1/users/me").then((res) => {
         if (!res.ok) throw new Error("Could not load your profile");
         return res.json();
@@ -33,8 +33,12 @@ export function useDashboard() {
         setLoading(false);
       });
 
+    load();
+    const timer = setInterval(() => { if (!document.hidden) load(); }, 15000);
+
     return () => {
       cancelled = true;
+      clearInterval(timer);
     };
   }, [authFetch]);
 

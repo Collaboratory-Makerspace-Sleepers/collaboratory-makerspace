@@ -39,7 +39,7 @@ function describeAvailability(equipment, reservations, now) {
   return { label: "Available for walk-ins", reservation: null };
 }
 
-export default function AllEquipment() {
+export default function AllEquipment({ refreshKey = 0 }) {
   const { authFetch } = useAuth();
   const [equipment, setEquipment] = useState([]);
   const [reservations, setReservations] = useState([]);
@@ -84,7 +84,7 @@ export default function AllEquipment() {
 
   useEffect(() => {
     load();
-  }, [load]);
+  }, [load, refreshKey]);
 
   const rows = useMemo(() => {
     const now = new Date();
@@ -313,6 +313,24 @@ export default function AllEquipment() {
               <div>
                 <dt>Description</dt>
                 <dd><input value={editing.description || ""} onChange={setField("description")} /></dd>
+              </div>
+              <div>
+                <dt>Image URL</dt>
+                <dd><input value={editing.imageUrl || ""} onChange={setField("imageUrl")} /></dd>
+              </div>
+              <div>
+                <dt>Requires waiver</dt>
+                <dd>
+                  <input type="checkbox" checked={!!editing.requiresWaiver}
+                    onChange={(e) => setEditing((p) => ({ ...p, requiresWaiver: e.target.checked }))} />
+                </dd>
+              </div>
+              <div>
+                <dt>Requires training</dt>
+                <dd>
+                  <input type="checkbox" checked={!!editing.trainingRequired}
+                    onChange={(e) => setEditing((p) => ({ ...p, trainingRequired: e.target.checked }))} />
+                </dd>
               </div>
               <div>
                 <dt>Status</dt>

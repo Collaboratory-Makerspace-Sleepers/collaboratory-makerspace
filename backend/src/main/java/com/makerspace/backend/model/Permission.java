@@ -26,5 +26,8 @@ public final class Permission {
     // Registration / onboarding
     public static final String REGISTER_USERS = "REGISTER_USERS";
 
+    // Classes
+    public static final String MANAGE_CLASSES = "MANAGE_CLASSES";
+
     private Permission() {}
 }

@@ -203,7 +203,24 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // -------------------------------------------------------------------------
+    // Order 9 — Class Sessions
+    // Public GET for browsing; write endpoints require authentication.
+    // Fine-grained access (@PreAuthorize) is enforced on the controller.
+    // -------------------------------------------------------------------------
     @Bean @Order(9)
+    public SecurityFilterChain classSessionChain(HttpSecurity http) throws Exception {
+        applyShared(http)
+                .securityMatcher("/api/v1/class-sessions/**")
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(GET, "/api/v1/class-sessions").permitAll()
+                        .requestMatchers(GET, "/api/v1/class-sessions/*").permitAll()
+                        .anyRequest().authenticated()
+                );
+        return http.build();
+    }
+
+    @Bean @Order(10)
     public SecurityFilterChain devWebhookChain(HttpSecurity http) throws Exception {
         applyShared(http)
                 .securityMatcher("/api/dev/**")

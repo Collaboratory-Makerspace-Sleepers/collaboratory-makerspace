@@ -36,6 +36,27 @@ WHERE code = 'DAY_PASS';
 -- ── Remove V7 placeholder equipment ──────────────────────────────────────────────
 -- V8 seeds the real named inventory. The V7 placeholder rows are duplicates
 -- and must not appear in the frontend catalog.
+-- Must clear FK chains before deleting: waiver signatures → reservations → equipment.
+
+UPDATE training_waiver_signatures
+SET reservation_id = NULL
+WHERE reservation_id IN (
+    SELECT r.id FROM reservations r
+    WHERE r.equipment_id IN (
+        SELECT id FROM equipment WHERE name IN (
+            'Laser Cutter', '3D Printer', 'CNC Router',
+            'Soldering Station', 'Table Saw', 'Sewing Machine'
+        )
+    )
+);
+
+DELETE FROM reservations
+WHERE equipment_id IN (
+    SELECT id FROM equipment WHERE name IN (
+        'Laser Cutter', '3D Printer', 'CNC Router',
+        'Soldering Station', 'Table Saw', 'Sewing Machine'
+    )
+);
 
 DELETE FROM equipment WHERE name IN (
     'Laser Cutter',

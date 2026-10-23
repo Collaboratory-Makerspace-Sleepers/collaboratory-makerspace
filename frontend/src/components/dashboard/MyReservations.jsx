@@ -192,6 +192,12 @@ export default function MyReservations() {
 
   useEffect(() => { loadReservations(); }, [loadReservations]);
 
+  // Auto-refresh every 15 seconds so COMPLETED status appears without manual reload.
+  useEffect(() => {
+    const id = setInterval(loadReservations, 15000);
+    return () => clearInterval(id);
+  }, [loadReservations]);
+
   async function handleCancel(id) {
     setActionError("");
     setBusy(id + "-cancel");
@@ -242,7 +248,7 @@ export default function MyReservations() {
   const active = reservations.filter((r) => r.status === "ACTIVE");
   const past = reservations.filter(
     (r) => r.status !== "ACTIVE" && r.status !== "TRAINING_PENDING"
-  );
+  ); // includes COMPLETED, CANCELLED, etc.
 
   return (
     <div className="DashHome1">

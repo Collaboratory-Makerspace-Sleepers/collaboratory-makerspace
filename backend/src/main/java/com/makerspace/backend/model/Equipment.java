@@ -68,6 +68,10 @@ public class Equipment {
     @Column(name = "requires_training", nullable = false)
     private boolean requiresTraining = false;
 
+    /** True if staff must approve a signed waiver before the user can check in via NFC. */
+    @Column(name = "requires_waiver", nullable = false)
+    private boolean requiresWaiver = false;
+
     /** One-time training session fee in cents (0 when requiresTraining is false). */
     @Column(name = "training_fee_cents", nullable = false)
     private int trainingFeeCents = 0;

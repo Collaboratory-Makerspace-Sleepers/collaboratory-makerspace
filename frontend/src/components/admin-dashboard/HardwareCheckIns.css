@@ -1,0 +1,436 @@
+.HardwareCheckInsContainer {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+}
+
+.HWHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.HWHeader h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.HWFilters {
+  display: flex;
+  gap: 12px;
+}
+
+.FilterBtn {
+  padding: 8px 16px;
+  border: 2px solid #ddd;
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.FilterBtn:hover {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+.FilterBtn.active {
+  background: #ff6b6b;
+  border-color: #ff6b6b;
+  color: #fff;
+}
+
+.HardwareLoading,
+.HardwareError {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-size: 16px;
+}
+
+.HardwareError {
+  color: #dc3545;
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+}
+
+.HWTable {
+  overflow-x: auto;
+}
+
+.HWTable table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.HWTable thead {
+  background: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.HWTable th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #495057;
+  white-space: nowrap;
+}
+
+.HWTable tbody tr {
+  border-bottom: 1px solid #dee2e6;
+  transition: background 0.2s;
+}
+
+.HWTable tbody tr:hover {
+  background: #f8f9fa;
+}
+
+.HWTable td {
+  padding: 12px;
+  vertical-align: middle;
+}
+
+/* Status row styling */
+.HWTable tr.status-success {
+  background-color: #f0f9ff;
+}
+
+.HWTable tr.status-success:hover {
+  background-color: #e0f2fe;
+}
+
+.HWTable tr.status-failed {
+  background-color: #fef2f2;
+}
+
+.HWTable tr.status-failed:hover {
+  background-color: #fee2e2;
+}
+
+.HWTable tr.status-warning {
+  background-color: #fffbeb;
+}
+
+.HWTable tr.status-warning:hover {
+  background-color: #fef3c7;
+}
+
+.HWTable tr.status-info {
+  background-color: #f0f4ff;
+}
+
+.HWTable tr.status-info:hover {
+  background-color: #e0e7ff;
+}
+
+.HWTable tr.status-danger {
+  background-color: #fef2f2;
+}
+
+.Badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.Badge.badge-success {
+  background: #d1e7dd;
+  color: #0f5132;
+}
+
+.Badge.badge-failed {
+  background: #f8d7da;
+  color: #842029;
+}
+
+.Badge.badge-pending {
+  background: #fff3cd;
+  color: #664d03;
+}
+
+.Badge.badge-warning {
+  background: #fcd8b6;
+  color: #a51200;
+}
+
+.Badge.badge-info {
+  background: #cfe2ff;
+  color: #084298;
+}
+
+.Badge.badge-danger {
+  background: #f8d7da;
+  color: #842029;
+}
+
+.WaiverStatus,
+.AccessGranted,
+.AccessDenied {
+  font-weight: 600;
+  font-size: 13px;
+  display: block;
+}
+
+.WaiverStatus.signed {
+  color: #0f5132;
+}
+
+.WaiverStatus.pending {
+  color: #664d03;
+}
+
+.AccessGranted {
+  color: #0f5132;
+}
+
+.AccessDenied {
+  color: #842029;
+}
+
+.ErrorMsg {
+  color: #842029;
+  display: block;
+  margin-top: 4px;
+}
+
+.Actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ApproveBtn,
+.DenyBtn,
+.SignBtn,
+.ViewBtn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.SignBtn {
+  background: #cfe2ff;
+  color: #084298;
+}
+
+.SignBtn:hover {
+  background: #b6d0f7;
+}
+
+.ViewBtn {
+  background: #e2e3e5;
+  color: #41464b;
+}
+
+.ViewBtn:hover {
+  background: #d3d6d8;
+}
+
+.HWModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.HWModal {
+  background: #fff;
+  color: #222;
+  border-radius: 8px;
+  padding: 20px;
+  width: min(560px, 92vw);
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.HWSignatureImg {
+  display: block;
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin: 12px 0;
+  background: #000;
+}
+
+.ApproveBtn {
+  background: #d1e7dd;
+  color: #0f5132;
+}
+
+.ApproveBtn:hover {
+  background: #b6d4c8;
+}
+
+.DenyBtn {
+  background: #f8d7da;
+  color: #842029;
+}
+
+.DenyBtn:hover {
+  background: #f5c2c7;
+}
+
+.NoData {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+  font-style: italic;
+}
+
+.HWPagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #dee2e6;
+}
+
+.HWPagination button {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #495057;
+  transition: all 0.2s;
+}
+
+.HWPagination button:hover:not(:disabled) {
+  background: #f8f9fa;
+  border-color: #adb5bd;
+}
+
+.HWPagination button:disabled {
+  color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.HWPagination span {
+  color: #666;
+  font-weight: 500;
+  min-width: 80px;
+  text-align: center;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .HWHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .HWFilters {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .FilterBtn {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .HWTable table {
+    font-size: 12px;
+  }
+
+  .HWTable th,
+  .HWTable td {
+    padding: 8px;
+  }
+
+  .Actions {
+    flex-direction: column;
+  }
+
+  .ApproveBtn,
+  .DenyBtn {
+    width: 100%;
+  }
+}
+
+.HWSignatureName {
+  background: #000;
+  border-radius: 6px;
+  padding: 24px 16px;
+  margin: 12px 0;
+  text-align: center;
+  color: #fff;
+}
+.HWSignatureScript {
+  display: block;
+  font-family: "Brush Script MT", "Snell Roundhand", "Segoe Script", cursive;
+  font-size: 2.4rem;
+  line-height: 1.2;
+  word-break: break-word;
+}
+.HWSignatureName small { display: block; margin-top: 10px; color: #bbb; }
+.HWNameInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  margin: 8px 0 12px;
+  font-size: 1rem;
+}
+.HWModalActions { display: flex; gap: 8px; justify-content: flex-end; }
+
+.HWTabBar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.HWTab {
+  padding: 8px 16px;
+  border: 1px solid #ccc;
+  border-radius: 999px;
+  background: #fff;
+  color: #222;
+  cursor: pointer;
+  font-weight: 600;
+}
+.HWTab.active { background: #e75710; border-color: #e75710; color: #fff; }
+
+.CardTapBanner {
+  border-radius: 12px;
+  padding: 28px 20px;
+  text-align: center;
+  color: #fff;
+  margin-bottom: 16px;
+  transition: background 0.2s;
+}
+.CardTapBanner.idle { background: #444; }
+.CardTapBanner.ok { background: #1e9e4a; }
+.CardTapBanner.denied { background: #c62828; }
+.CardTapBanner h2 { margin: 0 0 6px; font-size: 2rem; color: #fff; }
+.CardTapBanner p { margin: 0; font-size: 1.1rem; color: #fff; }
+
+.CardTable { width: 100%; border-collapse: collapse; }
+.CardTable th, .CardTable td { text-align: left; padding: 8px; border-bottom: 1px solid #e3e3e3; }
+.CardTable tr.ok td:first-child { border-left: 4px solid #1e9e4a; }
+.CardTable tr.denied td:first-child { border-left: 4px solid #c62828; }
+.CardUid { font-family: ui-monospace, Menlo, monospace; }
+.CardForm { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+.CardForm input, .CardForm select { padding: 8px; }
+.CardMuted { color: #777; }
+.CardActions { display: flex; gap: 6px; flex-wrap: wrap; }

@@ -5,7 +5,7 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color: #213547;
+  color: #450b00;
   background-color: #ffffff;
 
   font-synthesis: none;
@@ -28,8 +28,8 @@ body,
 }
 
 body {
-  color: #213547;
-  background-color: #ffffff;
+  color: #450b00;
+  background-color: #fcd8b6;
 }
 
 #root {
@@ -42,11 +42,11 @@ img {
 
 a {
   font-weight: 500;
-  color: #ff530e;
+  color: #e75710;
   text-decoration: inherit;
 }
 a:hover {
-  color: #e04500;
+  color: #a51200;
 }
 
 h1 {
@@ -61,13 +61,13 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: #450b00;
   color: #ffffff;
   cursor: pointer;
   transition: border-color 0.25s;
 }
 button:hover {
-  border-color: #ff530e;
+  border-color: #e75710;
 }
 button:focus,
 button:focus-visible {
@@ -76,7 +76,7 @@ button:focus-visible {
 
 @media (prefers-color-scheme: light) {
   :root {
-    color: #213547;
+    color: #450b00;
     background-color: #ffffff;
   }
   a:hover {
@@ -92,7 +92,7 @@ h2.section-title,
 p.section-title {
   font-size: 40px !important;
   font-weight: 700 !important;
-  color: #000000 !important;
+  color: #450b00 !important;
   line-height: 1.1 !important;
   letter-spacing: -0.6px !important;
 }

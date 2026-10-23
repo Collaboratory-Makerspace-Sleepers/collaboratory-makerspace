@@ -41,6 +41,9 @@ export default function Dashboard() {
             <NavLink to="/dashboard/membership">Membership</NavLink>
             <NavLink to="/dashboard/payment-methods">Payment Methods</NavLink>
             <NavLink to="/dashboard/billing-history">Billing History</NavLink>
+            {hasPermission("MANAGE_EQUIPMENT") && !hasPermission("MANAGE_ROLES") && (
+              <NavLink to="/dashboard/hardware-approvals">Approve Hardware</NavLink>
+            )}
             {hasPermission("MANAGE_ROLES") && (
               <NavLink to="/admin-dashboard">Admin dashboard</NavLink>
             )}

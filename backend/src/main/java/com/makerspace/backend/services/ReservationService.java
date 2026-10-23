@@ -11,6 +11,7 @@ import com.makerspace.backend.model.TrainingWaiverSignature;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.repository.EquipmentRepository;
 import com.makerspace.backend.repository.ReservationRepository;
+import com.makerspace.backend.repository.PaymentRecordRepository;
 import com.makerspace.backend.repository.TrainingCompletionRepository;
 import com.makerspace.backend.repository.TrainingWaiverSignatureRepository;
 import com.makerspace.backend.repository.UserRepository;
@@ -25,9 +26,12 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -39,10 +43,15 @@ public class ReservationService {
     @Autowired private MembershipService membershipService;
     @Autowired private TrainingCompletionRepository trainingCompletionRepository;
     @Autowired private TrainingWaiverSignatureRepository waiverSignatureRepository;
+    @Autowired private PaymentRecordRepository paymentRecordRepository;
     @Autowired private EmailService emailService;
 
     /** How long after signing a waiver it remains valid for use in a booking (minutes). */
     private static final int WAIVER_VALIDITY_MINUTES = 30;
+
+    private static final ZoneId NY = ZoneId.of("America/New_York");
+    private static final DateTimeFormatter CONFLICT_FMT =
+            DateTimeFormatter.ofPattern("M/d h:mm a z");
 
     @Transactional
     public EquipmentReservation create(Long userId, Long equipmentId,
@@ -98,8 +107,12 @@ public class ReservationService {
                 EnumSet.of(ReservationStatus.ACTIVE, ReservationStatus.TRAINING_PENDING),
                 null);
         if (!conflicts.isEmpty()) {
+            String conflictTimes = conflicts.stream()
+                    .map(c -> c.getStartTime().withZoneSameInstant(NY).format(CONFLICT_FMT)
+                              + " – " + c.getEndTime().withZoneSameInstant(NY).format(CONFLICT_FMT))
+                    .collect(Collectors.joining(", "));
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Equipment is already reserved during that time window");
+                    "Equipment is already reserved: " + conflictTimes);
         }
 
         User user = userRepository.findById(userId)
@@ -134,7 +147,8 @@ public class ReservationService {
                     ? user.getProfile().getFirstName() + " " + user.getProfile().getLastName()
                     : user.getEmail();
             emailService.sendReservationConfirmation(
-                    user.getEmail(), fullName, equipment.getName(), startTime, endTime);
+                    user.getEmail(), fullName, equipment.getName(), equipment.getCategory(),
+                    startTime, endTime);
         } catch (Exception e) {
             log.warn("Failed to send reservation confirmation for id={}: {}", saved.getId(), e.getMessage());
         }
@@ -221,8 +235,12 @@ public class ReservationService {
                 reservation.getEquipmentId(), reservation.getEndTime(), newEndTime,
                 ReservationStatus.ACTIVE, reservation.getId());
         if (!conflicts.isEmpty()) {
+            String conflictTimes = conflicts.stream()
+                    .map(c -> c.getStartTime().withZoneSameInstant(NY).format(CONFLICT_FMT)
+                              + " – " + c.getEndTime().withZoneSameInstant(NY).format(CONFLICT_FMT))
+                    .collect(Collectors.joining(", "));
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Cannot extend: another reservation starts before the new end time");
+                    "Cannot extend: time conflicts with an existing reservation: " + conflictTimes);
         }
 
         reservation.setEndTime(newEndTime);
@@ -310,6 +328,33 @@ public class ReservationService {
         if (isStudioMember) return 0;
         if (isMember && "CLASS".equals(equipment.getCategory())) return equipment.getHourlyRateCents() / 2;
         return equipment.getHourlyRateCents();
+    }
+
+    /** Equipment that someone has booked for the current moment. */
+    @Transactional(readOnly = true)
+    public List<Long> findEquipmentIdsInUseNow() {
+        return reservationRepository.findEquipmentIdsInUseAt(
+                EnumSet.of(ReservationStatus.ACTIVE, ReservationStatus.TRAINING_PENDING),
+                ZonedDateTime.now());
+    }
+
+    /** Time ranges already taken (ACTIVE or TRAINING_PENDING) for the equipment within [from, to). */
+    @Transactional(readOnly = true)
+    public List<EquipmentReservation> findBlocking(Long equipmentId, ZonedDateTime from, ZonedDateTime to) {
+        if (!equipmentRepository.existsById(equipmentId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Equipment not found");
+        }
+        return reservationRepository.findOverlappingByStatuses(equipmentId, from, to,
+                EnumSet.of(ReservationStatus.ACTIVE, ReservationStatus.TRAINING_PENDING), null);
+    }
+
+    /** A successful Day Pass payment in the last 24 hours lets the user book without a membership. */
+    public boolean hasRecentDayPass(Long userId) {
+        ZonedDateTime cutoff = ZonedDateTime.now().minusHours(24);
+        return paymentRecordRepository.findByUserIdOrderByOccurredAtDesc(userId).stream()
+                .anyMatch(p -> p.getKind() == com.makerspace.backend.model.PaymentKind.DAY_PASS
+                        && p.getStatus() == com.makerspace.backend.model.PaymentStatus.SUCCEEDED
+                        && p.getOccurredAt() != null && p.getOccurredAt().isAfter(cutoff));
     }
 
     private boolean hasPermission(UserPrincipal principal, String permission) {

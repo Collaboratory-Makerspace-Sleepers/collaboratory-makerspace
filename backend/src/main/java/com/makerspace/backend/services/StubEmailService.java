@@ -34,9 +34,22 @@ public class StubEmailService implements EmailService {
 
     @Override
     public void sendReservationConfirmation(String toEmail, String fullName,
-            String equipmentName, ZonedDateTime startTime, ZonedDateTime endTime) {
-        log.warn("[STUB] Reservation confirmation for {} <{}> — {} from {} to {}",
-                fullName, toEmail, equipmentName, startTime, endTime);
+            String equipmentName, String equipmentCategory,
+            ZonedDateTime startTime, ZonedDateTime endTime) {
+        log.warn("[STUB] Reservation confirmation for {} <{}> — {} ({}) from {} to {}",
+                fullName, toEmail, equipmentName, equipmentCategory, startTime, endTime);
+    }
+
+    @Override
+    public void sendWaiverSigned(String toEmail, String fullName, String equipmentName,
+            String signedName, byte[] pdf) {
+        log.warn("[STUB] Signed waiver PDF ({} bytes) for {} <{}> — {} signed by {}",
+                pdf.length, fullName, toEmail, equipmentName, signedName);
+    }
+
+    @Override
+    public void sendAccountInvite(String toEmail, String fullName, String roleLabel, String code) {
+        log.warn("[STUB] Account invite for {} <{}> as {} — sign-in code: {}", fullName, toEmail, roleLabel, code);
     }
 
     @Override

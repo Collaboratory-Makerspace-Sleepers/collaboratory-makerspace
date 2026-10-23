@@ -1,105 +1,103 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
-const WAIVER_SECTIONS = [
-  {
-    title: "Acknowledgment of Risk",
-    text: "I understand that operating or being near makerspace equipment involves inherent risks, including but not limited to burns, fire hazards, exposure to fumes, eye injury, and damage to personal property. I voluntarily assume all risks associated with the use of the makerspace and its equipment.",
-  },
-  {
-    title: "Training & Proper Use",
-    text: "I confirm that I have received proper training or instruction on the safe use of the equipment I intend to use, or I agree to seek assistance before operating any machinery. I will follow all posted rules, safety guidelines, and instructions provided by staff.",
-  },
-  {
-    title: "Personal Responsibility",
-    text: "I agree to use all equipment responsibly and only for its intended purpose. I will not operate machinery under the influence of drugs or alcohol, and I will wear required safety equipment at all times.",
-  },
-  {
-    title: "Materials & Safety Compliance",
-    text: "I understand that only approved materials may be used with makerspace equipment. I will not use hazardous, flammable, or prohibited materials and will confirm material safety if unsure.",
-  },
-  {
-    title: "Supervision & Access",
-    text: "I understand that access to equipment may be restricted and that supervision may be required. I agree to comply with all access policies.",
-  },
-  {
-    title: "Release of Liability",
-    text: "I hereby release, waive, and discharge Collaboratory Makerspace, its staff, affiliates, and representatives from any and all liability, claims, demands, or causes of action arising out of or related to any loss, damage, or injury, including serious injury or death, that may occur while using the facility or equipment.",
-  },
-  {
-    title: "Indemnification",
-    text: "I agree to indemnify and hold harmless Collaboratory Makerspace from any claims resulting from my actions, misuse of equipment, or violation of safety rules.",
-  },
-  {
-    title: "Medical Treatment Authorization",
-    text: "In the event of an emergency, I authorize staff to obtain medical treatment on my behalf if I am unable to do so.",
-  },
-  {
-    title: "Agreement & Understanding",
-    text: "I have read this waiver, fully understand its terms, and sign it freely and voluntarily. I understand that I am giving up certain legal rights.",
-  },
-];
+import { WAIVER_SECTIONS } from "./waiverSections";
+
+const POLL_MS = 4000;
+const RABBITSIGN_URL =
+  import.meta.env.VITE_RABBITSIGN_WAIVER_URL ||
+  "https://www.rabbitsign.com/template/link/SzNLl1tmVh80eu086cmInx";
 
 export default function LaserWaiver() {
   const { state } = useLocation();
   const navigate = useNavigate();
   const { id } = useParams();
   const { authFetch } = useAuth();
-  const [signerName, setSignerName] = useState("");
-  const [agreed, setAgreed] = useState(false);
-  const [signature, setSignature] = useState(null); // { name, signedAt, waiverSignatureId }
-  const [signing, setSigning] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [request, setRequest] = useState(null);
   const [signError, setSignError] = useState("");
+  const equipmentId = state?.equipmentId;
+  const slotStart = state?.startTime;
+  const status = request?.status;
+  const awaitingStaff = status === "WAIVER_SIGNED" || status === "NEEDS_WAIVER";
+
+  const refresh = useCallback(async () => {
+    if (!equipmentId) return;
+    try {
+      const query = slotStart ? `?start=${encodeURIComponent(slotStart)}` : "";
+      const res = await authFetch(`/api/v1/hardware/checkins/me/equipment/${equipmentId}${query}`);
+      if (res.status === 204) setRequest(null);
+      else if (res.ok) setRequest(await res.json());
+    } catch {
+      // the next poll retries
+    }
+  }, [authFetch, equipmentId, slotStart]);
+
+  useEffect(() => {
+    const timer = setTimeout(refresh, 0);
+    return () => clearTimeout(timer);
+  }, [refresh]);
+
+  useEffect(() => {
+    if (!awaitingStaff) return undefined;
+    const timer = setInterval(() => {
+      if (!document.hidden) refresh();
+    }, POLL_MS);
+    return () => clearInterval(timer);
+  }, [awaitingStaff, refresh]);
 
   if (!state?.equipmentId || !state.waiverRequired) {
     navigate(`/dashboard/rentequipment/${id}`, { replace: true });
     return null;
   }
 
-  async function handleSign(event) {
-    event.preventDefault();
-    const name = signerName.trim();
-    if (!name || !agreed) return;
-    setSigning(true);
+  const signed = status === "WAIVER_SIGNED" || status === "WAIVER_APPROVED";
+  const approved = status === "WAIVER_APPROVED";
+  const denied = status === "DENIED";
+  const signature = signed
+    ? { name: request?.signedName || "RabbitSign", signedAt: request?.signedAt }
+    : null;
+
+  async function handleOpenRabbitSign() {
+    if (submitting) return;
     setSignError("");
+    setSubmitting(true);
+    // Open synchronously so the browser doesn't block the popup.
+    window.open(RABBITSIGN_URL, "_blank", "noopener,noreferrer");
     try {
-      const response = await authFetch(`/api/v1/training-waivers/${state.equipmentId}/sign`, {
+      const res = await authFetch("/api/v1/hardware/waiver-requests", {
         method: "POST",
         body: JSON.stringify({
-          signerName: name,
+          equipmentId: state.equipmentId,
           startTime: state.startTime,
           endTime: state.endTime,
-          waiverVersion: state.currentWaiverVersion ?? 1,
         }),
       });
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.message || "Could not save your waiver signature.");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setSignError(data.message || "Could not submit the waiver. Please try again.");
+        return;
       }
-      const { waiverSignatureId } = await response.json();
-      setSignature({ name, signedAt: new Date().toISOString(), waiverSignatureId });
-    } catch (err) {
-      setSignError(err.message || "Could not save your waiver signature.");
+      setRequest(await res.json());
+      // Keep the existing training-waiver record so checkout still sees the signature.
+      await authFetch(`/api/v1/training-waivers/${state.equipmentId}/sign`, {
+        method: "POST",
+        body: JSON.stringify({ signerName: "RabbitSign" }),
+      }).catch(() => {});
+    } catch {
+      setSignError("Could not reach the server. Please try again.");
     } finally {
-      setSigning(false);
+      setSubmitting(false);
     }
   }
 
   function handleContinueToCheckout() {
-    if (!signature) return;
+    if (!approved) return;
     navigate(`/dashboard/rentequipment/${state.equipmentId}/checkout`, {
-      state: {
-        ...state,
-        waiverSigned: true,
-        waiverSignature: signature,
-        waiverSignatureId: signature.waiverSignatureId,
-      },
+      state: { ...state, waiverSigned: true, waiverSignature: signature },
     });
   }
-
-  const videoUrl = state.trainingVideoUrl ||
-    "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
 
   return (
     <div className="DashHome1 laser-waiver-page">
@@ -108,6 +106,17 @@ export default function LaserWaiver() {
         <h1>Makerspace Equipment Waiver</h1>
         <p>Read the waiver and sign before continuing your reservation.</p>
       </header>
+
+      {status === "WAIVER_SIGNED" && (
+        <div className="waiver-waiting-card" role="status">
+          <div className="waiver-waiting-spinner" aria-hidden="true" />
+          <h2>Waiting for staff approval</h2>
+          <p>
+            Your signed waiver was sent to an admin or staff member. Keep this page open —
+            it updates automatically and unlocks checkout once approved.
+          </p>
+        </div>
+      )}
 
       <article className="laser-waiver-document">
         <div className="laser-waiver-box">
@@ -124,56 +133,60 @@ export default function LaserWaiver() {
           </ol>
         </div>
 
-        <form className="laser-waiver-signature" onSubmit={handleSign}>
-          <label htmlFor="waiver-signer-name">Full legal name</label>
-          <input
-            autoComplete="name"
-            id="waiver-signer-name"
-            onChange={(event) => setSignerName(event.target.value)}
-            readOnly={Boolean(signature)}
-            required
-            value={signature?.name ?? signerName}
-          />
-          <label className="laser-waiver-agreement">
-            <input
-              checked={agreed}
-              disabled={Boolean(signature)}
-              onChange={(event) => setAgreed(event.target.checked)}
-              type="checkbox"
-            />
-            <span>I have read and agree to this waiver.</span>
-          </label>
-          <button
-            disabled={!signerName.trim() || !agreed || Boolean(signature) || signing}
-            type="submit"
-          >
-            {signing ? "Saving signature…" : signature ? "Signed electronically" : "Sign electronically"}
-          </button>
+        <div className="laser-waiver-signature">
+          <p className="laser-waiver-hint">
+            {state.equipmentName}
+            {state.displayDate ? ` · ${state.displayDate}` : ""}
+            {state.displayTime ? ` · ${state.displayTime}` : ""}
+          </p>
+          {!signed && !denied && (
+            <button
+              className="laser-waiver-rabbitsign"
+              disabled={submitting}
+              onClick={handleOpenRabbitSign}
+              type="button"
+            >
+              {submitting ? "Opening…" : "Open the waiver in RabbitSign ↗"}
+            </button>
+          )}
           {signError && <p className="training-task-error" role="alert">{signError}</p>}
-          {signature && (
+          {status === "WAIVER_SIGNED" && (
             <p className="laser-waiver-signed" role="status">
-              Signed by {signature.name} on {new Date(signature.signedAt).toLocaleString()}.
+              Pending staff review. Finish signing in the RabbitSign tab if you haven't —
+              this page updates automatically once staff approve.
             </p>
           )}
-        </form>
+          {approved && (
+            <p className="laser-waiver-signed" role="status">
+              Approved by staff. You can continue to checkout.
+            </p>
+          )}
+          {denied && (
+            <p className="training-task-error" role="alert">
+              Staff did not approve this waiver. Please see staff for help.
+            </p>
+          )}
+        </div>
       </article>
 
-      {state.requiresTraining && (
-        <section className="laser-waiver-training">
-          <h2>Equipment Training</h2>
-          <p>Please watch the full training video. You will confirm it in your account after booking.</p>
-          <video controls preload="metadata" src={videoUrl}>
-            Your browser does not support video playback.
-          </video>
-        </section>
-      )}
+      <section className="laser-waiver-training">
+        <h2>Equipment Training</h2>
+        <p>Please watch the full training video. You will confirm it in your account.</p>
+        <video
+          controls
+          preload="metadata"
+          src={import.meta.env.VITE_LASER_TRAINING_VIDEO_URL || "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"}
+        >
+          Your browser does not support video playback.
+        </video>
+      </section>
 
       <button
         className="laser-waiver-finish"
-        disabled={!signature}
+        disabled={!approved}
         onClick={handleContinueToCheckout}
       >
-        Continue to checkout
+        {approved ? "Continue to checkout" : "Waiting for staff approval"}
       </button>
     </div>
   );

@@ -16,9 +16,17 @@ public interface EmailService {
 
     /**
      * Sends a reservation confirmation to the user with equipment and time details.
+     * equipmentCategory is the raw category code (e.g. "3D_PRINTER"); the implementation
+     * is responsible for rendering it as a human-readable label.
      */
     void sendReservationConfirmation(String toEmail, String fullName,
-            String equipmentName, java.time.ZonedDateTime startTime, java.time.ZonedDateTime endTime);
+            String equipmentName, String equipmentCategory,
+            java.time.ZonedDateTime startTime, java.time.ZonedDateTime endTime);
+
+    void sendWaiverSigned(String toEmail, String fullName, String equipmentName,
+            String signedName, byte[] pdf);
+
+    void sendAccountInvite(String toEmail, String fullName, String roleLabel, String code);
 
     /**
      * Sends a payment receipt after a successful charge.

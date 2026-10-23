@@ -1,23 +1,76 @@
-import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+
+const PLAN_DETAILS = {
+  MONTHLY:       { name: "Monthly Membership",  features: ["Equipment access at member rates","Access to common space","50% off classes","Access to events and discounts"] },
+  ANNUAL:        { name: "Annual Membership",   features: ["Equipment access at member rates","Access to common space","50% off classes","Access to events and discounts","Billed once per year"] },
+  STUDENT:       { name: "Student Membership",  features: ["Equipment access at member rates","50% off classes","Access to events and discounts","Requires .edu email address"] },
+  DAY_PASS:      { name: "Day Pass",            features: ["Full access for one day","Equipment at standard rates","Class access"] },
+  STUDIO_SMALL:  { name: "Small Studio",        features: ["Private small maker studio","Machine rate waiver — equipment included","Access to common space","50% off classes","Access to events and discounts"] },
+  STUDIO_MEDIUM: { name: "Medium Studio",       features: ["Private medium maker studio","Machine rate waiver — equipment included","Access to common space","50% off classes","Access to events and discounts"] },
+  STUDIO_LARGE:  { name: "Large Studio",        features: ["Private large maker studio","Machine rate waiver — equipment included","Access to common space","50% off classes","Access to events and discounts"] },
+};
+
+function formatPrice(amountCents, billingInterval) {
+  const amount = (amountCents / 100).toLocaleString("en-US", {
+    style: "currency", currency: "USD", minimumFractionDigits: 0,
+  });
+  return billingInterval ? `${amount}/${billingInterval.toLowerCase()}` : amount;
+}
 
 export default function MembershipCheckout() {
   const { state } = useLocation();
   const navigate = useNavigate();
-  const { authFetch } = useAuth();
+  const { authFetch, user } = useAuth();
+  const isStudentEligible = user?.email?.toLowerCase().endsWith(".edu") ?? false;
+  const [searchParams] = useSearchParams();
+
+  const planCodeFromUrl = searchParams.get("plan");
+  const [plan, setPlan] = useState(state?.plan ?? null);
+  const [planLoading, setPlanLoading] = useState(!state?.plan && !!planCodeFromUrl);
+  const [planError, setPlanError] = useState("");
 
   const [saveCard, setSaveCard] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Guard: if navigated here directly without state, go back
-  if (!state?.plan) {
+  useEffect(() => {
+    if (state?.plan || !planCodeFromUrl) return;
+    fetch("/api/v1/billing/plans")
+      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
+      .then((plans) => {
+        const match = plans.find((p) => p.code === planCodeFromUrl);
+        if (!match) throw new Error("Plan not found");
+        const details = PLAN_DETAILS[match.code] ?? { name: match.code, features: [] };
+        setPlan({ ...match, ...details, price: formatPrice(match.amountCents, match.billingInterval) });
+      })
+      .catch(() => setPlanError("Could not load plan details."))
+      .finally(() => setPlanLoading(false));
+  }, [planCodeFromUrl, state?.plan]);
+
+  if (planLoading) {
+    return <div className="DashHome1"><p>Loading…</p></div>;
+  }
+
+  if (planError) {
+    return (
+      <div className="DashHome1">
+        <p>{planError}</p>
+        <button onClick={() => navigate("/dashboard/membership")}>Back to Membership</button>
+      </div>
+    );
+  }
+
+  if (!plan) {
     navigate("/dashboard/membership", { replace: true });
     return null;
   }
 
-  const { plan } = state;
+  if (plan.code === "STUDENT" && !isStudentEligible) {
+    navigate("/dashboard/membership", { replace: true });
+    return null;
+  }
 
   async function handleConfirm() {
     setError("");

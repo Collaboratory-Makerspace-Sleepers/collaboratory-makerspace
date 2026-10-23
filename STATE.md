@@ -3,7 +3,7 @@
 Each row describes a backend endpoint or feature and whether the frontend is connected to it.
 "Connected" means the frontend actively calls the endpoint and uses the response.
 
-Last updated: 2026-10-18 · Tests passing: 121
+Last updated: 2026-10-23 · Tests passing: 124
 
 ---
 
@@ -13,11 +13,11 @@ Last updated: 2026-10-18 · Tests passing: 121
 |---|---|---|
 | `GET /api/v1/users/me` | `useDashboard.js`, `Account.jsx` | Connected |
 | `PATCH /api/v1/users/me` | `Account.jsx` | Connected |
-| `GET /api/v1/users` (admin) | — | Not connected |
-| `GET /api/v1/users/{id}` (admin) | — | Not connected |
-| `PATCH /api/v1/users/{id}/role` | — | Not connected |
-| `DELETE /api/v1/users/{id}` | — | Not connected |
-| `POST /api/v1/users/{id}/restore` | — | Not connected |
+| `GET /api/v1/users` (admin) | `AllUsers.jsx` | Connected — list, search, delete, resend OTP |
+| `GET /api/v1/users/{id}` (admin) | `UserInformation.jsx` | Connected |
+| `PATCH /api/v1/users/{id}/role` | `UserInformation.jsx` | Connected — role checkboxes; saves `{ roleCodes }` |
+| `DELETE /api/v1/users/{id}` | `UserInformation.jsx` | Connected — "Disable Member" soft-deletes user |
+| `POST /api/v1/users/{id}/restore` | `UserInformation.jsx` | Connected — "Enable Member" restores soft-deleted user |
 | OTP email sign-in | `SignIn.jsx`, `SignUp.jsx`, `EmailOtpForm.jsx` | Connected |
 | OAuth (Google/Microsoft/Apple) | `OAuthButtons.jsx`, `OAuthCallback.jsx` | Connected |
 
@@ -32,10 +32,10 @@ Last updated: 2026-10-18 · Tests passing: 121
 | `GET /api/v1/equipment/category/CLASS` | `BookClasses.jsx` | Connected |
 | `GET /api/v1/equipment/status/{status}` | — | Not connected |
 | `GET /api/v1/equipment/search` | — | Not connected — search is client-side filter in frontend |
-| `POST /api/v1/equipment` (admin) | — | Not connected |
-| `PUT /api/v1/equipment/{id}` (admin) | — | Not connected |
-| `PATCH /api/v1/equipment/{id}/status` (admin) | — | Not connected |
-| `DELETE /api/v1/equipment/{id}` (admin) | — | Not connected |
+| `POST /api/v1/equipment` (admin) | `AdminRentEquipment.jsx` | Connected |
+| `PUT /api/v1/equipment/{id}` (admin) | `AllEquipment.jsx` | Connected |
+| `PATCH /api/v1/equipment/{id}/status` (admin) | `AllEquipment.jsx` | Connected |
+| `DELETE /api/v1/equipment/{id}` (admin) | `AllEquipment.jsx` | Connected |
 
 **Resolved:** `RentEquipment.jsx` displays live `hourlyRateCents` from API. `ReserveEquipment.jsx`
 has a duration selector (1–4 hrs) and computes live cost. `ReservationCheckout.jsx` uses
@@ -57,16 +57,18 @@ conflict awareness (time-slot availability is a Phase 2 backend feature).
 | `PATCH /api/v1/reservations/{id}/cancel` | `MyReservations.jsx` | Connected |
 | `PATCH /api/v1/reservations/{id}/reschedule` | `MyReservations.jsx` | Connected |
 | `PATCH /api/v1/reservations/{id}/extend` (staff) | — | Not connected |
-| `GET /api/v1/reservations/admin/all` | — | Not connected |
+| `GET /api/v1/reservations/admin/all` | `ReservationsTable.jsx` | Connected |
 | `GET /api/v1/reservations/admin/equipment/{id}` | — | Not connected |
+| `GET /api/v1/reservations/in-use-now` | `useInUseNow.js` | Connected — 15s poll; highlights active equipment |
+| `GET /api/v1/reservations/equipment/{id}/booked` | `ReserveEquipment.jsx` | Connected — greys out booked time slots |
 
 **Resolved gaps:**
 - `MyReservations.jsx` now has three buckets: `TRAINING_PENDING` (shows `TrainingAttestCard` with
-  video link + checkbox + attest button), `ACTIVE` (reschedule/cancel), and past.
+  video link + checkbox + attest button), `ACTIVE` (reschedule/cancel), and past (COMPLETED/CANCELLED).
 - `upcomingReservations()` in `useDashboard.js` includes `TRAINING_PENDING`.
-
-**Remaining gap:** No time-slot availability check — `ReserveEquipment.jsx` shows all slots as
-bookable; conflict is caught at booking time with a 409.
+- `ReservationsTable.jsx` shows all reservations in admin panel.
+- `ReserveEquipment.jsx` fetches booked ranges and greys out conflicting time slots.
+- 15-second auto-refresh in `MyReservations.jsx` and `useDashboard.js` shows COMPLETED status live.
 
 ---
 
@@ -75,11 +77,16 @@ bookable; conflict is caught at booking time with a 409.
 | Endpoint | Frontend component | Status |
 |---|---|---|
 | `POST /api/v1/access/check` | — | Not connected — staff/kiosk UI only |
-| `POST /api/v1/hardware/checkin` | — | Hardware only — NFC reader calls this directly |
-
-`POST /api/v1/access/check` — requires `MANAGE_RESERVATIONS` (JWT). Takes `{ userId, equipmentId }`, checks for an ACTIVE reservation in a 30-min window.
-
-`POST /api/v1/hardware/checkin` — requires `X-Device-Key` header (no JWT). Takes `{ cardId }` (NFC UID), resolves to a user, grants entry if the user has a studio subscription, any active/grace membership, or an ACTIVE reservation in window. Writes an `access_events` audit row on every attempt.
+| `POST /api/v1/hardware/checkin` | NFC hardware | Hardware only — `X-Device-Key` auth |
+| `POST /api/v1/hardware/card-scan` | NFC hardware | Hardware only — card tap event |
+| `GET /api/v1/hardware/waiver-requests` | `HardwareCheckIns.jsx` | Connected — admin pending waiver list |
+| `POST /api/v1/hardware/checkin/{id}/approve` | `HardwareCheckIns.jsx` | Connected |
+| `POST /api/v1/hardware/checkin/{id}/deny` | `HardwareCheckIns.jsx` | Connected |
+| `POST /api/v1/hardware/checkin/{id}/sign` | `LaserWaiver.jsx` | Connected — RabbitSign flow |
+| `GET /api/v1/hardware/cards` | `CardManager.jsx` | Connected — admin card list |
+| `POST /api/v1/hardware/cards` | `CardManager.jsx` | Connected — assign card |
+| `GET /api/v1/hardware/card-scans/recent` | `CardScansLive.jsx` | Connected — live feed |
+| `GET /api/v1/users/activity/feed` | `RecentActivity.jsx` | Connected — admin home activity feed |
 
 ---
 
@@ -88,12 +95,13 @@ bookable; conflict is caught at booking time with a 409.
 | Endpoint | Frontend component | Status |
 |---|---|---|
 | `POST /api/v1/training-waivers/{equipmentId}/sign` | `LaserWaiver.jsx` | Connected |
+| `POST /api/v1/hardware/checkin/{id}/sign` | `LaserWaiver.jsx` (RabbitSign path) | Connected |
+| `POST /api/v1/hardware/checkin/{id}/approve` | `HardwareCheckIns.jsx` | Connected |
 
-Per-reservation waiver signing is required for every booking. `LaserWaiver.jsx` posts
-`{ signerName, startTime, endTime, waiverVersion }` and captures `waiverSignatureId` from the
-response. That ID is passed through nav state to `ReservationCheckout.jsx`, which includes it in
-the `POST /reservations` body. The backend validates version freshness (30-min window, must match
-`equipment.currentWaiverVersion`) and links the waiver row to the created reservation atomically.
+`LaserWaiver.jsx` now uses a RabbitSign staff-approval workflow: member signs digitally → backend
+creates a `hardware_checkins` row in WAIVER_SIGNED status → staff approves in `HardwareCheckIns.jsx`
+→ frontend polls status → on WAIVER_APPROVED, passes `waiverSignatureId` to `ReservationCheckout.jsx`.
+`WaiverStatusPanel.jsx` shows pending waiver banners on `DashboardHome.jsx` and `RentEquipment.jsx`.
 
 ---
 
@@ -127,16 +135,15 @@ the `POST /reservations` body. The backend validates version freshness (30-min w
 
 ## Admin & Staff Features
 
-None of the following backend capabilities have any frontend UI:
-
 | Feature | Backend | Frontend |
 |---|---|---|
-| Admin registration / invite flow | `AdminRegistrationController`, `RegistrationClaimController` | None |
-| Role management | `RoleController` | None |
-| User management | `UserController` (MANAGE_USERS endpoints) | None |
-| Equipment management | `EquipmentController` (write endpoints) | None |
-| Staff reservation extension | `PATCH /{id}/extend` | None |
-| Admin reservation view | `GET /admin/all`, `GET /admin/equipment/{id}` | None |
+| Admin registration / invite flow | `AdminRegistrationController`, `RegistrationClaimController` | `AdminUsers.jsx` create dialog |
+| Role management | `RoleController` | `UserInformation.jsx` role checkboxes |
+| User management | `UserController` | `AllUsers.jsx`, `AdminUsers.jsx` |
+| Equipment management | `EquipmentController` (write) | `AdminRentEquipment.jsx`, `AllEquipment.jsx` |
+| Staff reservation extension | `PATCH /{id}/extend` | Not connected |
+| Admin reservation view | `ReservationsTable.jsx` | `GET /admin/all` connected |
+| Hardware check-in / waiver management | `HardwareCheckInController`, `CardController` | `HardwareCheckIns.jsx`, `CardManager.jsx`, `CardScansLive.jsx` |
 | Admin refund | Not yet built (Phase 4) | None |
 
 ---
@@ -148,6 +155,7 @@ None of the following backend capabilities have any frontend UI:
 | Studio assignment | Auto-assigned on STUDIO_* plan activation | No UI — user cannot see their assigned room |
 | CLASS 50% member discount | `quotedRateCents = hourlyRate/2` for members | Rate in response; `BookClasses.jsx` shows "Free" (rate unconfirmed by client) |
 | Student .edu gate | 403 returned if email doesn't end in `.edu` | No friendly error in `MembershipCheckout.jsx` |
+| Day-pass alternative to membership gate | `hasRecentDayPass()` in `ReservationService` | Handled via `ReservationCheckout.jsx` day-pass button |
 
 ---
 
@@ -169,7 +177,7 @@ None of the following backend capabilities have any frontend UI:
 
 | Item | Status | Notes |
 |---|---|---|
-| Flyway migrations (V1, V3–V10, V12–V14) | Done | V13: waiver versioning + video URL; V14: corrects Stripe IDs for MONTHLY/STUDENT/DAY_PASS; ANNUAL IDs still TODO |
+| Flyway migrations (V1–V22) | Done | V20: hardware_checkins; V21: member_cards/card_scans; V22: waiver_documents |
 | PostgreSQL (RDS) | Done | Connection in application.properties |
 | Redis (OTP) | Done (config) | `REDIS_HOST` must be set in prod |
 | AWS Lambda event consumers | Done | Deployed in lambdas/ directory |

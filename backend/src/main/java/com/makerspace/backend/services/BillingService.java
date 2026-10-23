@@ -303,8 +303,10 @@ public class BillingService {
                 .setName(profile.getFirstName() + " " + profile.getLastName())
                 .setEmail(user.getEmail())
                 .build();
+        // Include the parameters in the key: Stripe rejects a reused key with different params.
+        int paramsHash = java.util.Objects.hash(params.getName(), params.getEmail());
         RequestOptions options = RequestOptions.builder()
-                .setIdempotencyKey("cust-create-" + userId)
+                .setIdempotencyKey("cust-create-" + userId + "-" + Integer.toHexString(paramsHash))
                 .build();
         Customer customer = stripeClient.v1().customers().create(params, options);
         user.setStripeCustomerId(customer.getId());
@@ -331,6 +333,57 @@ public class BillingService {
                 return customer.getId();
             }
             throw e;
+        }
+    }
+
+    public String createClassCheckoutSession(Long userId, Long enrollmentId, int priceCents, String title)
+            throws StripeException {
+        Optional<User> userOpt = userRepository.findByIdForUpdate(userId);
+        if (userOpt.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+        }
+        User user = userOpt.get();
+        UserProfile profile = user.getProfile();
+
+        String stripeCustomerId;
+        if (user.getStripeCustomerId() == null) {
+            stripeCustomerId = createStripeCustomer(user, profile, userId);
+        } else {
+            stripeCustomerId = verifyOrRecreateCustomer(user, profile, userId);
+        }
+
+        SessionCreateParams.LineItem lineItem = SessionCreateParams.LineItem.builder()
+                .setQuantity(1L)
+                .setPriceData(SessionCreateParams.LineItem.PriceData.builder()
+                        .setCurrency("usd")
+                        .setUnitAmount((long) priceCents)
+                        .setProductData(SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                                .setName(title)
+                                .build())
+                        .build())
+                .build();
+
+        String typedSuccessUrl = successUrl + "?type=class&enrollmentId=" + enrollmentId
+                + "&session_id={CHECKOUT_SESSION_ID}";
+
+        SessionCreateParams params = SessionCreateParams.builder()
+                .setCustomer(stripeCustomerId)
+                .setMode(SessionCreateParams.Mode.PAYMENT)
+                .setSuccessUrl(typedSuccessUrl)
+                .setCancelUrl(cancelUrl)
+                .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
+                .addLineItem(lineItem)
+                .build();
+
+        Session session = stripeClient.v1().checkout().sessions().create(params);
+        return session.getUrl();
+    }
+
+    public void verifyClassPayment(String stripeSessionId) throws StripeException {
+        Session session = stripeClient.v1().checkout().sessions().retrieve(stripeSessionId);
+        if (!"paid".equals(session.getPaymentStatus()) && !"no_payment_required".equals(session.getPaymentStatus())) {
+            throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED,
+                    "Payment not confirmed for session: " + stripeSessionId);
         }
     }
 

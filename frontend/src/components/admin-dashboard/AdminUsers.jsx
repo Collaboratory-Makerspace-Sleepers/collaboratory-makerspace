@@ -73,23 +73,10 @@ export default function AdminUsers() {
   return (
     <div className="AdUserRow">
       <div className="AdUser">
-        <p>Users</p>
-
-        <div className="AdUser1">
-          <div className="AdUser2">
-            <div className="AdUser3">
-              <p>Create Staff/Instructor</p>
-              <p>Create a new staff employee or instructor for classes</p>
-            </div>
-            <button onClick={() => openInvite("STAFF")}>Create New Staff</button>
-          </div>
-          <div className="AdUser2">
-            <div className="AdUser3">
-              <p>Create a new user</p>
-              <p>Create a new user to access the makerspace</p>
-            </div>
-            <button onClick={() => openInvite("MEMBER")}>Create New User</button>
-          </div>
+        <h1 className="admin-page-title">Users</h1>
+        <div className="admin-actions-row">
+          <button onClick={() => openInvite("STAFF")}>Create New Staff</button>
+          <button onClick={() => openInvite("MEMBER")}>Create New User</button>
         </div>
 
         <div className="AdAct">

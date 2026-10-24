@@ -7,16 +7,9 @@ export default function AdminBookClasses() {
 
   return (
     <div className="AdUser">
-      <p>Classes</p>
-
-      <div className="AdUser1">
-        <div className="AdUser2">
-          <div className="AdUser3">
-            <p>Create a new class</p>
-            <p>Create a new class session for the makerspace</p>
-          </div>
-          <button onClick={() => setCreateOpen(true)}>Create New Class</button>
-        </div>
+      <h1 className="admin-page-title">Classes</h1>
+      <div className="admin-actions-row">
+        <button onClick={() => setCreateOpen(true)}>Create New Class</button>
       </div>
 
       <div className="AdAct">

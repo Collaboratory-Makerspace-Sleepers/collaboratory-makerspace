@@ -12,6 +12,22 @@ import {
   formatTime,
 } from "../../hooks/useDashboard";
 
+export const CATEGORY_LABELS = {
+  LASER:         "Laser Cutters",
+  "3D_PRINTER":  "3D Printers",
+  CNC:           "CNC Routers",
+  CNC_LARGE:     "CNC Routers (Large)",
+  CNC_SMALL:     "CNC Routers (Small)",
+  ELECTRONICS:   "Electronics",
+  WOODSHOP:      "Woodshop",
+  WOOD_LATHE:    "Wood Lathes",
+  METAL_LATHE:   "Metal Lathes",
+  SEWING:        "Sewing",
+  STUDIO_SMALL:  "Small Studios",
+  STUDIO_MEDIUM: "Medium Studios",
+  STUDIO_LARGE:  "Large Studios",
+};
+
 export default function RentEquipment() {
   const navigate = useNavigate();
   const { authFetch } = useAuth();

@@ -69,3 +69,34 @@ WARNING: sun.misc.Unsafe::allocateMemory will be removed in a future release
 2026-10-25T15:16:49.594-04:00  INFO 27035 --- [backend] [nio-8080-exec-2] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
 2026-10-25T15:16:49.594-04:00  INFO 27035 --- [backend] [nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
 2026-10-25T15:16:49.595-04:00  INFO 27035 --- [backend] [nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2026-10-25T15:16:59.801-04:00  INFO 27035 --- [backend] [nio-8080-exec-9] c.m.backend.services.CardService         : Card scan uid=95E263D4 device=test approved=false reason=Card verified! Please complete sign-in on the screen, then tap card again to activate
+2026-10-25T15:16:59.823-04:00  INFO 27035 --- [backend] [nio-8080-exec-2] c.m.backend.services.CardService         : Card scan uid=85F10CD4 device=test approved=false reason=Card verified! Please complete sign-in on the screen, then tap card again to activate
+2026-10-25T15:16:59.840-04:00  INFO 27035 --- [backend] [nio-8080-exec-1] c.m.backend.services.CardService         : Card scan uid=857454D4 device=test approved=false reason=Card not registered - awaiting admin assignment
+2026-10-25T15:17:16.749-04:00  INFO 27035 --- [backend] [nio-8080-exec-1] c.m.backend.services.CardService         : Card scan uid=85F10CD4 device=reader-1 approved=false reason=Card verified! Please complete sign-in on the screen, then tap card again to activate
+2026-10-25T15:17:24.488-04:00  INFO 27035 --- [backend] [nio-8080-exec-8] c.m.b.c.HardwareCheckInController        : Fetching recent check-ins - page: 0, size: 20
+2026-10-25T15:17:24.498-04:00  WARN 27035 --- [backend] [nio-8080-exec-8] ration$PageModule$WarningLoggingModifier : Serializing PageImpl instances as-is is not supported, meaning that there is no guarantee about the stability of the resulting JSON structure!
+	For a stable JSON structure, please use Spring Data's PagedModel (globally via @EnableSpringDataWebSupport(pageSerializationMode = VIA_DTO))
+	or Spring HATEOAS and Spring Data's PagedResourcesAssembler as documented in https://docs.spring.io/spring-data/commons/reference/repositories/core-extensions.html#core.web.pageables.
+
+2026-10-25T15:17:24.507-04:00  INFO 27035 --- [backend] [nio-8080-exec-9] c.m.b.c.HardwareCheckInController        : Fetching recent check-ins - page: 0, size: 20
+2026-10-25T15:17:34.556-04:00  INFO 27035 --- [backend] [nio-8080-exec-6] c.m.backend.controller.OtpController     : OTP send requested
+2026-10-25T15:17:35.968-04:00  INFO 27035 --- [backend] [nio-8080-exec-6] c.m.backend.services.SmtpEmailService    : OTP sent to <liangzhijun1216@gmail.com>
+2026-10-25T15:17:35.968-04:00  INFO 27035 --- [backend] [nio-8080-exec-6] c.m.backend.controller.OtpController     : OTP send completed
+2026-10-25T15:17:47.854-04:00  INFO 27035 --- [backend] [nio-8080-exec-7] c.m.backend.controller.OtpController     : OTP verification requested
+2026-10-25T15:17:47.891-04:00  INFO 27035 --- [backend] [nio-8080-exec-7] c.m.backend.controller.OtpController     : OTP verification succeeded; session issued
+2026-10-25T15:17:58.818-04:00  INFO 27035 --- [backend] [nio-8080-exec-9] c.m.backend.services.CardService         : Card scan uid=85F10CD4 device=sign-in-reader approved=false reason=Card verified! Please complete sign-in on the screen, then tap card again to activate
+2026-10-25T15:18:02.998-04:00  INFO 27035 --- [backend] [nio-8080-exec-5] c.m.backend.services.SmtpEmailService    : Card activation OTP sent to <liangzhijun1216@gmail.com>
+2026-10-25T15:18:02.998-04:00  INFO 27035 --- [backend] [nio-8080-exec-5] c.m.backend.services.CardService         : OTP sent to liangzhijun1216@gmail.com for card 85F10CD4
+2026-10-25T15:18:03.006-04:00  INFO 27035 --- [backend] [nio-8080-exec-5] c.m.b.controller.CardAuthController      : OTP sent to email liangzhijun1216@gmail.com for card 85F10CD4
+2026-10-25T15:18:11.782-04:00  INFO 27035 --- [backend] [nio-8080-exec-3] c.m.b.controller.CardAuthController      : Card OTP verification succeeded for email liangzhijun1216@gmail.com
+2026-10-25T15:18:21.812-04:00  INFO 27035 --- [backend] [nio-8080-exec-5] c.m.backend.services.CardService         : Card scan uid=95E263D4 device=reader-1 approved=false reason=Card verified! Please complete sign-in on the screen, then tap card again to activate
+2026-10-25T15:18:32.628-04:00  INFO 27035 --- [backend] [nio-8080-exec-6] c.m.backend.services.CardService         : Card scan uid=85F10CD4 device=reader-1 approved=false reason=Card verified! Please complete sign-in on the screen, then tap card again to activate
+2026-10-25T15:19:36.730-04:00  INFO 27035 --- [backend] [nio-8080-exec-7] c.m.backend.services.CardService         : Card scan uid=85F10CD4 device=terminal-test approved=false reason=Card verified! Please complete sign-in on the screen, then tap card again to activate
+2026-10-25T15:20:25.231-04:00  INFO 27035 --- [backend] [nio-8080-exec-8] c.m.b.c.HardwareCheckInController        : Fetching recent check-ins - page: 0, size: 20
+2026-10-25T15:20:25.246-04:00  INFO 27035 --- [backend] [nio-8080-exec-5] c.m.b.c.HardwareCheckInController        : Fetching recent check-ins - page: 0, size: 20
+2026-10-25T15:21:04.994-04:00  INFO 27035 --- [backend] [nio-8080-exec-3] c.m.backend.services.CardService         : Card scan uid=85F10CD4 device=reader-1 approved=false reason=No active membership or day pass
+2026-10-25T15:21:14.075-04:00  INFO 27035 --- [backend] [nio-8080-exec-2] c.m.backend.services.CardService         : Card scan uid=85F10CD4 device=reader-1 approved=false reason=No active membership or day pass
+2026-10-25T15:21:20.191-04:00  INFO 27035 --- [backend] [nio-8080-exec-3] c.m.backend.services.CardService         : Card scan uid=95E263D4 device=reader-1 approved=false reason=Card verified! Please complete sign-in on the screen, then tap card again to activate
+2026-10-25T15:24:03.147-04:00  INFO 27035 --- [backend] [ionShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-10-25T15:24:03.149-04:00  INFO 27035 --- [backend] [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-10-25T15:24:03.150-04:00  INFO 27035 --- [backend] [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.

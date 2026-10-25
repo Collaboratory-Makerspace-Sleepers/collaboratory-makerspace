@@ -8,6 +8,7 @@ import com.makerspace.backend.model.HardwareCheckIn;
 import com.makerspace.backend.model.MemberCard;
 import com.makerspace.backend.model.UnregisteredCard;
 import com.makerspace.backend.model.User;
+import com.makerspace.backend.repository.AppRoleRepository;
 import com.makerspace.backend.repository.CardScanRepository;
 import com.makerspace.backend.repository.EquipmentRepository;
 import com.makerspace.backend.repository.MemberCardRepository;
@@ -41,6 +42,7 @@ public class CardService {
     @Autowired private CardScanRepository scanRepository;
     @Autowired private UnregisteredCardRepository unregisteredCardRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private AppRoleRepository roleRepository;
     @Autowired private EquipmentRepository equipmentRepository;
     @Autowired private TrainingTaskRepository trainingTaskRepository;
     @Autowired private HardwareCheckInService checkInService;
@@ -355,11 +357,12 @@ public class CardService {
         // Assign role if one was specified
         if (unregistered.getAssignedRole() != null && !unregistered.getAssignedRole().isEmpty()) {
             String roleCode = unregistered.getAssignedRole().toUpperCase();
-            // Clear existing roles
+            // Fetch the actual role from the database
+            AppRole appRole = roleRepository.findById(roleCode)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
+                            "Role '" + roleCode + "' not found in system"));
+            // Clear existing roles and assign the new one
             user.getRoles().clear();
-            // Assign the new role by code
-            AppRole appRole = new AppRole();
-            appRole.setCode(roleCode);
             user.getRoles().add(appRole);
             userRepository.save(user);
         }

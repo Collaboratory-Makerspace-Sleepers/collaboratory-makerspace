@@ -80,12 +80,25 @@ public class CardService {
                 unregistered.setDeviceId(deviceId);
                 unregistered.setScanCount(1);
                 unregistered.setStatus("PENDING");
+                unregisteredCardRepository.save(unregistered);
+                return record(uid, null, null, deviceId, false, "Card not registered - awaiting admin assignment");
             } else {
+                // Card exists but not registered as MemberCard
                 unregistered.setLastScannedAt(Instant.now());
                 unregistered.setScanCount((unregistered.getScanCount() != null ? unregistered.getScanCount() : 0) + 1);
+                unregisteredCardRepository.save(unregistered);
+                
+                // Provide status-specific message
+                String message = switch (unregistered.getStatus()) {
+                    case "PENDING" -> "Card not registered - awaiting admin assignment";
+                    case "ASSIGNED" -> "Card awaiting role assignment";
+                    case "ROLE_ASSIGNED" -> "Card ready - please sign in and tap again";
+                    case "VERIFIED" -> "Card ready for sign-in - please complete the sign-in process";
+                    case "ACTIVATED" -> "Card activated - should have MemberCard entry";
+                    default -> "Card status unknown - contact admin";
+                };
+                return record(uid, null, null, deviceId, false, message);
             }
-            unregisteredCardRepository.save(unregistered);
-            return record(uid, null, null, deviceId, false, "Card not registered - awaiting admin assignment");
         }
         card.setLastSeenAt(Instant.now());
         User user = card.getUser();

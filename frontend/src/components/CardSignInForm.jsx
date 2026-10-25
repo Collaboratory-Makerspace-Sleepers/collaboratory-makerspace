@@ -162,17 +162,21 @@ export default function CardSignInForm() {
         );
       }
 
-      // Set token
-      setToken(verifyData.access_token);
+      // Store the JWT token for authentication
+      const jwtToken = verifyData.access_token;
+      setToken(jwtToken);
 
-      // Now activate the card with the JWT token
+      // Now activate the card with the JWT token in Authorization header
       const activateRes = await fetch("/api/v1/auth/card/activate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${jwtToken}`
+        },
         body: JSON.stringify({ cardUid }),
       });
 
-      const activateData = activateRes.json().catch(() => ({}));
+      const activateData = await activateRes.json().catch(() => ({}));
       if (!activateRes.ok) {
         console.warn("Card activation warning:", activateData?.message);
       }

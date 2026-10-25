@@ -92,8 +92,8 @@ public class CardService {
                 String message = switch (unregistered.getStatus()) {
                     case "PENDING" -> "Card not registered - awaiting admin assignment";
                     case "ASSIGNED" -> "Card awaiting role assignment";
-                    case "ROLE_ASSIGNED" -> "Card ready - please sign in and tap again";
-                    case "VERIFIED" -> "Card ready for sign-in - please complete the sign-in process";
+                    case "ROLE_ASSIGNED" -> "Card ready - please sign in with email " + (unregistered.getAssignedToEmail() != null ? unregistered.getAssignedToEmail() : "and tap again");
+                    case "VERIFIED" -> "Card verified! Please complete sign-in on the screen, then tap card again to activate";
                     case "ACTIVATED" -> "Card activated - should have MemberCard entry";
                     default -> "Card status unknown - contact admin";
                 };

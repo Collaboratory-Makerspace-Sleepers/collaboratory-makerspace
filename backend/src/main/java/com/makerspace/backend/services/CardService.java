@@ -357,14 +357,20 @@ public class CardService {
         // Assign role if one was specified
         if (unregistered.getAssignedRole() != null && !unregistered.getAssignedRole().isEmpty()) {
             String roleCode = unregistered.getAssignedRole().toUpperCase();
+            log.info("Assigning role {} to user {} for card {}", roleCode, user.getId(), uid);
             // Fetch the actual role from the database
             AppRole appRole = roleRepository.findById(roleCode)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
                             "Role '" + roleCode + "' not found in system"));
+            log.info("Found role: {}", appRole.getCode());
             // Clear existing roles and assign the new one
             user.getRoles().clear();
             user.getRoles().add(appRole);
-            userRepository.save(user);
+            User savedUser = userRepository.save(user);
+            log.info("User {} now has {} roles", savedUser.getId(), savedUser.getRoles().size());
+            for (AppRole r : savedUser.getRoles()) {
+                log.info("  - Role: {}", r.getCode());
+            }
         }
 
         // Create the member card

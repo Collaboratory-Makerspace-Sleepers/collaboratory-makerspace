@@ -100,11 +100,30 @@ public class HardwareCheckInService {
 
     /** Staff, legacy ADMIN/MEMBER roles, an active membership, or a Day Pass in the last 24h. */
     public boolean hasFacilityAccess(User user) {
+        log.debug("Checking facility access for user {} ({})", user.getId(), user.getEmail());
+        
         boolean roleOk = user.getRoles().stream()
                 .anyMatch(r -> r.getCode().equals("ADMIN") || r.getCode().equals("MEMBER"))
                 || user.effectivePermissions().contains("MANAGE_EQUIPMENT");
-        return roleOk || membershipService.hasActiveMembership(user.getId())
-                || reservationService.hasRecentDayPass(user.getId());
+        
+        if (roleOk) {
+            log.debug("User {} has facility access via role/permission", user.getId());
+            return true;
+        }
+        
+        log.debug("User {} has {} roles: {}", user.getId(), user.getRoles().size(), 
+                user.getRoles().stream().map(r -> r.getCode()).toList());
+        
+        boolean hasMembership = membershipService.hasActiveMembership(user.getId());
+        log.debug("User {} has active membership: {}", user.getId(), hasMembership);
+        if (hasMembership) return true;
+        
+        boolean hasDayPass = reservationService.hasRecentDayPass(user.getId());
+        log.debug("User {} has recent day pass: {}", user.getId(), hasDayPass);
+        if (hasDayPass) return true;
+        
+        log.debug("User {} denied facility access", user.getId());
+        return false;
     }
 
     /**

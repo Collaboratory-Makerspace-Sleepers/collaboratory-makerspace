@@ -225,11 +225,36 @@ export default function CardSignInForm() {
         body: JSON.stringify({ cardUid }),
       });
 
-      const activateData = await activateRes.json().catch(() => ({}));
+      let activateData = {};
+      const contentType = activateRes.headers.get("content-type");
+      
+      if (contentType?.includes("application/json")) {
+        try {
+          activateData = await activateRes.json();
+        } catch (parseErr) {
+          console.error("Failed to parse JSON response:", parseErr);
+          console.error("Response status:", activateRes.status);
+          activateData = { message: "Server returned invalid response" };
+        }
+      } else {
+        const bodyText = await activateRes.text();
+        console.error("Backend returned non-JSON. Content-type:", contentType);
+        console.error("Response body (first 500 chars):", bodyText.substring(0, 500));
+        activateData = { message: "Server error - check browser console for details" };
+      }
+
       if (!activateRes.ok) {
+        const statusMessage = activateRes.status === 401 
+          ? "Session expired. Please sign in again."
+          : activateRes.status === 403
+          ? "You don't have permission to activate cards."
+          : activateRes.status >= 500
+          ? "Server error (500+). Check that the backend is running and database is accessible."
+          : undefined;
+        
         throw new Error(
-          activateData?.message || 
-          "Failed to activate card. Please try again."
+          statusMessage || activateData?.message ||
+          `Failed to activate card (HTTP ${activateRes.status}). Please try again.`
         );
       }
 

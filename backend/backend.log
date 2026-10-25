@@ -1,39 +1,71 @@
-[INFO] Scanning for projects...
-[INFO] 
-[INFO] -----------------------< com.makerspace:backend >-----------------------
-[INFO] Building backend 0.0.1-SNAPSHOT
-[INFO]   from pom.xml
-[INFO] --------------------------------[ jar ]---------------------------------
-[INFO] 
-[INFO] >>> spring-boot:3.3.9:run (default-cli) > test-compile @ backend >>>
-[INFO] 
-[INFO] --- resources:3.3.1:resources (default-resources) @ backend ---
-[INFO] Copying 4 resources from src/main/resources to target/classes
-[INFO] Copying 10 resources from src/main/resources to target/classes
-[INFO] 
-[INFO] --- compiler:3.13.0:compile (default-compile) @ backend ---
-[INFO] Nothing to compile - all classes are up to date.
-[INFO] 
-[INFO] --- resources:3.3.1:testResources (default-testResources) @ backend ---
-[INFO] Copying 1 resource from src/test/resources to target/test-classes
-[INFO] 
-[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ backend ---
-[INFO] Nothing to compile - all classes are up to date.
-[INFO] 
-[INFO] <<< spring-boot:3.3.9:run (default-cli) < test-compile @ backend <<<
-[INFO] 
-[INFO] 
-[INFO] --- spring-boot:3.3.9:run (default-cli) @ backend ---
-[INFO] ------------------------------------------------------------------------
-[INFO] BUILD FAILURE
-[INFO] ------------------------------------------------------------------------
-[INFO] Total time:  1.584 s
-[INFO] Finished at: 2026-10-19T19:47:21-04:00
-[INFO] ------------------------------------------------------------------------
-[ERROR] Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:3.3.9:run (default-cli) on project backend: Execution default-cli of goal org.springframework.boot:spring-boot-maven-plugin:3.3.9:run failed: Unable to find a single main class from the following candidates [com.makerspace.backend.Application, com.makerspace.backend.Application 2] -> [Help 1]
-[ERROR] 
-[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
-[ERROR] Re-run Maven using the -X switch to enable full debug logging.
-[ERROR] 
-[ERROR] For more information about the errors and possible solutions, please read the following articles:
-[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/PluginExecutionException
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.9)
+
+2026-10-25T15:16:45.493-04:00  INFO 27035 --- [backend] [           main] com.makerspace.backend.Application       : Starting Application v0.0.1-SNAPSHOT using Java 25.0.2 with PID 27035 (/Users/zhijunliang/Desktop/code/collaboratory-makerspace/backend/target/backend-0.0.1-SNAPSHOT.jar started by zhijunliang in /Users/zhijunliang/Desktop/code/collaboratory-makerspace/backend)
+2026-10-25T15:16:45.495-04:00  INFO 27035 --- [backend] [           main] com.makerspace.backend.Application       : No active profile set, falling back to 1 default profile: "default"
+2026-10-25T15:16:45.951-04:00  INFO 27035 --- [backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-10-25T15:16:45.952-04:00  INFO 27035 --- [backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-10-25T15:16:46.036-04:00  INFO 27035 --- [backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 82 ms. Found 16 JPA repository interfaces.
+2026-10-25T15:16:46.043-04:00  INFO 27035 --- [backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-10-25T15:16:46.043-04:00  INFO 27035 --- [backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-10-25T15:16:46.049-04:00  INFO 27035 --- [backend] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.makerspace.backend.repository.UserRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-10-25T15:16:46.049-04:00  INFO 27035 --- [backend] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.makerspace.backend.repository.EquipmentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-10-25T15:16:46.049-04:00  INFO 27035 --- [backend] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.makerspace.backend.repository.PaymentRecordRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-10-25T15:16:46.050-04:00  INFO 27035 --- [backend] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.makerspace.backend.repository.ReservationRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-10-25T15:16:46.050-04:00  INFO 27035 --- [backend] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.makerspace.backend.repository.TrainingTaskRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-10-25T15:16:46.050-04:00  INFO 27035 --- [backend] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.makerspace.backend.repository.MembershipPlanRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-10-25T15:16:46.050-04:00  INFO 27035 --- [backend] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.makerspace.backend.repository.TrainingWaiverSignatureRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-10-25T15:16:46.050-04:00  INFO 27035 --- [backend] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.makerspace.backend.repository.AppRoleRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-10-25T15:16:46.050-04:00  INFO 27035 --- [backend] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.makerspace.backend.repository.CardScanRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-10-25T15:16:46.050-04:00  INFO 27035 --- [backend] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.makerspace.backend.repository.UnregisteredCardRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-10-25T15:16:46.050-04:00  INFO 27035 --- [backend] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.makerspace.backend.repository.MemberCardRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-10-25T15:16:46.050-04:00  INFO 27035 --- [backend] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.makerspace.backend.repository.StripeEventLogRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-10-25T15:16:46.050-04:00  INFO 27035 --- [backend] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.makerspace.backend.repository.RegistrationInviteRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-10-25T15:16:46.050-04:00  INFO 27035 --- [backend] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.makerspace.backend.repository.HardwareCheckInRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-10-25T15:16:46.050-04:00  INFO 27035 --- [backend] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.makerspace.backend.repository.WaiverDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-10-25T15:16:46.050-04:00  INFO 27035 --- [backend] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.makerspace.backend.repository.MembershipRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-10-25T15:16:46.050-04:00  INFO 27035 --- [backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 4 ms. Found 0 Redis repository interfaces.
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by org.apache.tomcat.jni.Library in an unnamed module (jar:nested:/Users/zhijunliang/Desktop/code/collaboratory-makerspace/backend/target/backend-0.0.1-SNAPSHOT.jar/!BOOT-INF/lib/tomcat-embed-core-10.1.36.jar!/)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+2026-10-25T15:16:46.385-04:00  INFO 27035 --- [backend] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-10-25T15:16:46.391-04:00  INFO 27035 --- [backend] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-10-25T15:16:46.391-04:00  INFO 27035 --- [backend] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.36]
+2026-10-25T15:16:46.401-04:00  INFO 27035 --- [backend] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-10-25T15:16:46.401-04:00  INFO 27035 --- [backend] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 889 ms
+2026-10-25T15:16:46.596-04:00  INFO 27035 --- [backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-10-25T15:16:46.652-04:00  INFO 27035 --- [backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@2c15034f
+2026-10-25T15:16:46.652-04:00  INFO 27035 --- [backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-10-25T15:16:46.665-04:00  INFO 27035 --- [backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://localhost:5432/collaboratory_makerspace (PostgreSQL 18.3)
+2026-10-25T15:16:46.669-04:00  WARN 27035 --- [backend] [           main] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: PostgreSQL 18.3 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 16.
+2026-10-25T15:16:46.693-04:00  INFO 27035 --- [backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 17 migrations (execution time 00:00.017s)
+2026-10-25T15:16:46.704-04:00  INFO 27035 --- [backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "public": 18
+2026-10-25T15:16:46.706-04:00  INFO 27035 --- [backend] [           main] o.f.core.internal.command.DbMigrate      : Schema "public" is up to date. No migration necessary.
+2026-10-25T15:16:46.746-04:00  INFO 27035 --- [backend] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-10-25T15:16:46.764-04:00  INFO 27035 --- [backend] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.3.Final
+2026-10-25T15:16:46.776-04:00  INFO 27035 --- [backend] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-10-25T15:16:46.868-04:00  INFO 27035 --- [backend] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-10-25T15:16:46.890-04:00  WARN 27035 --- [backend] [           main] org.hibernate.orm.deprecation            : HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-10-25T15:16:47.345-04:00  INFO 27035 --- [backend] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-10-25T15:16:47.346-04:00  INFO 27035 --- [backend] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-10-25T15:16:47.441-04:00  INFO 27035 --- [backend] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::allocateMemory has been called by io.netty.util.internal.PlatformDependent0$2 (jar:nested:/Users/zhijunliang/Desktop/code/collaboratory-makerspace/backend/target/backend-0.0.1-SNAPSHOT.jar/!BOOT-INF/lib/netty-common-4.1.118.Final.jar!/)
+WARNING: Please consider reporting this to the maintainers of class io.netty.util.internal.PlatformDependent0$2
+WARNING: sun.misc.Unsafe::allocateMemory will be removed in a future release
+2026-10-25T15:16:48.242-04:00  WARN 27035 --- [backend] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-10-25T15:16:48.431-04:00  INFO 27035 --- [backend] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+2026-10-25T15:16:48.741-04:00  INFO 27035 --- [backend] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2026-10-25T15:16:48.747-04:00  INFO 27035 --- [backend] [           main] com.makerspace.backend.Application       : Started Application in 3.424 seconds (process running for 3.67)
+2026-10-25T15:16:49.594-04:00  INFO 27035 --- [backend] [nio-8080-exec-2] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-10-25T15:16:49.594-04:00  INFO 27035 --- [backend] [nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-10-25T15:16:49.595-04:00  INFO 27035 --- [backend] [nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms

@@ -266,6 +266,7 @@ public class CardService {
         
         card.setAssignedRole(role.toUpperCase());
         card.setRoleAssignedAt(Instant.now());
+        card.setStatus("ROLE_ASSIGNED");
         return unregisteredCardRepository.save(card);
     }
 

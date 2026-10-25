@@ -55,4 +55,10 @@ public class UnregisteredCard {
 
     @Column(name = "scan_count")
     private Integer scanCount = 1;
+
+    @Column(name = "assigned_role", length = 50)
+    private String assignedRole; // MEMBER, ADMIN, STAFF
+
+    @Column(name = "role_assigned_at")
+    private Instant roleAssignedAt;
 }

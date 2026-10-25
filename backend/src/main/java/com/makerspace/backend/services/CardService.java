@@ -1,5 +1,6 @@
 package com.makerspace.backend.services;
 
+import com.makerspace.backend.model.AppRole;
 import com.makerspace.backend.model.CardScan;
 import com.makerspace.backend.model.Equipment;
 import com.makerspace.backend.model.EquipmentStatus;
@@ -231,6 +232,22 @@ public class CardService {
     }
 
     @Transactional
+    public UnregisteredCard assignRole(Long unregisteredCardId, String role) {
+        UnregisteredCard card = unregisteredCardRepository.findById(unregisteredCardId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
+        
+        // Validate role
+        if (!role.matches("(?i)(MEMBER|ADMIN|STAFF)")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                "Invalid role. Must be one of: MEMBER, ADMIN, STAFF");
+        }
+        
+        card.setAssignedRole(role.toUpperCase());
+        card.setRoleAssignedAt(Instant.now());
+        return unregisteredCardRepository.save(card);
+    }
+
+    @Transactional
     public UnregisteredCard generateOtp(Long unregisteredCardId) {
         UnregisteredCard card = unregisteredCardRepository.findById(unregisteredCardId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
@@ -280,6 +297,18 @@ public class CardService {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        // Assign role if one was specified
+        if (unregistered.getAssignedRole() != null && !unregistered.getAssignedRole().isEmpty()) {
+            String roleCode = unregistered.getAssignedRole().toUpperCase();
+            // Clear existing roles
+            user.getRoles().clear();
+            // Assign the new role by code
+            AppRole appRole = new AppRole();
+            appRole.setCode(roleCode);
+            user.getRoles().add(appRole);
+            userRepository.save(user);
+        }
 
         // Create the member card
         MemberCard card = new MemberCard();

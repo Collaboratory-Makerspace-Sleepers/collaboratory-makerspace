@@ -49,6 +49,21 @@ public class UnregisteredCardController {
     }
 
     /**
+     * POST /api/v1/hardware/unregistered-cards/{id}/assign-role
+     * Admin assigns a role to the unregistered card.
+     * Request body: { "role": "ADMIN" | "STAFF" | "MEMBER" }
+     */
+    @PostMapping("/{id}/assign-role")
+    @PreAuthorize("hasAuthority('MANAGE_EQUIPMENT')")
+    public Map<String, Object> assignRole(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        if (!(body.get("role") instanceof String role) || role.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "role is required");
+        }
+        UnregisteredCard card = cardService.assignRole(id, role.trim());
+        return cardJson(card);
+    }
+
+    /**
      * POST /api/v1/hardware/unregistered-cards/{id}/send-otp
      * Admin sends OTP code to the assigned email.
      * This triggers an email to be sent with the OTP.
@@ -116,6 +131,8 @@ public class UnregisteredCardController {
         m.put("status", c.getStatus());
         m.put("assignedToEmail", c.getAssignedToEmail());
         m.put("assignedAt", c.getAssignedAt());
+        m.put("assignedRole", c.getAssignedRole());
+        m.put("roleAssignedAt", c.getRoleAssignedAt());
         m.put("otpGenerated", c.getOtpGeneratedAt() != null);
         m.put("otpVerified", c.isOtpVerified());
         m.put("deviceId", c.getDeviceId());

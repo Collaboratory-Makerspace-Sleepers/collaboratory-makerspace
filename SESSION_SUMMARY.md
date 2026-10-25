@@ -1,488 +1,209 @@
-# Hardware Check-In System - Session Summary
+# Session Summary: Card-Based Sign-In Implementation
 
-## Overview
+## ✅ What Was Accomplished
 
-Successfully implemented a complete hardware access control system with Raspberry Pi device integration, admin dashboard, and digital waiver management for the Collaboratory Makerspace application.
+### 1. Backend Implementation Complete
+- **CardAuthController.java**: New REST controller with three endpoints
+  - `GET /api/v1/auth/card/check-by-uid` - Check if card needs OTP
+  - `POST /api/v1/auth/card/verify-otp` - Verify admin-sent OTP and create/activate user
+  - `POST /api/v1/auth/card/activate` - Activate card after OTP verification
 
-## What Was Built
+- **CardService enhancements**:
+  - `verifyOtp(String otp, String email)` - Verify admin-sent code
+  - `activateCardAfterOtp()` - Activate card and assign role
+  - `assignRole()` - Assign role to card
+  - `deleteUnregisteredCard()` - Delete card for testing
+  - `getUnregisteredCardByUid()` - Lookup card by UID
 
-### 1. Backend API (Spring Boot)
+- **Database**:
+  - V17: UnregisteredCard table with OTP fields
+  - V18: Role columns (assignedRole, roleAssignedAt)
 
-#### Models & Persistence
-- **HardwareCheckIn.java** - JPA entity tracking user equipment access attempts
-  - Status enum with 7 states: PENDING, SUCCESS, FAILED, NEEDS_WAIVER, WAIVER_SIGNED, WAIVER_APPROVED, DENIED
-  - Tracks check-in timestamp, access grants, error messages
-  - Links to users, equipment, and admin approval chain
+### 2. Frontend Implementation Complete
+- **CardSignInForm.jsx**: New sign-in component
+  - Waits for card tap
+  - Shows email (read-only) from admin assignment
+  - Accepts OTP code from user
+  - Handles card activation and dashboard redirect
 
-- **Equipment.java** (updated) - Added `requiresWaiver` boolean field
-  - Allows marking specific equipment as requiring signed waivers
-  - Integrated with database schema
+- **SignIn.jsx**: Updated with tabs
+  - OAuth tab (existing)
+  - Email tab (existing)
+  - Card tab (new - uses CardSignInForm)
 
-#### Repository & Data Access
-- **HardwareCheckInRepository.java** - Custom Spring Data JPA queries
-  - `findByUserIdOrderByCheckinTimeDesc()` - User's check-in history
-  - `findByStatusAndWaiverApprovedByAdminIsTrueOrderByCheckinTimeDesc()` - Approved waivers
-  - `findPendingWaivers()` - Paginated pending waiver list
+- **Styling**: Added CSS for card signin form and tabs
+  - Tab navigation with active state
+  - Card info display
+  - Demo input field for testing
 
-#### Service Layer
-- **HardwareCheckInService.java** - Core business logic
-  - `checkIn()` - Process hardware access attempts with waiver validation
-  - `approveWaiver()` - Admin approval of signed waivers
-  - `denyAccess()` - Admin denial of access
-  - `signWaiver()` - User waiver signature capture
-  - `getPendingWaivers()` - Query for admin dashboard
+### 3. Admin Dashboard Features
+- View unregistered cards in "New Cards" tab
+- Assign email to card
+- Assign role (MEMBER/STAFF/ADMIN)
+- Send OTP code via email
+- Delete card for testing
 
-#### REST API
-- **HardwareCheckInController.java** - 7 endpoints
-  - `POST /api/v1/hardware/checkin` - Device check-in (public)
-  - `GET /api/v1/hardware/checkins/recent` - Recent check-ins (paginated)
-  - `GET /api/v1/hardware/checkins/pending-waivers` - Pending approvals (paginated)
-  - `POST /api/v1/hardware/checkins/{id}/sign-waiver` - Waiver signing
-  - `POST /api/v1/hardware/checkins/{id}/approve-waiver` - Admin approval
-  - `POST /api/v1/hardware/checkins/{id}/deny` - Admin denial
-  - `GET /api/v1/hardware/checkins/user/{userId}` - User check-in history
+### 4. Backend Compilation & Startup
+✅ No compilation errors
+✅ Backend running on port 8080
+✅ All endpoints accessible
+✅ Database migrations applied
 
-- **HardwareCheckInDTO.java** - Data transfer object
-  - Clean JSON representation of check-in data
-  - Includes user and equipment names/details
+### 5. Frontend Running
+✅ Frontend running on port 5173
+✅ Hot module reloading enabled
+✅ New CardSignInForm component available
 
-#### Database Migration
-- **V12__hardware_checkins.sql** - Flyway migration
-  - Creates `hardware_checkins` table with proper relationships
-  - Optimized indexes on user_id, equipment_id, status, device_id, waiver fields
-  - Adds `requires_waiver` column to equipment table
-  - Includes approval tracking and audit trail fields
+## 🔄 Testing Status
 
-### 2. Frontend Components (React)
+### Verified Working
+- Backend health check: ✅ UP
+- CardAuthController endpoints compiled: ✅ YES
+- Card check endpoint responding: ✅ YES
+- Frontend dev server running: ✅ YES
+- CSS styles loaded: ✅ YES
 
-#### Admin Dashboard Pages
-- **HardwareCheckIns.jsx** - Main admin page
-  - Real-time table of hardware check-ins
-  - Filter toggle: "All Check-ins" vs "Pending Waivers"
-  - Status-based color coding (SUCCESS=green, FAILED=red, NEEDS_WAIVER=yellow, etc.)
-  - Approve/deny action buttons for pending waivers
-  - Pagination with 20 items per page
-  - Auto-refresh every 10 seconds
-  - User and equipment details displayed inline
+### Not Yet Tested (Requires Manual Testing)
+- Admin dashboard card assignment workflow
+- OTP email sending
+- Complete sign-in flow end-to-end
+- Role-based dashboard access
+- Card activation persistence
 
-- **RabbitSignaturePad.jsx** - Waiver signature capture
-  - HTML5 canvas-based drawing pad
-  - Smooth line drawing with mouse and touch support
-  - Clear canvas button to start over
-  - Submit signature button with validation
-  - Converts drawing to base64-encoded PNG
-  - Responsive design for desktop and tablet
-
-#### Styling
-- **HardwareCheckIns.css** - Admin page styling
-  - Status badge colors and styling
-  - Table responsive design
-  - Button hover effects
-  - Loading state animations
-
-- **RabbitSignaturePad.css** - Signature pad styling
-  - Full-screen modal display
-  - Dark mode support
-  - Signature canvas with border
-  - Button group styling
-  - Touch-friendly sizing
-
-#### Integration
-- **App.jsx** - Updated with new route
-  - `<Route path="hardware" element={<HardwareCheckIns />} />`
-  - Protected by admin permissions through existing auth middleware
-
-- **AdminDashboard.jsx** - Updated navigation
-  - Added "Hardware Access" menu item
-  - Links to `/admin-dashboard/hardware`
-
-### 3. Configuration & Setup
-
-#### Database Schema
-```sql
-CREATE TABLE hardware_checkins (
-    id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT NOT NULL REFERENCES users(id),
-    equipment_id BIGINT NOT NULL REFERENCES equipment(id),
-    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
-    checkin_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    access_granted BOOLEAN,
-    error_message TEXT,
-    device_id VARCHAR(100),
-    waiver_signed BOOLEAN DEFAULT false,
-    waiver_approved_by_admin BOOLEAN DEFAULT false,
-    approved_by_user_id BIGINT REFERENCES users(id),
-    approval_time TIMESTAMP,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-#### Indexes Created
-- user_id (user lookup)
-- equipment_id (equipment tracking)
-- status (filtering)
-- device_id (device correlation)
-- waiver_signed (waiver status)
-- waiver_approved_by_admin (approval status)
-- checkin_time DESC (recent queries)
-
-## Workflow
-
-### 1. Device Check-In (Raspberry Pi)
-```
-POST /api/v1/hardware/checkin
-{
-  "userId": 1,
-  "equipmentId": 5,
-  "deviceId": "rpi-laser-01"
-}
-```
-
-**Response (no waiver needed):**
-```json
-{
-  "id": 123,
-  "status": "SUCCESS",
-  "accessGranted": true,
-  "checkinTime": "2026-10-20T00:50:09Z"
-}
-```
-
-**Response (waiver required):**
-```json
-{
-  "id": 124,
-  "status": "NEEDS_WAIVER",
-  "accessGranted": false,
-  "checkinTime": "2026-10-20T00:50:15Z"
-}
-```
-
-### 2. User Signs Waiver
-- User provided with signature pad on device or tablet
-- Draws signature using stylus or finger
-- System captures as base64-encoded PNG
-```
-POST /api/v1/hardware/checkins/124/sign-waiver
-{
-  "signatureData": "data:image/png;base64,iVBORw0KGgo..."
-}
-```
-
-Status changes to: `WAIVER_SIGNED`
-
-### 3. Admin Approves/Denies
-Admin views pending waivers in dashboard at `/admin-dashboard/hardware`:
-- Reviews pending signature
-- Clicks "Approve" to grant future access or "Deny" to reject
+## 📋 Complete Workflow Summary
 
 ```
-POST /api/v1/hardware/checkins/124/approve-waiver
+1. ADMIN SIDE
+   └─ Admin creates cards via card reader (PENDING)
+   └─ Assign email to card (ASSIGNED)
+   └─ Assign role: MEMBER/STAFF/ADMIN (ROLE_ASSIGNED)
+   └─ Send OTP code to email (VERIFIED)
+
+2. USER SIDE
+   └─ User taps card at reader
+   └─ Frontend checks if card needs OTP (GET /api/v1/auth/card/check-by-uid)
+   └─ Frontend shows sign-in form with email
+   └─ User enters OTP code from email
+   └─ Frontend verifies OTP (POST /api/v1/auth/card/verify-otp)
+   └─ Backend creates/activates user and issues JWT
+   └─ Frontend activates card (POST /api/v1/auth/card/activate)
+   └─ User redirected to role-appropriate dashboard (ACTIVATED)
 ```
 
-Status changes to: `WAIVER_APPROVED`
+## 🔑 Key Differences from Regular OTP Flow
 
-### 4. Next Check-In Succeeds
-```
-POST /api/v1/hardware/checkin
-{
-  "userId": 1,
-  "equipmentId": 5,
-  "deviceId": "rpi-laser-01"
-}
-```
+| Aspect | Regular OTP | Card OTP |
+|--------|-------------|----------|
+| Code Generation | User requests on-demand | Admin sends via dashboard |
+| Email Source | User enters their email | Pre-assigned by admin |
+| Card Tap Timing | After login (if any) | BEFORE login (required) |
+| Code Validity | Single-use, 1 hour TTL | Single-use, 1 hour TTL |
+| Role Assignment | After user logs in | Before OTP sent |
+| User Creation | Automatic on first login | Automatic on OTP verify |
 
-Response: `SUCCESS` with `accessGranted: true`
+## 📁 Files Modified/Created
 
-## Status Flow Diagram
+### Backend (Created)
+- `src/main/java/com/makerspace/backend/controller/CardAuthController.java`
 
-```
-User Attempts Access
-        ↓
-┌─────────────────────────┐
-│ PENDING                 │
-│ (Registered)            │
-└─────────────────────────┘
-        ↓
-┌─────────────────────────────────────────────────┐
-│ Check Equipment Permissions                     │
-└─────────────────────────────────────────────────┘
-        ↙                           ↘
-    [No Waiver]                 [Waiver Required]
-        ↓                           ↓
-┌─────────────────────┐   ┌──────────────────────┐
-│ SUCCESS             │   │ NEEDS_WAIVER         │
-│ Access Granted      │   │ Redirect to Sign     │
-└─────────────────────┘   └──────────────────────┘
-                               ↓
-                         ┌──────────────────────┐
-                         │ User Signs Waiver    │
-                         │ (Canvas Signature)   │
-                         └──────────────────────┘
-                               ↓
-                         ┌──────────────────────┐
-                         │ WAIVER_SIGNED        │
-                         │ Admin Review Pending │
-                         └──────────────────────┘
-                               ↙         ↘
-                         [Admin        [Admin
-                          Approves]     Denies]
-                               ↓         ↓
-                         ┌─────────┐   ┌───────┐
-                         │ WAIVER_ │   │ DENIED│
-                         │ APPROVED│   │       │
-                         └─────────┘   └───────┘
-                         Future Access Granted/Denied
-```
+### Backend (Modified)
+- `src/main/java/com/makerspace/backend/services/CardService.java` (added methods)
+- `src/main/java/com/makerspace/backend/services/EmailService.java` (added OTP email)
+- `src/main/java/com/makerspace/backend/services/SmtpEmailService.java` (added OTP email)
 
-## Key Features
+### Frontend (Created)
+- `src/components/CardSignInForm.jsx`
 
-### Security
-- Access control via user roles (ADMIN, MEMBER)
-- Waiver requirement enforcement per equipment
-- Audit trail: all approvals tracked with user and timestamp
-- Error messages captured for troubleshooting
-- Device ID tracking for correlation
+### Frontend (Modified)
+- `src/pages/SignIn.jsx` (added tabs and CardSignInForm)
+- `src/App.css` (added styles for card signin and tabs)
 
-### Usability
-- Admin dashboard with real-time updates
-- Color-coded status for quick visual scanning
-- Filter options for different views
-- Responsive design for desktop and tablet
-- Touch-friendly signature pad
+### Documentation (Created)
+- `CARD_SIGNIN_TESTING_GUIDE.md` - Comprehensive testing guide
+- `SESSION_SUMMARY.md` - This file
+- `IMPLEMENTATION_STATUS.md` - Status overview
 
-### Performance
-- Optimized database indexes on common queries
-- Lazy-loading relationships
-- Paginated results (20 per page)
-- DTO minimizes data transfer
-- Stateless REST API suitable for device integration
+## 🚀 Ready to Test
 
-### Scalability
-- Enum-based status for consistency
-- Transactional operations for data integrity
-- Support for batch operations (approvals)
-- Extensible workflow for future enhancements
+Both backend and frontend are running and ready for end-to-end testing:
 
-## Files Changed/Created
-
-### Backend
-```
-backend/
-├── src/main/java/com/makerspace/backend/
-│   ├── model/
-│   │   ├── Equipment.java (MODIFIED: added requiresWaiver)
-│   │   └── HardwareCheckIn.java (NEW)
-│   ├── repository/
-│   │   └── HardwareCheckInRepository.java (NEW)
-│   ├── services/
-│   │   └── HardwareCheckInService.java (NEW)
-│   └── controller/
-│       ├── HardwareCheckInController.java (NEW)
-│       └── dto/
-│           └── HardwareCheckInDTO.java (NEW)
-└── src/main/resources/db/migration/
-    └── V12__hardware_checkins.sql (NEW)
-```
-
-### Frontend
-```
-frontend/src/
-├── components/admin-dashboard/
-│   ├── HardwareCheckIns.jsx (NEW)
-│   ├── HardwareCheckIns.css (NEW)
-│   ├── RabbitSignaturePad.jsx (NEW)
-│   └── RabbitSignaturePad.css (NEW)
-├── pages/
-│   ├── App.jsx (MODIFIED: added route)
-│   └── AdminDashboard.jsx (MODIFIED: added nav link)
-```
-
-### Documentation
-```
-├── HARDWARE_API.md (NEW: Complete API reference)
-├── HARDWARE_IMPLEMENTATION.md (NEW: Setup guide)
-├── ADMIN_SETUP_GUIDE.md (NEW: Admin account setup)
-├── DEV_CREDENTIALS.md (NEW: Dev credentials)
-└── SESSION_SUMMARY.md (NEW: This file)
-```
-
-## Running the Application
-
-### Prerequisites
-- Java 17+
-- Node.js 16+
-- PostgreSQL (via Docker)
-- Maven 3.8+
-
-### Start Services
-
-**1. Backend:**
 ```bash
-cd backend
-export SPRING_PROFILES_ACTIVE=local
-java -jar target/backend-0.0.1-SNAPSHOT.jar
-# OR
-mvn spring-boot:run
+# Backend health
+curl http://localhost:8080/actuator/health
+
+# Frontend 
+curl http://localhost:5173
+
+# Test card check endpoint
+curl "http://localhost:8080/api/v1/auth/card/check-by-uid?uid=85F181D4"
 ```
 
-Backend available at: `http://localhost:8080`
+## ⚠️ Known Limitations / TODO
 
-**2. Frontend:**
-```bash
-cd frontend
-npm install
-npm run dev
-```
+1. **Card Reader Integration**: Demo uses manual input, needs real NFC reader
+2. **Email Service Testing**: Needs actual email service configuration
+3. **Session State**: Card UID not yet persisted to auth context
+4. **Security**: JWT extraction from auth context needs refinement
+5. **Error Messages**: Could be more specific for different failure scenarios
 
-Frontend available at: `http://localhost:5174` (or next available port)
+## 🔧 How to Continue Testing
 
-**3. Database:**
-```bash
-docker-compose up -d
-# Flyway migrations run automatically on startup
-```
+### Step 1: Create Test Card
+1. Sign in as admin
+2. Go to Hardware > New Cards
+3. Simulate card tap or use manual entry
 
-### Access Admin Dashboard
-1. Navigate to frontend: `http://localhost:5174`
-2. Login with admin account:
-   - Email: `admin@makerspace.local`
-   - OTP Code: `123456`
-3. Click "Hardware Access" in sidebar
-4. View check-ins and manage waivers
+### Step 2: Assign and Send OTP
+1. Click "Assign Email" → enter test email
+2. Click "Assign Role" → select MEMBER/STAFF/ADMIN
+3. Click "Send OTP" → check email for code
 
-## Testing the API
+### Step 3: Test Sign-In
+1. Open new tab to http://localhost:5173
+2. Click Sign In → Card tab
+3. Enter card UID (use demo input)
+4. Enter OTP code from email
+5. Verify redirect to dashboard
 
-### Test Hardware Check-In
-```bash
-curl -X POST http://localhost:8080/api/v1/hardware/checkin \
-  -H "Content-Type: application/json" \
-  -d '{
-    "userId": 1,
-    "equipmentId": 1,
-    "deviceId": "rpi-test-01"
-  }'
-```
+### Step 4: Verify Role-Based Access
+1. Check that dashboard matches assigned role
+2. Test MEMBER, STAFF, ADMIN roles separately
 
-### Test Waiver Signing
-```bash
-# First, create a check-in that needs waiver
-CHECK_IN_ID=42
+## 🎯 Success Criteria Met
 
-# Sign the waiver (use real base64 PNG data)
-curl -X POST http://localhost:8080/api/v1/hardware/checkins/$CHECK_IN_ID/sign-waiver \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $ADMIN_TOKEN" \
-  -d '{
-    "signatureData": "data:image/png;base64,iVBORw0KGgo..."
-  }'
-```
+- [x] CardAuthController implemented and compiled
+- [x] Backend running without errors
+- [x] CardSignInForm component created
+- [x] SignIn page shows three sign-in options
+- [x] Card check endpoint working
+- [x] OTP verification logic implemented
+- [x] Card activation logic implemented
+- [x] Database schema includes role assignment
+- [x] Email service integration in place
+- [x] Frontend styling complete
+- [x] Testing guide provided
 
-### Test Waiver Approval
-```bash
-# Approve the waiver
-curl -X POST http://localhost:8080/api/v1/hardware/checkins/$CHECK_IN_ID/approve-waiver \
-  -H "Authorization: Bearer $ADMIN_TOKEN"
-```
+## 📞 Support & Troubleshooting
 
-## Known Limitations & Future Enhancements
+See `CARD_SIGNIN_TESTING_GUIDE.md` for:
+- Detailed testing steps
+- Expected API responses
+- Troubleshooting common issues
+- cURL command examples
+- Database query examples
 
-### Current Limitations
-1. Signature stored as base64 in database
-   - Consider external storage (S3, file system) for compliance
-2. No device API authentication
-   - Implement API keys for Raspberry Pi devices
-3. No rate limiting
-   - Add protection against check-in spam
-4. Single signature storage
-   - Consider archiving multiple signatures per user/equipment
+## 🎉 Next Session
 
-### Recommended Enhancements
-1. **Email Notifications**
-   - Notify users when waivers approved/denied
-   - Alert admins of pending waivers
-
-2. **Batch Operations**
-   - Approve multiple waivers at once
-   - Export check-in reports
-
-3. **Advanced Filtering**
-   - Date range filtering
-   - User search/filter
-   - Equipment usage reports
-
-4. **Signature Archive**
-   - Move old signatures to S3
-   - Generate compliance reports
-   - Secure digital signature verification
-
-5. **Device Management**
-   - Configure device check-in endpoints
-   - Manage device credentials/API keys
-   - Device health monitoring
-
-6. **Access Control**
-   - Time-based restrictions (hours/days)
-   - Maintenance windows
-   - Emergency lockout
-
-## Git Commit
-
-All changes committed to `frontendAdmin` branch:
-```
-commit ac5171c
-feat: Implement hardware check-in system with admin dashboard and waiver approval workflow
-
-- Add HardwareCheckIn JPA entity with status enum and waiver tracking
-- Create HardwareCheckInRepository with custom query methods for filtering
-- Implement HardwareCheckInService with access control and waiver approval logic
-- Add HardwareCheckInController with 7 REST endpoints for device check-ins and admin operations
-- Create HardwareCheckInDTO for API responses
-- Add requires_waiver field to Equipment model
-- Create V12__hardware_checkins.sql Flyway migration with optimized indexes
-- Build HardwareCheckIns React component for admin dashboard with filtering and actions
-- Create RabbitSignaturePad component for canvas-based waiver signature capture
-- Integrate hardware access page into admin dashboard with navigation
-- Add comprehensive documentation (HARDWARE_API.md, HARDWARE_IMPLEMENTATION.md)
-```
-
-## Support & Troubleshooting
-
-### Backend Won't Start
-1. Ensure Docker services are running: `docker-compose up -d`
-2. Check PostgreSQL connection in `application-local.yml`
-3. Verify port 8080 is available
-4. Check logs: `tail -f backend/backend.log`
-
-### Frontend Can't Reach Backend
-1. Verify backend health: `curl http://localhost:8080/actuator/health`
-2. Check proxy configuration in `vite.config.js`
-3. CORS headers configured in backend
-
-### Hardware Check-In Fails
-1. Verify user exists in database
-2. Verify equipment exists in database
-3. Check user has MEMBER or ADMIN role
-4. Review backend logs for detailed error
-
-### Waiver Won't Submit
-1. Ensure signature pad has drawing
-2. Check browser console for JavaScript errors
-3. Verify admin user making approval has `MANAGE_EQUIPMENT` permission
-4. Check database connection
-
-## Contact & Questions
-
-For issues or questions about:
-- **API Implementation**: Review `/HARDWARE_API.md`
-- **Setup**: Review `/HARDWARE_IMPLEMENTATION.md`
-- **Admin Account**: Review `/ADMIN_SETUP_GUIDE.md`
-- **Development**: Review `/DEV_CREDENTIALS.md`
+The system is now ready for:
+1. Live end-to-end testing with card reader
+2. Email service verification
+3. Performance testing under load
+4. Security review of authentication flow
+5. Integration with existing hardware check-in system
+6. User acceptance testing with real cards
 
 ---
 
-**Implementation Date**: October 19, 2026  
-**Status**: ✅ Complete and Tested  
-**Branch**: `frontendAdmin`  
-**Last Updated**: 2026-10-20
+**Session Date**: 2026-10-25  
+**Status**: ✅ COMPLETE - Backend & Frontend Ready for Testing  
+**Server Status**: Backend UP (8080), Frontend UP (5173)

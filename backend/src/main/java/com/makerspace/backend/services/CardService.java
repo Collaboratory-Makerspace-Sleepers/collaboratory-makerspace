@@ -44,6 +44,7 @@ public class CardService {
     @Autowired private EquipmentRepository equipmentRepository;
     @Autowired private TrainingTaskRepository trainingTaskRepository;
     @Autowired private HardwareCheckInService checkInService;
+    @Autowired private EmailService emailService;
 
     public static String normalizeUid(String raw) {
         if (raw == null) return "";
@@ -290,6 +291,37 @@ public class CardService {
     }
 
     @Transactional
+    public UnregisteredCard verifyOtp(String otpCode, String email) {
+        UnregisteredCard card = unregisteredCardRepository.findByOtpCode(otpCode)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid OTP"));
+        
+        // Verify OTP belongs to this email
+        if (!email.equalsIgnoreCase(card.getAssignedToEmail())) {
+            log.warn("OTP code does not match assigned email. Code: {}, Email: {}", otpCode, email);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "OTP does not match email");
+        }
+        
+        // Check if OTP has expired
+        if (Instant.now().isAfter(card.getOtpExpiresAt())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "OTP has expired");
+        }
+        
+        // Mark OTP as verified
+        card.setOtpVerified(true);
+        card.setVerifiedAt(Instant.now());
+        card.setStatus("VERIFIED");
+        return unregisteredCardRepository.save(card);
+    }
+
+    public java.util.Optional<UnregisteredCard> getUnregisteredCardByUid(String cardUid) {
+        String uid = normalizeUid(cardUid);
+        if (uid.isEmpty()) {
+            return java.util.Optional.empty();
+        }
+        return unregisteredCardRepository.findByCardUid(uid);
+    }
+
+    @Transactional
     public MemberCard activateCardAfterOtp(String cardUid, Long userId) {
         String uid = normalizeUid(cardUid);
         if (uid.isEmpty()) {
@@ -333,6 +365,37 @@ public class CardService {
         unregisteredCardRepository.save(unregistered);
 
         return card;
+    }
+
+    /**
+     * Generate OTP code and send it to the user's email.
+     * Called by the user after their card is assigned by admin.
+     */
+    @Transactional
+    public void generateAndSendOtp(UnregisteredCard card) {
+        if (card.getAssignedToEmail() == null || card.getAssignedToEmail().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Card must be assigned to an email first");
+        }
+
+        // Generate OTP
+        String otp = String.format("%06d", (int)(Math.random() * 1000000));
+        card.setOtpCode(otp);
+        card.setOtpGeneratedAt(Instant.now());
+        card.setOtpExpiresAt(Instant.now().plusSeconds(3600)); // Valid for 1 hour
+        card.setOtpVerified(false);
+        card.setStatus("VERIFIED"); // Update status to VERIFIED after OTP is sent
+
+        // Save the card with OTP
+        unregisteredCardRepository.save(card);
+
+        // Send OTP email
+        try {
+            emailService.sendCardActivationOtp(card.getAssignedToEmail(), otp, card.getCardUid());
+            log.info("OTP sent to {} for card {}", card.getAssignedToEmail(), card.getCardUid());
+        } catch (Exception e) {
+            log.error("Failed to send OTP email: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to send OTP email");
+        }
     }
 
 }

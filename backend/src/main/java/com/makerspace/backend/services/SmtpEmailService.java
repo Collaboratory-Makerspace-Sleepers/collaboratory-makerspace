@@ -60,6 +60,21 @@ public class SmtpEmailService implements EmailService {
     }
 
     @Override
+    public void sendCardActivationOtp(String toEmail, String code, String cardUid) {
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom(fromAddress);
+        msg.setTo(toEmail);
+        msg.setSubject("Activate your Collaboratory access card");
+        msg.setText("Hi there,\n\nAn administrator has assigned a new access card to your account (Card UID: " + cardUid + ").\n\n"
+                + "To activate it, sign in at " + frontendBaseUrl + "/signin and enter this code:\n\n    " + code + "\n\n"
+                + "This code expires in 1 hour.\n\n"
+                + "Then, tap the card at the reader and you'll have access to equipment based on your membership and training.\n\n"
+                + "— The Collaboratory Makerspace");
+        mailSender.send(msg);
+        log.info("Card activation OTP sent to <{}>", toEmail);
+    }
+
+    @Override
     public void sendReservationConfirmation(String toEmail, String fullName,
             String equipmentName, ZonedDateTime startTime, ZonedDateTime endTime) {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("EEE, MMM d yyyy 'at' h:mm a z");

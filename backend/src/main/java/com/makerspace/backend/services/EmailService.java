@@ -15,6 +15,11 @@ public interface EmailService {
     void sendOtp(String toEmail, String code);
 
     /**
+     * Sends a one-time passcode for card activation to the given email address.
+     */
+    void sendCardActivationOtp(String toEmail, String code, String cardUid);
+
+    /**
      * Sends a reservation confirmation to the user with equipment and time details.
      */
     void sendReservationConfirmation(String toEmail, String fullName,

@@ -5,11 +5,13 @@ import com.makerspace.backend.model.Equipment;
 import com.makerspace.backend.model.EquipmentStatus;
 import com.makerspace.backend.model.HardwareCheckIn;
 import com.makerspace.backend.model.MemberCard;
+import com.makerspace.backend.model.UnregisteredCard;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.repository.CardScanRepository;
 import com.makerspace.backend.repository.EquipmentRepository;
 import com.makerspace.backend.repository.MemberCardRepository;
 import com.makerspace.backend.repository.TrainingTaskRepository;
+import com.makerspace.backend.repository.UnregisteredCardRepository;
 import com.makerspace.backend.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +38,7 @@ public class CardService {
 
     @Autowired private MemberCardRepository cardRepository;
     @Autowired private CardScanRepository scanRepository;
+    @Autowired private UnregisteredCardRepository unregisteredCardRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private EquipmentRepository equipmentRepository;
     @Autowired private TrainingTaskRepository trainingTaskRepository;
@@ -65,7 +68,22 @@ public class CardService {
 
         MemberCard card = cardRepository.findByCardUid(uid).orElse(null);
         if (card == null) {
-            return record(uid, null, null, deviceId, false, "Card not registered");
+            // Track unregistered card for admin dashboard
+            UnregisteredCard unregistered = unregisteredCardRepository.findByCardUid(uid).orElse(null);
+            if (unregistered == null) {
+                unregistered = new UnregisteredCard();
+                unregistered.setCardUid(uid);
+                unregistered.setFirstScannedAt(Instant.now());
+                unregistered.setLastScannedAt(Instant.now());
+                unregistered.setDeviceId(deviceId);
+                unregistered.setScanCount(1);
+                unregistered.setStatus("PENDING");
+            } else {
+                unregistered.setLastScannedAt(Instant.now());
+                unregistered.setScanCount((unregistered.getScanCount() != null ? unregistered.getScanCount() : 0) + 1);
+            }
+            unregisteredCardRepository.save(unregistered);
+            return record(uid, null, null, deviceId, false, "Card not registered - awaiting admin assignment");
         }
         card.setLastSeenAt(Instant.now());
         User user = card.getUser();
@@ -192,4 +210,92 @@ public class CardService {
                         || u.getEmail().toLowerCase(Locale.ROOT).contains(needle))
                 .limit(30).toList();
     }
+
+    // Unregistered card management
+    @Transactional(readOnly = true)
+    public List<UnregisteredCard> listUnregisteredCards() {
+        return unregisteredCardRepository.findAll().stream()
+                .filter(c -> "PENDING".equals(c.getStatus()) || "ASSIGNED".equals(c.getStatus()))
+                .sorted((a, b) -> b.getLastScannedAt().compareTo(a.getLastScannedAt()))
+                .toList();
+    }
+
+    @Transactional
+    public UnregisteredCard assignToEmail(Long unregisteredCardId, String email) {
+        UnregisteredCard card = unregisteredCardRepository.findById(unregisteredCardId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
+        card.setAssignedToEmail(email);
+        card.setAssignedAt(Instant.now());
+        card.setStatus("ASSIGNED");
+        return unregisteredCardRepository.save(card);
+    }
+
+    @Transactional
+    public UnregisteredCard generateOtp(Long unregisteredCardId) {
+        UnregisteredCard card = unregisteredCardRepository.findById(unregisteredCardId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
+        if (card.getAssignedToEmail() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Card must be assigned to an email first");
+        }
+        // Generate OTP
+        String otp = String.format("%06d", (int)(Math.random() * 1000000));
+        card.setOtpCode(otp);
+        card.setOtpGeneratedAt(Instant.now());
+        card.setOtpExpiresAt(Instant.now().plusSeconds(3600)); // Valid for 1 hour
+        card.setOtpVerified(false);
+        return unregisteredCardRepository.save(card);
+    }
+
+    @Transactional
+    public UnregisteredCard verifyOtp(String otpCode, Long userId) {
+        UnregisteredCard card = unregisteredCardRepository.findByOtpCode(otpCode)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid OTP"));
+        
+        if (Instant.now().isAfter(card.getOtpExpiresAt())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "OTP has expired");
+        }
+        
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        
+        card.setOtpVerified(true);
+        card.setVerifiedAt(Instant.now());
+        card.setStatus("VERIFIED");
+        return unregisteredCardRepository.save(card);
+    }
+
+    @Transactional
+    public MemberCard activateCardAfterOtp(String cardUid, Long userId) {
+        String uid = normalizeUid(cardUid);
+        if (uid.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Card UID must be 4-32 hex characters");
+        }
+
+        UnregisteredCard unregistered = unregisteredCardRepository.findByCardUid(uid)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
+
+        if (!unregistered.isOtpVerified()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "OTP not verified for this card");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        // Create the member card
+        MemberCard card = new MemberCard();
+        card.setCardUid(uid);
+        card.setUser(user);
+        card.setLabel(null);
+        card.setActive(true);
+        card.setAssignedAt(Instant.now());
+        card.setAssignedBy(null);
+        cardRepository.save(card);
+
+        // Mark unregistered card as activated
+        unregistered.setStatus("ACTIVATED");
+        unregisteredCardRepository.save(unregistered);
+
+        return card;
+    }
+
 }

@@ -33,6 +33,11 @@ public class StubEmailService implements EmailService {
     }
 
     @Override
+    public void sendCardActivationOtp(String toEmail, String code, String cardUid) {
+        log.warn("[STUB] Card activation OTP for <{}> — card UID: {} — code: {}", toEmail, cardUid, code);
+    }
+
+    @Override
     public void sendReservationConfirmation(String toEmail, String fullName,
             String equipmentName, ZonedDateTime startTime, ZonedDateTime endTime) {
         log.warn("[STUB] Reservation confirmation for {} <{}> — {} from {} to {}",

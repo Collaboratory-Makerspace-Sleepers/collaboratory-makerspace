@@ -90,13 +90,19 @@ public class CardService {
                 unregistered.setScanCount((unregistered.getScanCount() != null ? unregistered.getScanCount() : 0) + 1);
                 unregisteredCardRepository.save(unregistered);
                 
-                // Provide status-specific message
+                // If card is activated by admin but MemberCard hasn't been created yet, try to find/create it
+                if ("ACTIVATED".equals(unregistered.getStatus())) {
+                    log.info("Card {} is marked ACTIVATED but MemberCard not found", uid);
+                    // The MemberCard should exist if properly activated, but if not, deny with clear message
+                    return record(uid, null, null, deviceId, false, "Card activated by admin but member record not found - contact support");
+                }
+                
+                // Provide status-specific message for other states
                 String message = switch (unregistered.getStatus()) {
                     case "PENDING" -> "Card not registered - awaiting admin assignment";
                     case "ASSIGNED" -> "Card awaiting role assignment";
-                    case "ROLE_ASSIGNED" -> "Card ready - please sign in with email " + (unregistered.getAssignedToEmail() != null ? unregistered.getAssignedToEmail() : "and tap again");
+                    case "ROLE_ASSIGNED" -> "Card assigned with role - awaiting first tap to activate";
                     case "VERIFIED" -> "Card verified! Please complete sign-in on the screen, then tap card again to activate";
-                    case "ACTIVATED" -> "Card activated - should have MemberCard entry";
                     default -> "Card status unknown - contact admin";
                 };
                 return record(uid, null, null, deviceId, false, message);
@@ -419,6 +425,56 @@ public class CardService {
             log.error("Failed to send OTP email: {}", e.getMessage());
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to send OTP email");
         }
+    }
+
+    /**
+     * Activate a card directly without email/OTP verification.
+     * Called by admin when assigning a card to a user with a role.
+     * This creates a MemberCard immediately and sets the user's role.
+     */
+    @Transactional
+    public MemberCard activateCardDirectly(Long unregisteredCardId, Long userId, String role, Long staffId) {
+        UnregisteredCard unregistered = unregisteredCardRepository.findById(unregisteredCardId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        String uid = unregistered.getCardUid();
+
+        // Assign role if specified and valid
+        if (role != null && !role.isBlank()) {
+            String roleCode = role.toUpperCase();
+            log.info("Assigning role {} to user {} for card {}", roleCode, user.getId(), uid);
+            AppRole appRole = roleRepository.findById(roleCode)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
+                            "Role '" + roleCode + "' not found in system"));
+            user.getRoles().clear();
+            user.getRoles().add(appRole);
+            userRepository.save(user);
+            log.info("User {} assigned role {}", user.getId(), roleCode);
+        }
+
+        // Create or update the MemberCard
+        MemberCard card = cardRepository.findByCardUid(uid).orElse(null);
+        if (card == null) {
+            card = new MemberCard();
+            card.setCardUid(uid);
+            card.setAssignedAt(Instant.now());
+        }
+        card.setUser(user);
+        card.setActive(true);
+        if (staffId != null) {
+            card.setAssignedBy(userRepository.findById(staffId).orElse(null));
+        }
+        cardRepository.save(card);
+        log.info("Card {} activated for user {} with role {}", uid, user.getId(), role);
+
+        // Mark unregistered card as activated
+        unregistered.setStatus("ACTIVATED");
+        unregisteredCardRepository.save(unregistered);
+
+        return card;
     }
 
 }

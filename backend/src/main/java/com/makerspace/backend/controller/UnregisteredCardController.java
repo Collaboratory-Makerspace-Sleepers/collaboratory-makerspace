@@ -64,6 +64,48 @@ public class UnregisteredCardController {
     }
 
     /**
+     * POST /api/v1/hardware/unregistered-cards/{id}/activate-directly
+     * Admin activates a card immediately with email + role assignment.
+     * No email/OTP verification required - card works on next tap.
+     * Request body: { "userId": 123, "role": "MEMBER" }
+     */
+    @PostMapping("/{id}/activate-directly")
+    @PreAuthorize("hasAuthority('MANAGE_EQUIPMENT')")
+    public Map<String, Object> activateDirectly(@PathVariable Long id, @RequestBody Map<String, Object> body,
+                                                 org.springframework.security.core.Authentication auth) {
+        if (!(body.get("userId") instanceof Number userId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "userId is required");
+        }
+        String role = body.get("role") instanceof String r ? r.trim() : "MEMBER";
+        
+        Long staffId = null;
+        if (auth != null && auth.getPrincipal() instanceof com.makerspace.backend.config.security.UserPrincipal principal) {
+            staffId = principal.userId();
+        }
+        
+        var card = cardService.activateCardDirectly(id, userId.longValue(), role, staffId);
+        
+        // Also update the unregistered card with email from user if it has one
+        try {
+            var unregistered = cardService.listUnregisteredCards().stream()
+                    .filter(c -> c.getCardUid().equals(card.getCardUid()))
+                    .findFirst();
+            if (unregistered.isPresent()) {
+                return cardJson(unregistered.get());
+            }
+        } catch (Exception e) {
+            log.warn("Could not update unregistered card info after activation: {}", e.getMessage());
+        }
+        
+        return Map.of(
+            "success", true,
+            "cardUid", card.getCardUid(),
+            "userId", card.getUser().getId(),
+            "message", "Card activated successfully - user can now tap to access"
+        );
+    }
+
+    /**
      * POST /api/v1/hardware/unregistered-cards/{id}/send-otp
      * Admin sends OTP code to the assigned email.
      * This triggers an email to be sent with the OTP.

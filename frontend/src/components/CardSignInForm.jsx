@@ -152,7 +152,15 @@ export default function CardSignInForm() {
     }
   }
 
-  async function handleVerifyOtp(e) {
+
+  // When user taps card after OTP verification, activate the card
+  useEffect(() => {
+    if (step === "waiting-for-final-tap" && cardUid) {
+      activateCardWithToken();
+    }
+  }, [step, cardUid]);
+
+    async function handleVerifyOtp(e) {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -182,12 +190,37 @@ export default function CardSignInForm() {
       setToken(jwtToken);
       localStorage.setItem("jwtToken", jwtToken);
 
-      // Now activate the card with the JWT token in Authorization header
+      // OTP verified - now wait for user to tap card to complete activation
+      setStep("waiting-for-final-tap");
+      setMessage("✅ Code verified! Now tap your card to activate it...");
+      setLoading(false);
+    } catch (err) {
+      setError(err.message);
+      setStep("entering-otp");
+      setLoading(false);
+    }
+  }
+
+  async function activateCardWithToken() {
+    setLoading(true);
+    setMessage("Activating your card...");
+    setStep("processing");
+
+    try {
+      if (!cardUid) {
+        throw new Error("No card UID found. Please tap your card again.");
+      }
+
+      const jwtToken = localStorage.getItem("jwtToken");
+      if (!jwtToken) {
+        throw new Error("Authentication failed. Please start over.");
+      }
+
       const activateRes = await fetch("/api/v1/auth/card/activate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${jwtToken}`
+          "Authorization": `Bearer ${jwtToken}`,
         },
         body: JSON.stringify({ cardUid }),
       });
@@ -196,7 +229,7 @@ export default function CardSignInForm() {
       if (!activateRes.ok) {
         throw new Error(
           activateData?.message || 
-          "Failed to activate card. Make sure to tap your card during sign-in."
+          "Failed to activate card. Please try again."
         );
       }
 
@@ -204,11 +237,11 @@ export default function CardSignInForm() {
       setMessage("Success! Card activated. Redirecting to your dashboard...");
       setTimeout(() => {
         navigate("/dashboard", { replace: true });
-      }, 1000);
+      }, 1500);
     } catch (err) {
       setError(err.message);
-      setStep("entering-otp");
-    } finally {
+      setStep("waiting-for-final-tap");
+      setMessage("❌ Activation failed. Please tap your card again.");
       setLoading(false);
     }
   }

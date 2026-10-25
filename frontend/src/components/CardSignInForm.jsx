@@ -13,7 +13,7 @@ export default function CardSignInForm() {
   const navigate = useNavigate();
   const { setToken } = useAuth();
   
-  const [step, setStep] = useState("waiting"); // waiting | card-found | sending-otp | entering-otp | processing
+  const [step, setStep] = useState("waiting"); // waiting | card-found | sending-otp | entering-otp | waiting-for-final-tap | processing
   const [cardUid, setCardUid] = useState("");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
@@ -55,6 +55,14 @@ export default function CardSignInForm() {
         }
 
         setCardUid(uid);
+
+        // If we're waiting for final tap to activate, do it now
+        if (step === "waiting-for-final-tap") {
+          e.currentTarget.value = "";
+          // The activateCardWithToken function will be called from the component
+          // Just set loading state, it will trigger via useEffect
+          return;
+        }
 
         // Case 1: Card not found
         if (!data.found) {
@@ -99,7 +107,14 @@ export default function CardSignInForm() {
       cardReaderInput.addEventListener("change", handleCardTap);
       return () => cardReaderInput.removeEventListener("change", handleCardTap);
     }
-  }, []);
+  }, [step, email, otp, navigate, setToken]);
+
+  // When user taps card after OTP verification, activate the card
+  useEffect(() => {
+    if (step === "waiting-for-final-tap" && cardUid) {
+      activateCardWithToken();
+    }
+  }, [step, cardUid]);
 
   async function handleSendOtp(e) {
     e.preventDefault();
@@ -142,7 +157,7 @@ export default function CardSignInForm() {
     setError("");
     setLoading(true);
     setStep("processing");
-    setMessage("Verifying code and signing you in...");
+    setMessage("Verifying code...");
 
     try {
       // Verify OTP and get JWT token
@@ -165,6 +180,7 @@ export default function CardSignInForm() {
       // Store the JWT token for authentication
       const jwtToken = verifyData.access_token;
       setToken(jwtToken);
+      localStorage.setItem("jwtToken", jwtToken);
 
       // Now activate the card with the JWT token in Authorization header
       const activateRes = await fetch("/api/v1/auth/card/activate", {
@@ -178,11 +194,14 @@ export default function CardSignInForm() {
 
       const activateData = await activateRes.json().catch(() => ({}));
       if (!activateRes.ok) {
-        console.warn("Card activation warning:", activateData?.message);
+        throw new Error(
+          activateData?.message || 
+          "Failed to activate card. Make sure to tap your card during sign-in."
+        );
       }
 
       // Success - redirect to dashboard
-      setMessage("Success! Redirecting to your dashboard...");
+      setMessage("Success! Card activated. Redirecting to your dashboard...");
       setTimeout(() => {
         navigate("/dashboard", { replace: true });
       }, 1000);

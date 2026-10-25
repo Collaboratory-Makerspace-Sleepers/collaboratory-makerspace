@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import CardScansLive from "./CardScansLive";
 import CardManager from "./CardManager";
-import UnregisteredCardsManager from "./UnregisteredCardsManager";
 import "./HardwareCheckIns.css";
 
 function CheckInLog() {
@@ -347,14 +346,13 @@ function CheckInLog() {
 }
 
 const TABS = [
-  { id: "new-cards", label: "New Cards" },
   { id: "taps", label: "Card taps" },
   { id: "cards", label: "Cards" },
   { id: "log", label: "Waivers & check-ins" },
 ];
 
 export default function HardwareCheckIns() {
-  const [tab, setTab] = useState("new-cards");
+  const [tab, setTab] = useState("taps");
   return (
     <div className="HardwareTabs">
       <div className="HWTabBar" role="tablist">
@@ -370,7 +368,6 @@ export default function HardwareCheckIns() {
           </button>
         ))}
       </div>
-      {tab === "new-cards" && <UnregisteredCardsManager />}
       {tab === "taps" && <CardScansLive onAssigned={() => setTab("cards")} />}
       {tab === "cards" && <CardManager />}
       {tab === "log" && <CheckInLog />}

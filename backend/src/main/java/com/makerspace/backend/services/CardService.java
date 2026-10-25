@@ -24,6 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.util.Set;
+
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 
@@ -449,10 +452,16 @@ public class CardService {
             AppRole appRole = roleRepository.findById(roleCode)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
                             "Role '" + roleCode + "' not found in system"));
-            user.getRoles().clear();
-            user.getRoles().add(appRole);
-            userRepository.save(user);
-            log.info("User {} assigned role {}", user.getId(), roleCode);
+            
+            // Clear existing roles and assign new one
+            Set<AppRole> roles = user.getRoles();
+            roles.clear();
+            roles.add(appRole);
+            
+            // Explicitly save to ensure role is persisted
+            userRepository.saveAndFlush(user);
+            log.info("User {} assigned role {} - roles now: {}", user.getId(), roleCode, 
+                    user.getRoles().stream().map(AppRole::getCode).toList());
         }
 
         // Create or update the MemberCard

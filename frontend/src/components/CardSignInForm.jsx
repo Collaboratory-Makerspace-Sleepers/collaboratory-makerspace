@@ -54,15 +54,15 @@ export default function CardSignInForm() {
           throw new Error("Failed to check card status");
         }
 
-        setCardUid(uid);
-
         // If we're waiting for final tap to activate, do it now
         if (step === "waiting-for-final-tap") {
           e.currentTarget.value = "";
-          // The activateCardWithToken function will be called from the component
-          // Just set loading state, it will trigger via useEffect
+          setCardUid(uid);
+          // Activation will be handled by useEffect watching cardUid and step
           return;
         }
+
+        setCardUid(uid);
 
         // Case 1: Card not found
         if (!data.found) {
@@ -396,6 +396,69 @@ export default function CardSignInForm() {
           </button>
         </div>
       </form>
+    );
+  }
+
+  // Waiting for final card tap after OTP verification
+  if (step === "waiting-for-final-tap") {
+    return (
+      <div className="card-signin-form">
+        <div className="card-message">
+          <p>{message}</p>
+        </div>
+
+        {/* Hidden input for card reader simulation */}
+        <input
+          id="card-reader-input"
+          type="hidden"
+          autoFocus
+          aria-hidden="true"
+        />
+
+        {/* For testing/demo purposes - show manual card UID input */}
+        <div className="card-demo-section">
+          <p className="demo-label">Demo: Manually enter card UID</p>
+          <input
+            type="text"
+            placeholder="Enter card UID (e.g., 85F181D4)"
+            onKeyPress={(e) => {
+              if (e.key === "Enter") {
+                const event = new Event("change", { bubbles: true });
+                const input = document.getElementById("card-reader-input");
+                if (input) {
+                  input.value = e.currentTarget.value;
+                  input.dispatchEvent(event);
+                }
+              }
+            }}
+            disabled={loading}
+          />
+          <p className="demo-note">Press Enter to tap card</p>
+        </div>
+
+        {error && (
+          <p className="error-message" role="alert">
+            {error}
+          </p>
+        )}
+
+        {loading && <p className="loading-message">Activating card...</p>}
+
+        <div className="card-info-box">
+          <h4>Final step:</h4>
+          <ul>
+            <li>✅ Email verified</li>
+            <li>👉 Now tap your card to activate it</li>
+            <li>After tap, you'll have full access</li>
+          </ul>
+        </div>
+
+        <div className="reset-link">
+          <button type="button" onClick={handleReset} disabled={loading} className="textButton">
+            Start over
+          </button>
+        </div>
+      </div>
     );
   }
 

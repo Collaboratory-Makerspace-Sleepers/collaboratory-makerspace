@@ -94,6 +94,26 @@ export default function UnregisteredCardsManager() {
     }
   }
 
+  async function deleteCard(cardId, cardUid) {
+    if (!window.confirm(`Delete card ${cardUid}? This will remove it from the queue for testing.`)) {
+      return;
+    }
+    try {
+      setError("");
+      const res = await authFetch(`/api/v1/hardware/unregistered-cards/${cardId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || `HTTP ${res.status}`);
+      }
+      setSuccess(`Card ${cardUid} has been deactivated and removed.`);
+      await load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   const formatDate = (dateStr) => {
     if (!dateStr) return "—";
     return new Date(dateStr).toLocaleString();
@@ -283,6 +303,21 @@ export default function UnregisteredCardsManager() {
                         ✓ OTP Verified
                       </span>
                     )}
+
+                    {/* Delete Button - Always Available for Testing */}
+                    <button
+                      className="ViewBtn"
+                      onClick={() => deleteCard(card.id, card.cardUid)}
+                      style={{ 
+                        fontSize: "12px", 
+                        padding: "4px 8px",
+                        backgroundColor: "#ffebee",
+                        color: "#c62828",
+                        border: "1px solid #ef5350"
+                      }}
+                    >
+                      🗑️ Delete & Reset
+                    </button>
                   </div>
                 </td>
               </tr>

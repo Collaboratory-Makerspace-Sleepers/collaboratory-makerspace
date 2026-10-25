@@ -222,6 +222,14 @@ public class CardService {
     }
 
     @Transactional
+    public void deleteUnregisteredCard(Long cardId) {
+        UnregisteredCard card = unregisteredCardRepository.findById(cardId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
+        log.info("Deleting unregistered card {} (UID: {})", cardId, card.getCardUid());
+        unregisteredCardRepository.deleteById(cardId);
+    }
+
+    @Transactional
     public UnregisteredCard assignToEmail(Long unregisteredCardId, String email) {
         UnregisteredCard card = unregisteredCardRepository.findById(unregisteredCardId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));

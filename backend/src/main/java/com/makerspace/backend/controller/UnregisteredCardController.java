@@ -124,6 +124,25 @@ public class UnregisteredCardController {
                 "Call /api/v1/auth/activate-card instead");
     }
 
+    /**
+     * DELETE /api/v1/hardware/unregistered-cards/{id}
+     * Admin deletes/deactivates an unregistered card for testing/reset purposes.
+     * Allows admins to clear cards and restart the registration process.
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('MANAGE_EQUIPMENT')")
+    public ResponseEntity<Map<String, String>> deleteCard(@PathVariable Long id) {
+        try {
+            cardService.deleteUnregisteredCard(id);
+            return ResponseEntity.ok(Map.of(
+                "success", "true",
+                "message", "Card deactivated and removed from queue"
+            ));
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found: " + e.getMessage());
+        }
+    }
+
     private Map<String, Object> cardJson(UnregisteredCard c) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", c.getId());

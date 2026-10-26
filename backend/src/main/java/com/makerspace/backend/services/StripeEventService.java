@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.makerspace.backend.controller.dto.StripeEventCommand;
 import com.makerspace.backend.controller.dto.SubscriptionSnapshot;
 import com.makerspace.backend.model.*;
+import com.makerspace.backend.repository.MembershipPlanRepository;
 import com.makerspace.backend.repository.MembershipRepository;
 import com.makerspace.backend.repository.PaymentRecordRepository;
 import com.makerspace.backend.repository.StripeEventLogRepository;
@@ -34,6 +35,7 @@ public class StripeEventService {
     @Autowired private StripeEventLogRepository eventLogRepository;
     @Autowired private MembershipService membershipService;
     @Autowired private MembershipRepository membershipRepository;
+    @Autowired private MembershipPlanRepository membershipPlanRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private PaymentRecordRepository paymentRecordRepository;
     @Autowired private ObjectMapper objectMapper;
@@ -271,6 +273,10 @@ public class StripeEventService {
                     record.setDescription("Day pass");
                     record.setOccurredAt(ZonedDateTime.now());
                     paymentRecordRepository.save(record);
+                    
+                    // Create a Day Pass membership (one-time pass that expires after 24 hours)
+                    createDayPassMembership(user);
+                    log.info("Day pass purchased and membership created for user {}", user.getId());
                 }
 
                 try {
@@ -328,6 +334,38 @@ public class StripeEventService {
                         .build())
                 .build();
         stripeClient.v1().customers().update(customerId, params);
+    }
+
+    private void createDayPassMembership(User user) {
+        log.info("createDayPassMembership called for user {}", user.getId());
+        try {
+            // Get the Day Pass plan
+            log.debug("Looking up DAY_PASS plan...");
+            MembershipPlan dayPassPlan = membershipPlanRepository.findByCode("DAY_PASS")
+                    .orElseThrow(() -> {
+                        log.error("DAY_PASS plan not found in database!");
+                        return new ResponseStatusException(HttpStatus.NOT_FOUND, "Day Pass plan not found");
+                    });
+            log.info("Found DAY_PASS plan: id={}, code={}", dayPassPlan.getId(), dayPassPlan.getCode());
+
+            // Create membership valid for 24 hours from now
+            ZonedDateTime now = ZonedDateTime.now();
+            ZonedDateTime expiresAt = now.plusHours(24);
+
+            Membership membership = new Membership();
+            membership.setUser(user);
+            membership.setPlan(dayPassPlan);
+            membership.setStatus(MembershipStatus.ACTIVE);
+            membership.setCurrentPeriodStart(now);
+            membership.setCurrentPeriodEnd(expiresAt);
+            membership.setCancelAtPeriodEnd(false);
+            membership.setUpdatedAt(now);
+
+            Membership saved = membershipRepository.saveAndFlush(membership);
+            log.info("✅ Created Day Pass membership id={} for user {} expiring at {}", saved.getId(), user.getId(), expiresAt);
+        } catch (Exception e) {
+            log.error("❌ Failed to create Day Pass membership for user {}: {}", user.getId(), e.getMessage(), e);
+        }
     }
 
     private ZonedDateTime epochToUtc(long epochSeconds) {

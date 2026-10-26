@@ -118,7 +118,7 @@ function readPendingBooking() {
     const r = saved?.reservation;
     if (!r?.equipmentId || !r.startTime || !r.endTime) return null;
     if (Date.now() - saved.savedAt > PENDING_TTL_MS) return null;
-    return r;
+    return saved; // Return full saved object with all state info
   } catch {
     return null;
   }
@@ -148,10 +148,18 @@ export default function MyReservations() {
   // Finish a booking that was waiting on payment. Membership activation is webhook-driven,
   // so a 402 is retried for a while before asking the user to try again.
   const [pendingBooking] = useState(readPendingBooking);
-  const [bookingState, setBookingState] = useState(pendingBooking ? "booking" : "none");
+  const [bookingState, setBookingState] = useState(() => {
+    if (!pendingBooking) return "none";
+    // If waiver is required but not signed, don't try auto-booking
+    if (pendingBooking.reservation?.waiverRequired && !pendingBooking.reservation?.waiverSigned) {
+      return "waiver_required";
+    }
+    return "booking";
+  });
+  const [bookingError, setBookingError] = useState("");
 
   useEffect(() => {
-    if (!pendingBooking) return undefined;
+    if (!pendingBooking || bookingState !== "booking") return undefined;
     let cancelled = false;
     let timer;
 
@@ -160,9 +168,9 @@ export default function MyReservations() {
         const res = await authFetch("/api/v1/reservations", {
           method: "POST",
           body: JSON.stringify({
-            equipmentId: pendingBooking.equipmentId,
-            startTime: pendingBooking.startTime,
-            endTime: pendingBooking.endTime,
+            equipmentId: pendingBooking.reservation.equipmentId,
+            startTime: pendingBooking.reservation.startTime,
+            endTime: pendingBooking.reservation.endTime,
           }),
         });
         if (cancelled) return;
@@ -174,6 +182,14 @@ export default function MyReservations() {
         }
         if (res.status === 402 && n < MAX_ATTEMPTS) {
           timer = setTimeout(() => attempt(n + 1), RETRY_MS);
+          return;
+        }
+        // 403 usually means waiver not signed - don't retry
+        if (res.status === 403) {
+          const body = await res.json().catch(() => ({}));
+          setBookingError(body.error || "Please sign the equipment waiver before reserving.");
+          sessionStorage.removeItem(PENDING_RESERVATION_KEY);
+          setBookingState("failed");
           return;
         }
       } catch {
@@ -252,10 +268,20 @@ export default function MyReservations() {
           That time slot is no longer available. Please pick a different time.
         </p>
       )}
+      {bookingState === "waiver_required" && (
+        <p style={{ color: "orange" }}>
+          Payment received! To complete your booking, please sign the equipment waiver first.
+          <br />
+          <button onClick={() => navigate(`/dashboard/rentequipment/${pendingBooking?.reservation?.equipmentId}/waiver`, {
+            state: pendingBooking?.reservation,
+          })}>
+            Sign Waiver & Continue
+          </button>
+        </p>
+      )}
       {bookingState === "failed" && (
         <p style={{ color: "red" }}>
-          We couldn't finish booking automatically. Your payment went through — please reserve again
-          from Rent Equipment.
+          {bookingError || "We couldn't finish booking automatically. Your payment went through — please reserve again from Rent Equipment."}
         </p>
       )}
       {error && <p>{error}</p>}

@@ -1,5 +1,4 @@
--- Update Stripe Product IDs to use active products
--- IMPORTANT: Replace prod_XXXX values with your actual Stripe product IDs from your dashboard
+-- Update Stripe Product IDs and Price IDs to use active products from Stripe dashboard
 
 UPDATE membership_plan 
 SET stripe_product_id = 'prod_VSv1h5nOzd03Zq'  
@@ -10,5 +9,6 @@ SET stripe_product_id = 'prod_VSv3Vw9u19zXIJ'
 WHERE code = 'STUDENT';
 
 UPDATE membership_plan 
-SET stripe_product_id = 'prod_VSv2pb4onc7qSy'  
+SET stripe_product_id = 'prod_VSv2pb4onc7qSy',
+    stripe_price_id = 'price_1URzCYCqDStEDHd00V1salUU'
 WHERE code = 'DAY_PASS';

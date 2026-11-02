@@ -36,6 +36,7 @@ import java.time.ZonedDateTime;
 public class StripeEventService {
 
     @Autowired private StripeEventLogRepository eventLogRepository;
+    @Autowired private CancellationRequestService cancellationRequestService;
     @Autowired private MembershipService membershipService;
     @Autowired private MembershipRepository membershipRepository;
     @Autowired private UserRepository userRepository;
@@ -101,13 +102,16 @@ public class StripeEventService {
                 handleCheckoutSessionCompleted(cmd);
                 yield EventOutcome.PROCESSED;
             }
+            case "charge.refunded" -> {
+                handleChargeRefunded(cmd);
+                yield EventOutcome.PROCESSED;
+            }
             // Remaining handlers pending Phase 2
             case "invoice.payment_failed",
                  "invoice.payment_action_required",
                  "invoice.upcoming",
                  "checkout.session.async_payment_succeeded",
                  "checkout.session.async_payment_failed",
-                 "charge.refunded",
                  "charge.dispute.created",
                  "payment_intent.payment_failed",
                  "customer.deleted" -> {
@@ -372,6 +376,16 @@ public class StripeEventService {
                         .build())
                 .build();
         stripeClient.v1().customers().update(customerId, params);
+    }
+
+    private void handleChargeRefunded(StripeEventCommand cmd) {
+        JsonNode charge = parseObject(cmd);
+        String chargeId = charge.path("id").asText(null);
+        if (chargeId == null) {
+            log.warn("charge.refunded event {} missing charge id", cmd.eventId());
+            return;
+        }
+        cancellationRequestService.handleStripeRefundConfirmed(chargeId);
     }
 
     private ZonedDateTime epochToUtc(long epochSeconds) {

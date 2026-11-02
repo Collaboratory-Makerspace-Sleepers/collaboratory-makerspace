@@ -11,15 +11,17 @@ export default function AdminHome() {
 
   const [inUseIds, setInUseIds] = useState([]);
   const [visitsToday, setVisitsToday] = useState(null);
+  const [pendingCancellations, setPendingCancellations] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
       try {
-        const [inUseRes, feedRes] = await Promise.all([
+        const [inUseRes, feedRes, cancelRes] = await Promise.all([
           authFetch("/api/v1/reservations/in-use-now"),
           authFetch("/api/v1/users/activity/feed?limit=200"),
+          authFetch("/api/v1/admin/cancellation-requests/count?status=PENDING"),
         ]);
 
         if (!cancelled && inUseRes.ok) {
@@ -34,6 +36,11 @@ export default function AdminHome() {
             (item) => item.type === "CARD_TAP" && new Date(item.time).toDateString() === today
           ).length;
           setVisitsToday(count);
+        }
+
+        if (!cancelled && cancelRes.ok) {
+          const d = await cancelRes.json();
+          setPendingCancellations(d.count ?? 0);
         }
       } catch {
         // leave defaults
@@ -72,8 +79,8 @@ export default function AdminHome() {
 
         <div className="admin-stat-card">
           <p className="admin-stat-card__label">Cancellation Requests</p>
-          <p className="admin-stat-card__value">0</p>
-          <span className="admin-stat-card__badge">Coming soon</span>
+          <p className="admin-stat-card__value">{pendingCancellations ?? "—"}</p>
+          <button onClick={() => navigate("/admin-dashboard/cancellations")}>View</button>
         </div>
       </div>
 

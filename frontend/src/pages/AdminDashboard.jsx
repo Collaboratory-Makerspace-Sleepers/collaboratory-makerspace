@@ -7,6 +7,7 @@ export default function AdminDashboard() {
 
   const canManageRoles = permissions.includes("MANAGE_ROLES");
   const canManageClasses = permissions.includes("MANAGE_CLASSES");
+  const canManageReservations = permissions.includes("MANAGE_RESERVATIONS");
 
   function handleSignOut() {
     setToken(null);
@@ -25,6 +26,7 @@ export default function AdminDashboard() {
             {canManageClasses && <NavLink to="/admin-dashboard/bookclasses">Classes</NavLink>}
             {canManageRoles && <NavLink to="/admin-dashboard/hardware">Hardware Access</NavLink>}
             {canManageRoles && <NavLink to="/admin-dashboard/roles">Roles</NavLink>}
+            {canManageReservations && <NavLink to="/admin-dashboard/cancellations">Cancellations</NavLink>}
           </div>
         </div>
 

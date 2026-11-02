@@ -171,6 +171,93 @@ function TrainingAttestCard({ reservation, onAttest, busy }) {
   );
 }
 
+function CancelRequestModal({ reservation, onClose, onSuccess }) {
+  const { authFetch } = useAuth();
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+
+  const refundWindowEnd = new Date(new Date(reservation.endTime).getTime() + 48 * 60 * 60 * 1000);
+  const refundEligible = new Date() < refundWindowEnd;
+  const isCompleted = reservation.status === "COMPLETED";
+  const title = isCompleted ? "Request Refund" : "Cancel & Request Refund";
+
+  async function handleSubmit() {
+    setErr("");
+    setBusy(true);
+    try {
+      const res = await authFetch(
+        `/api/v1/reservations/${reservation.id}/cancellation-request`,
+        { method: "POST", body: JSON.stringify({ reason }) }
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || "Could not submit request");
+      }
+      setMsg("Request submitted. An admin will review it shortly.");
+      setTimeout(() => { onSuccess(); }, 2000);
+    } catch (e) {
+      setErr(e.message || "Something went wrong.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="ra-profile-backdrop" onClick={onClose}>
+      <div className="nu-dialog" onClick={(e) => e.stopPropagation()}>
+        <h2>{title}</h2>
+        <p><strong>{reservation.equipmentName}</strong></p>
+        <p>
+          {new Date(reservation.startTime).toLocaleDateString(undefined, {
+            weekday: "short", month: "short", day: "numeric", year: "numeric",
+          })}
+          {" – "}
+          {new Date(reservation.endTime).toLocaleDateString(undefined, {
+            weekday: "short", month: "short", day: "numeric", year: "numeric",
+          })}
+        </p>
+
+        {refundEligible ? (
+          <span style={{ background: "green", color: "#fff", borderRadius: "4px", padding: "2px 8px", fontSize: "0.8rem" }}>
+            Refund eligible
+          </span>
+        ) : (
+          <span style={{ background: "#dc2626", color: "#fff", borderRadius: "4px", padding: "2px 8px", fontSize: "0.8rem" }}>
+            Refund window expired — no refund will be issued
+          </span>
+        )}
+
+        <label style={{ display: "block", marginTop: "12px" }}>
+          <span>Reason (optional)</span>
+          <textarea
+            rows={3}
+            style={{ width: "100%", marginTop: "4px" }}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            disabled={busy || !!msg}
+          />
+        </label>
+
+        <p style={{ fontSize: "0.85rem", color: "#6b7280", marginTop: "8px" }}>
+          Your request will be reviewed by an admin before the reservation is cancelled.
+        </p>
+
+        {err && <p style={{ color: "red" }}>{err}</p>}
+        {msg && <p style={{ color: "green" }}>{msg}</p>}
+
+        <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
+          <button onClick={onClose} disabled={busy}>Cancel</button>
+          <button onClick={handleSubmit} disabled={busy || !!msg}>
+            {busy ? "Submitting…" : "Submit"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MyReservations() {
   const { authFetch } = useAuth();
   const [reservations, setReservations] = useState([]);
@@ -179,6 +266,7 @@ export default function MyReservations() {
   const [actionError, setActionError] = useState("");
   const [reschedulingId, setReschedulingId] = useState(null);
   const [busy, setBusy] = useState(null);
+  const [cancelModal, setCancelModal] = useState(null);
 
   const loadReservations = useCallback(() => {
     authFetch("/api/v1/reservations/me")
@@ -198,19 +286,7 @@ export default function MyReservations() {
     return () => clearInterval(id);
   }, [loadReservations]);
 
-  async function handleCancel(id) {
-    setActionError("");
-    setBusy(id + "-cancel");
-    try {
-      const res = await authFetch(`/api/v1/reservations/${id}/cancel`, { method: "PATCH" });
-      if (!res.ok) throw new Error("Could not cancel reservation");
-      loadReservations();
-    } catch (err) {
-      setActionError(err.message || "Something went wrong.");
-    } finally {
-      setBusy(null);
-    }
-  }
+  // Direct cancel removed — users now go through the cancellation request modal.
 
   async function handleReschedule(id, startIso, endIso) {
     setActionError("");
@@ -290,11 +366,8 @@ export default function MyReservations() {
               <button onClick={() => setReschedulingId(reschedulingId === r.id ? null : r.id)}>
                 {reschedulingId === r.id ? "Cancel reschedule" : "Reschedule"}
               </button>
-              <button
-                onClick={() => handleCancel(r.id)}
-                disabled={busy === r.id + "-cancel"}
-              >
-                {busy === r.id + "-cancel" ? "Cancelling…" : "Cancel reservation"}
+              <button onClick={() => setCancelModal(r)}>
+                Cancel reservation
               </button>
             </div>
           </div>
@@ -313,20 +386,37 @@ export default function MyReservations() {
       {past.length > 0 && (
         <>
           <div className="Dash2"><p>Past reservations</p></div>
-          {past.map((r) => (
-            <div className="Dash3" key={r.id}>
-              <div className="Dash4">
-                <p>{r.equipmentName}</p>
-                <p>
-                  {new Date(r.startTime).toLocaleDateString(undefined, {
-                    weekday: "long", month: "long", day: "numeric", year: "numeric",
-                  })}
-                </p>
-                <p style={{ color: r.status === "CANCELLED" ? "red" : "gray" }}>{r.status}</p>
+          {past.map((r) => {
+            const refundWindowEnd = new Date(new Date(r.endTime).getTime() + 48 * 60 * 60 * 1000);
+            const canRequestRefund = r.status === "COMPLETED" && new Date() < refundWindowEnd;
+            return (
+              <div className="Dash3" key={r.id}>
+                <div className="Dash4">
+                  <p>{r.equipmentName}</p>
+                  <p>
+                    {new Date(r.startTime).toLocaleDateString(undefined, {
+                      weekday: "long", month: "long", day: "numeric", year: "numeric",
+                    })}
+                  </p>
+                  <p style={{ color: r.status === "CANCELLED" ? "red" : "gray" }}>{r.status}</p>
+                  {canRequestRefund && (
+                    <div className="Dash5">
+                      <button onClick={() => setCancelModal(r)}>Request Refund</button>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </>
+      )}
+
+      {cancelModal && (
+        <CancelRequestModal
+          reservation={cancelModal}
+          onClose={() => setCancelModal(null)}
+          onSuccess={() => { setCancelModal(null); loadReservations(); }}
+        />
       )}
     </div>
   );

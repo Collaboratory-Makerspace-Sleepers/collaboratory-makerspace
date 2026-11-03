@@ -154,7 +154,8 @@ export default function ReserveEquipment() {
       hour, 0, 0
     );
     const end = new Date(start.getTime() + 60 * 60 * 1000);
-    const waiverRequired = item.requiresWaiver || false;
+    // For classes, skip waiver requirement; for other equipment, require waiver if item.requiresWaiver
+    const waiverRequired = item.category === "CLASS" ? false : (item.requiresWaiver || false);
     const reservationState = {
       equipmentId: Number(id),
       equipmentName: item.name,

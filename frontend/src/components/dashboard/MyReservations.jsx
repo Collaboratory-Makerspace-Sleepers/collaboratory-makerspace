@@ -171,6 +171,7 @@ export default function MyReservations() {
     return "booking";
   });
   const [bookingError, setBookingError] = useState("");
+  const [bookingAttempt, setBookingAttempt] = useState(0);
 
   useEffect(() => {
     if (!pendingBooking || bookingState !== "booking") return undefined;
@@ -178,6 +179,7 @@ export default function MyReservations() {
     let timer;
 
     async function attempt(n) {
+      setBookingAttempt(n);
       try {
         const res = await authFetch("/api/v1/reservations", {
           method: "POST",
@@ -195,6 +197,7 @@ export default function MyReservations() {
           return;
         }
         if (res.status === 402 && n < MAX_ATTEMPTS) {
+          console.log(`Membership not active yet (attempt ${n}/${MAX_ATTEMPTS}), retrying in ${RETRY_MS}ms...`);
           timer = setTimeout(() => attempt(n + 1), RETRY_MS);
           return;
         }
@@ -275,6 +278,11 @@ export default function MyReservations() {
             Payment received. We're confirming your {pendingBooking?.equipmentName ?? "reservation"}{" "}
             booking and it will appear below shortly.
           </p>
+          {bookingAttempt > 0 && (
+            <p style={{ fontSize: "0.9em", color: "#666", marginTop: "8px" }}>
+              Setting up membership ({bookingAttempt}/{MAX_ATTEMPTS})
+            </p>
+          )}
         </div>
       )}
       {bookingState === "conflict" && (

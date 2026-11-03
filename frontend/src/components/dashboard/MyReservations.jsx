@@ -339,48 +339,58 @@ export default function MyReservations() {
       {loading && <p>Loading…</p>}
       {!loading && active.length === 0 && <p>No upcoming reservations.</p>}
 
-      {active.map((r) => (
-        <div className="Dash3" key={r.id}>
-          <div className="Dash4">
-            <p>{r.equipmentName}</p>
-            <p>
-              {new Date(r.startTime).toLocaleDateString(undefined, {
-                weekday: "long", month: "long", day: "numeric", year: "numeric",
-              })}{" "}
-              {new Date(r.startTime).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
-              {" – "}
-              {new Date(r.endTime).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
-            </p>
-            {r.status === "PENDING" && (
-              <p style={{ color: "#e75710" }}>
-                Pending — watch the training video and check the box in your account to confirm this reservation.
+      <div className="ReservationsGrid">
+        {active.map((r) => (
+          <div className="ReservationCard" key={r.id}>
+            <div className="ReservationHeader">
+              <h3>{r.equipmentName}</h3>
+            </div>
+            
+            <div className="ReservationDetails">
+              <p className="ReservationTime">
+                {new Date(r.startTime).toLocaleDateString(undefined, {
+                  weekday: "long", month: "long", day: "numeric", year: "numeric",
+                })}<br />
+                {new Date(r.startTime).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+                {" – "}
+                {new Date(r.endTime).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
               </p>
-            )}
-            <div className="Dash5">
+              {r.status === "PENDING" && (
+                <p style={{ color: "#e75710", fontSize: "12px", marginTop: "8px" }}>
+                  Pending — watch the training video and check the box in your account to confirm this reservation.
+                </p>
+              )}
+            </div>
+
+            <div className="ReservationActions">
               <button
+                className="btn-reschedule"
                 onClick={() => setReschedulingId(reschedulingId === r.id ? null : r.id)}
               >
                 {reschedulingId === r.id ? "Cancel reschedule" : "Reschedule"}
               </button>
               <button
+                className="btn-cancel"
                 onClick={() => handleCancel(r.id)}
                 disabled={busy === r.id + "-cancel"}
               >
                 {busy === r.id + "-cancel" ? "Cancelling…" : "Cancel reservation"}
               </button>
             </div>
-          </div>
 
-          {reschedulingId === r.id && (
-            <RescheduleCalendar
-              reservationId={r.id}
-              onConfirm={handleReschedule}
-              onCancel={() => setReschedulingId(null)}
-              busy={busy === r.id + "-reschedule"}
-            />
-          )}
-        </div>
-      ))}
+            {reschedulingId === r.id && (
+              <div className="ReservationReschedule">
+                <RescheduleCalendar
+                  reservationId={r.id}
+                  onConfirm={handleReschedule}
+                  onCancel={() => setReschedulingId(null)}
+                  busy={busy === r.id + "-reschedule"}
+                />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
 
       {past.length > 0 && (
         <>

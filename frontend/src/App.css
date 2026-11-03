@@ -3945,3 +3945,194 @@ p {
   color: #999999;
   margin: 4px 0 0 0;
 }
+
+/* User Reserved Classes (Admin Dashboard) */
+.urc-wrapper {
+  --urc-bg: #e8f5e9;
+  --urc-card: #ffffff;
+  --urc-border: #c8e6c9;
+  --urc-text: #2e7d32;
+  --urc-heading: #1b5e20;
+  
+  font-family: "Poppins", sans-serif;
+  background: var(--urc-bg);
+  padding: 24px;
+  border-radius: 16px;
+  box-sizing: border-box;
+  margin-top: 24px;
+}
+
+.urc-wrapper *,
+.urc-wrapper *::before,
+.urc-wrapper *::after {
+  box-sizing: inherit;
+}
+
+.urc-card {
+  background: var(--urc-card);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.urc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  gap: 16px;
+  border-bottom: 1px solid var(--urc-border);
+}
+
+.urc-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--urc-heading);
+  flex-grow: 1;
+}
+
+.urc-title h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: -0.2px;
+}
+
+.urc-title svg {
+  color: var(--urc-text);
+}
+
+.urc-pagination {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+.urc-page-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--urc-border);
+  border-radius: 6px;
+  background: var(--urc-card);
+  color: var(--urc-text);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.urc-page-btn:hover:not(:disabled) {
+  background: #f1f8f5;
+  border-color: var(--urc-text);
+}
+
+.urc-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.urc-page-info {
+  font-size: 13px;
+  color: var(--urc-text);
+}
+
+.urc-state {
+  padding: 24px;
+  text-align: center;
+  color: var(--urc-text);
+  font-size: 14px;
+  margin: 0;
+}
+
+.urc-state.urc-error {
+  color: #c62828;
+  background: #ffebee;
+  border: 1px solid #ef5350;
+}
+
+.urc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 20px;
+}
+
+.urc-card-item {
+  background: #f9f9f9;
+  border: 1px solid var(--urc-border);
+  border-radius: 10px;
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.urc-card-item:hover {
+  border-color: var(--urc-text);
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.12);
+  transform: translateY(-2px);
+}
+
+.urc-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--urc-border);
+}
+
+.urc-card-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--urc-heading);
+}
+
+.urc-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.urc-status.active {
+  background: #c8e6c9;
+  color: var(--urc-heading);
+}
+
+.urc-status.pending {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.urc-card-body {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.6;
+}
+
+.urc-card-body p {
+  margin: 8px 0;
+  padding: 0;
+}
+
+.urc-card-body strong {
+  color: var(--urc-heading);
+  font-weight: 600;
+}
+
+.urc-user {
+  font-size: 12px;
+  color: #666;
+}
+
+.urc-time {
+  font-size: 12px;
+  color: #555;
+}

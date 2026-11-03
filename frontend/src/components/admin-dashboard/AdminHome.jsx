@@ -1,5 +1,6 @@
 import AdminCalendar from "./AdminCalendar";
 import RecentActivity from "./RecentActivity";
+import UserReservedClasses from "./UserReservedClasses";
 import { firstName, useDashboard } from "../../hooks/useDashboard";
 
 export default function AdminHome() {
@@ -50,6 +51,8 @@ export default function AdminHome() {
           </div>
         </div>
       </div>
+
+      <UserReservedClasses />
 
       <div className="AdAct">
         <RecentActivity />

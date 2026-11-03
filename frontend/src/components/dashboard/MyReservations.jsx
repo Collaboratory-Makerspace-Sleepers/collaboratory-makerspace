@@ -302,9 +302,37 @@ export default function MyReservations() {
         </p>
       )}
       {bookingState === "failed" && (
-        <p style={{ color: "red" }}>
-          {bookingError || "We couldn't finish booking automatically. Your payment went through — please reserve again from Rent Equipment."}
-        </p>
+        <div style={{ color: "red" }}>
+          <p>
+            {bookingError || "We couldn't finish booking automatically. Your payment went through — please reserve again from Rent Equipment."}
+          </p>
+          {import.meta.env.DEV && (
+            <div style={{ marginTop: "16px", padding: "12px", backgroundColor: "#f0f0f0", borderRadius: "4px" }}>
+              <p style={{ fontSize: "0.9em", color: "#666", margin: "0 0 8px 0" }}>
+                🔧 Dev Mode: Webhook not triggering? Create a test membership:
+              </p>
+              <button 
+                onClick={() => {
+                  sessionStorage.removeItem(PENDING_RESERVATION_KEY);
+                  setBookingState("none");
+                  // Manually create membership via dev API (if available)
+                  authFetch("/api/dev/membership/create-active-for-testing?planCode=MONTHLY", {
+                    method: "POST"
+                  }).then(() => {
+                    loadReservations();
+                    // Try booking again
+                    setBookingState("booking");
+                  }).catch(() => {
+                    alert("Dev endpoint not available. Ensure backend is running with 'dev' profile.");
+                  });
+                }}
+                style={{ padding: "8px 12px", backgroundColor: "#4CAF50", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
+              >
+                Create Test Membership & Retry
+              </button>
+            </div>
+          )}
+        </div>
       )}
       {error && <p>{error}</p>}
       {actionError && <p style={{ color: "red" }}>{actionError}</p>}

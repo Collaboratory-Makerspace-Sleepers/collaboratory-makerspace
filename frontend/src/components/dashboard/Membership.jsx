@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import BillingHistory from "./BillingHistory";
 import {
   useDashboard,
   todaySentence,
@@ -278,6 +279,8 @@ export default function Membership() {
           );
         })}
       </div>
+
+      <BillingHistory />
     </div>
   );
 }

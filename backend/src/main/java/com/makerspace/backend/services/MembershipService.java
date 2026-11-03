@@ -29,11 +29,20 @@ public class MembershipService {
     private boolean pastDueRetainsAccess;
 
     public boolean hasActiveMembership(Long userId) {
-        return membershipRepository.findByUserId(userId)
-                .map(m -> isBookingEligible(m.getStatus())
-                        && m.getCurrentPeriodEnd() != null
-                        && m.getCurrentPeriodEnd().isAfter(ZonedDateTime.now()))
-                .orElse(false);
+        Optional<Membership> membership = membershipRepository.findByUserId(userId);
+        if (!membership.isPresent()) {
+            log.debug("  No membership found for user {}", userId);
+            return false;
+        }
+        
+        Membership m = membership.get();
+        boolean eligible = isBookingEligible(m.getStatus());
+        boolean notExpired = m.getCurrentPeriodEnd() != null && m.getCurrentPeriodEnd().isAfter(ZonedDateTime.now());
+        
+        log.debug("  Membership check for user {}: status={}, eligible={}, expired={}, expiresAt={}", 
+            userId, m.getStatus(), eligible, !notExpired, m.getCurrentPeriodEnd());
+        
+        return eligible && notExpired;
     }
 
     public MembershipStatus statusOf(Long userId) {

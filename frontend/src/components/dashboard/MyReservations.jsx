@@ -110,16 +110,27 @@ function RescheduleCalendar({ reservationId, onConfirm, onCancel, busy }) {
 const PENDING_RESERVATION_KEY = "pendingReservationAfterPayment";
 const PENDING_TTL_MS = 2 * 60 * 60 * 1000;
 const RETRY_MS = 1000;
-const MAX_ATTEMPTS = 8;
+const MAX_ATTEMPTS = 30;
 
 function readPendingBooking() {
   try {
-    const saved = JSON.parse(sessionStorage.getItem(PENDING_RESERVATION_KEY));
-    const r = saved?.reservation;
+    const raw = sessionStorage.getItem(PENDING_RESERVATION_KEY);
+    if (!raw) return null;
+    
+    const saved = JSON.parse(raw);
+    
+    // Handle both formats: {reservation: {...}, savedAt} and direct {...}
+    const r = saved?.reservation || saved;
     if (!r?.equipmentId || !r.startTime || !r.endTime) return null;
-    if (Date.now() - saved.savedAt > PENDING_TTL_MS) return null;
-    return saved; // Return full saved object with all state info
-  } catch {
+    
+    // Check TTL if savedAt exists, otherwise assume it's fresh
+    const savedAt = saved?.savedAt || Date.now();
+    if (Date.now() - savedAt > PENDING_TTL_MS) return null;
+    
+    // Always return the full structure with reservation nested
+    return saved?.reservation ? saved : { reservation: r, savedAt };
+  } catch (err) {
+    console.error("Error reading pending booking:", err);
     return null;
   }
 }
@@ -149,9 +160,12 @@ export default function MyReservations() {
   // so a 402 is retried for a while before asking the user to try again.
   const [pendingBooking] = useState(readPendingBooking);
   const [bookingState, setBookingState] = useState(() => {
+    console.log("MyReservations init - pendingBooking:", pendingBooking);
     if (!pendingBooking) return "none";
+    console.log("Checking waiver - required:", pendingBooking.reservation?.waiverRequired, "signed:", pendingBooking.reservation?.waiverSigned);
     // If waiver is required but not signed, don't try auto-booking
     if (pendingBooking.reservation?.waiverRequired && !pendingBooking.reservation?.waiverSigned) {
+      console.log("Waiver required but not signed - showing waiver state");
       return "waiver_required";
     }
     return "booking";

@@ -337,6 +337,7 @@ public class StripeEventService {
     }
 
     private void createDayPassMembership(User user) {
+        System.out.println("\n🎟️  CREATE DAY PASS MEMBERSHIP for user " + user.getId() + "\n");
         log.info("createDayPassMembership called for user {}", user.getId());
         try {
             // Get the Day Pass plan
@@ -362,8 +363,10 @@ public class StripeEventService {
             membership.setUpdatedAt(now);
 
             Membership saved = membershipRepository.saveAndFlush(membership);
+            System.out.println("✅✅ CREATED MEMBERSHIP: id=" + saved.getId() + " expires=" + expiresAt);
             log.info("✅ Created Day Pass membership id={} for user {} expiring at {}", saved.getId(), user.getId(), expiresAt);
         } catch (Exception e) {
+            System.out.println("❌ FAILED TO CREATE MEMBERSHIP: " + e.getMessage());
             log.error("❌ Failed to create Day Pass membership for user {}: {}", user.getId(), e.getMessage(), e);
         }
     }

@@ -154,11 +154,12 @@ export default function ReserveEquipment() {
       hour, 0, 0
     );
     const end = new Date(start.getTime() + 60 * 60 * 1000);
-    const waiverRequired = true;
+    const waiverRequired = item.requiresWaiver || false;
     const reservationState = {
       equipmentId: Number(id),
       equipmentName: item.name,
       waiverRequired,
+      waiverSigned: false, // User hasn't signed yet - needs to go to waiver page
       trainingRequired: item.trainingRequired,
       startTime: start.toISOString(),
       endTime: end.toISOString(),

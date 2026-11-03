@@ -45,21 +45,36 @@ public class ReservationService {
     public EquipmentReservation create(Long userId, Long equipmentId,
                                        ZonedDateTime startTime, ZonedDateTime endTime) {
 
+        log.info("=== RESERVATION CREATE START === userId: {}, equipmentId: {}, startTime: {}, endTime: {}", userId, equipmentId, startTime, endTime);
+
         if (!endTime.isAfter(startTime)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End time must be after start time");
         }
 
         Equipment equipment = equipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Equipment not found"));
+        
+        log.info("Equipment found: {} (requiresWaiver: {}, trainingRequired: {})", equipment.getName(), equipment.isRequiresWaiver(), equipment.isTrainingRequired());
 
-            if (!trainingWaiverSignatureRepository.existsByUserIdAndEquipmentId(userId, equipmentId)) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sign the equipment waiver before checkout");
-            }
+        if (equipment.isRequiresWaiver() && !trainingWaiverSignatureRepository.existsByUserIdAndEquipmentId(userId, equipmentId)) {
+            log.warn("❌ Waiver required but not signed for user {} on equipment {}", userId, equipmentId);
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sign the equipment waiver before checkout");
+        }
 
-            if (!membershipService.hasActiveMembership(userId) && !hasRecentDayPass(userId)) {
-                throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED,
-                    "An active membership is required to reserve equipment");
-            }
+        boolean hasActiveMembership = membershipService.hasActiveMembership(userId);
+        boolean hasRecentDayPass = hasRecentDayPass(userId);
+        log.info("Membership check - hasActiveMembership: {}, hasRecentDayPass: {}", hasActiveMembership, hasRecentDayPass);
+        System.out.println("\n📋 MEMBERSHIP CHECK: hasActive=" + hasActiveMembership + ", hasRecent=" + hasRecentDayPass + "\n");
+        
+        if (!hasActiveMembership && !hasRecentDayPass) {
+            log.warn("❌ NO ACTIVE MEMBERSHIP for user {} - returning 402 PAYMENT_REQUIRED", userId);
+            System.out.println("❌❌ NO MEMBERSHIP - RETURNING 402");
+            throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED,
+                "An active membership is required to reserve equipment");
+        }
+        
+        System.out.println("✅✅ MEMBERSHIP VALID - BOOKING ALLOWED");
+        log.info("✅ User has valid membership or day pass");
 
         if (equipment.getStatus() == EquipmentStatus.MAINTENANCE
                 || equipment.getStatus() == EquipmentStatus.RETIRED) {

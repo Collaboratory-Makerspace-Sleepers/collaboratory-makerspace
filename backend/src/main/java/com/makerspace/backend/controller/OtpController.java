@@ -5,6 +5,7 @@ import com.makerspace.backend.model.User;
 import com.makerspace.backend.model.UserResolution;
 import com.makerspace.backend.services.JwtService;
 import com.makerspace.backend.services.OtpService;
+import com.makerspace.backend.services.UserPermissionService;
 import com.makerspace.backend.services.UserService;
 import com.makerspace.backend.services.UserStateService;
 import com.makerspace.backend.repository.UserRepository;
@@ -31,6 +32,7 @@ public class OtpController {
     @Autowired private OtpService otpService;
     @Autowired private UserService userService;
     @Autowired private UserStateService userStateService;
+    @Autowired private UserPermissionService userPermissionService;
     @Autowired private JwtService jwtService;
     @Autowired private UserRepository userRepository;
 
@@ -104,7 +106,11 @@ public class OtpController {
 
             case UserResolution.Pending pending ->
                 // Email verified — auto-activate the pre-registered account
-                userStateService.autoClaimByEmail(pending.user().getId(), otpSubject);
+                {
+                    User claimed = userStateService.autoClaimByEmail(pending.user().getId(), otpSubject);
+                    userPermissionService.evict(email);
+                    yield claimed;
+                }
 
             case UserResolution.NotFound notFound ->
                 // Self-provision as GUEST (same policy as OAuth2 flow)

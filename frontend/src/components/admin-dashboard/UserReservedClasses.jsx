@@ -14,19 +14,19 @@ export default function UserReservedClasses() {
     let cancelled = false;
     const load = async () => {
       try {
-        const res = await authFetch("/api/v1/reservations");
+        const res = await authFetch("/api/v1/reservations/admin/all?size=100");
         if (!res.ok) throw new Error("Could not load reservations.");
         const data = await res.json();
         
         if (cancelled) return;
         
         // Filter only ACTIVE/PENDING reservations and only classes (equipment with category CLASS)
-        const classReservations = Array.isArray(data) 
-          ? data.filter(r => 
-              (r.status === "ACTIVE" || r.status === "PENDING") && 
-              r.category === "CLASS"
-            )
-          : [];
+        // The API returns a Page object with a content array
+        const reservationList = data.content || (Array.isArray(data) ? data : []);
+        const classReservations = reservationList.filter(r => 
+          (r.status === "ACTIVE" || r.status === "PENDING") && 
+          r.equipmentCategory === "CLASS"
+        );
         
         setReservations(classReservations);
         setError("");
@@ -106,7 +106,7 @@ export default function UserReservedClasses() {
                 
                 <div className="urc-card-body">
                   <p className="urc-user">
-                    <strong>User:</strong> {reservation.userName || reservation.userEmail || "Unknown"}
+                    <strong>User ID:</strong> {reservation.userId}
                   </p>
                   <p className="urc-time">
                     <strong>Date:</strong> {new Date(reservation.startTime).toLocaleDateString(undefined, {

@@ -64,6 +64,35 @@ export default function ReservationCheckout() {
     }
   }
 
+  async function handlePaymentCheckout() {
+    setStatus("confirming");
+    setErrorMsg("");
+    try {
+      // Create Stripe checkout session for equipment rental
+      const res = await authFetch("/api/v1/billing/equipment-checkout-session", {
+        method: "POST",
+        body: JSON.stringify({
+          equipmentId,
+          startTime,
+          endTime,
+          hours: Math.round((new Date(endTime) - new Date(startTime)) / (1000 * 60 * 60) * 100) / 100,
+          price: Math.round(price * 100) / 100,
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || "Could not start checkout");
+      }
+
+      const { sessionUrl } = await res.json();
+      window.location.href = sessionUrl;
+    } catch (err) {
+      setErrorMsg(err.message || "Something went wrong.");
+      setStatus("error");
+    }
+  }
+
   if (status === "success") {
     return (
       <div className="DashHome1">
@@ -114,6 +143,7 @@ export default function ReservationCheckout() {
           <div className="Dash4">
             <p>You don't have an active membership.</p>
             <p>Members reserve equipment for free.</p>
+            <p>Or pay per rental: ${price.toFixed(2)}</p>
           </div>
           <div className="Dash5 checkout-actions">
             <button
@@ -127,7 +157,10 @@ export default function ReservationCheckout() {
             >
               Get a membership
             </button>
-            <button disabled title="Coming soon">
+            <button
+              onClick={handlePaymentCheckout}
+              disabled={status === "confirming"}
+            >
               Pay ${price.toFixed(2)}
             </button>
           </div>

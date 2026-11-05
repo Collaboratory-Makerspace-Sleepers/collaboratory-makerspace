@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const PENDING_RESERVATION_KEY = "pendingReservationAfterPayment";
 const PENDING_RESERVATION_TTL_MS = 2 * 60 * 60 * 1000;
@@ -35,22 +36,79 @@ const CONTENT = {
     link: "/dashboard/payment-methods",
     label: "View payment methods",
   },
+  equipment: {
+    title: "Payment received",
+    subtitle: "Creating your reservation...",
+    link: "/dashboard/reservations",
+    label: "View my reservations",
+  },
 };
 
 export default function BillingSuccess() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
+  const { authFetch } = useAuth();
   const type = params.get("type");
+  const equipmentId = params.get("equipmentId");
+  const startTime = params.get("startTime");
+  const endTime = params.get("endTime");
+  
   const [pendingReservation] = useState(() =>
     ["membership", "daypass"].includes(type) ? readPendingReservation() : null
   );
 
-  // Go straight to My Reservations; it finishes the booking once the membership is active.
-  useEffect(() => {
-    if (pendingReservation) navigate("/dashboard/reservations", { replace: true });
-  }, [navigate, pendingReservation]);
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState("");
 
-  const content = pendingReservation
+  // For equipment payments, create the reservation
+  useEffect(() => {
+    if (type === "equipment" && equipmentId && startTime && endTime && !creating) {
+      setCreating(true);
+      const createReservation = async () => {
+        try {
+          const res = await authFetch("/api/v1/reservations", {
+            method: "POST",
+            body: JSON.stringify({
+              equipmentId: parseInt(equipmentId),
+              startTime: decodeURIComponent(startTime),
+              endTime: decodeURIComponent(endTime),
+            }),
+          });
+
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.message || "Failed to create reservation");
+          }
+
+          // Reservation created successfully, navigate to reservations page
+          setTimeout(() => navigate("/dashboard/reservations", { replace: true }), 1500);
+        } catch (err) {
+          setError(err.message || "Something went wrong");
+          setCreating(false);
+        }
+      };
+
+      createReservation();
+    }
+
+    // Go straight to My Reservations; it finishes the booking once the membership is active.
+    if (pendingReservation && !creating) {
+      navigate("/dashboard/reservations", { replace: true });
+    }
+  }, [navigate, authFetch, pendingReservation, type, equipmentId, startTime, endTime, creating]);
+
+  const content = 
+    error ? {
+      title: "Error creating reservation",
+      subtitle: error,
+      link: "/dashboard/rentequipment",
+      label: "Try again",
+    } : creating ? {
+      title: "Payment received",
+      subtitle: "Creating your reservation...",
+      link: "/dashboard/reservations",
+      label: "View my reservations",
+    } : pendingReservation
     ? {
         title: "Payment received",
         subtitle: "Taking you to My Reservations…",
@@ -72,7 +130,7 @@ export default function BillingSuccess() {
           <p className="signin-subtitle">{content.subtitle}</p>
         </div>
         <div className="sign-in">
-          {!pendingReservation && (
+          {!pendingReservation && !creating && (
           <Link
             to={content.link}
             onClick={() => {

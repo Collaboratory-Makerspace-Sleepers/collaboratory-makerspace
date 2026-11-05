@@ -123,4 +123,19 @@ public class BillingController {
     public List<PaymentRecordDTO> showPayments(Authentication auth) {
         return billingService.getPayments(userSecurity.getUserId(auth));
     }
+
+    @PostMapping("/equipment-checkout-session")
+    public CheckoutSessionResponse createEquipmentCheckoutSession(
+            @Valid @RequestBody EquipmentCheckoutRequest req, Authentication auth) {
+        Long userId = userSecurity.getUserId(auth);
+        try {
+            return new CheckoutSessionResponse(
+                    billingService.createEquipmentCheckoutSession(userId, req.equipmentId(), 
+                            req.startTime(), req.endTime(), req.price())
+            );
+        } catch (StripeException e) {
+            log.error("Stripe error for user {} equipment checkout: {}", userId, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Payment provider error");
+        }
+    }
 }

@@ -343,4 +343,60 @@ public class BillingService {
                 ))
                 .toList();
     }
+
+    public String createEquipmentCheckoutSession(Long userId, Long equipmentId, String startTime, 
+                                                   String endTime, Double price) throws StripeException {
+        Optional<User> user = userRepository.findByIdForUpdate(userId);
+
+        if (user.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+        }
+
+        UserProfile userProfile = user.get().getProfile();
+        String stripeCustomerId;
+
+        if (user.get().getStripeCustomerId() == null) {
+            stripeCustomerId = createStripeCustomer(user.get(), userProfile, userId);
+        } else {
+            stripeCustomerId = verifyOrRecreateCustomer(user.get(), userProfile, userId);
+        }
+
+        // Convert price to cents for Stripe
+        long priceCents = Math.round(price * 100);
+
+        SessionCreateParams.LineItem lineItem = SessionCreateParams.LineItem.builder()
+                .setPriceData(SessionCreateParams.LineItem.PriceData.builder()
+                        .setCurrency("usd")
+                        .setProductData(SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                                .setName("Equipment Rental - " + equipmentId)
+                                .setDescription("Equipment rental from " + startTime + " to " + endTime)
+                                .build())
+                        .setUnitAmount(priceCents)
+                        .build())
+                .setQuantity(1L)
+                .build();
+
+        String typedSuccessUrl = successUrl + "?type=equipment&equipmentId=" + equipmentId + 
+                "&startTime=" + encodeString(startTime) + "&endTime=" + encodeString(endTime);
+
+        SessionCreateParams.Builder sessionBuilder = SessionCreateParams.builder()
+                .setCustomer(stripeCustomerId)
+                .setMode(SessionCreateParams.Mode.PAYMENT)
+                .setSuccessUrl(typedSuccessUrl)
+                .setCancelUrl(cancelUrl)
+                .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
+                .addLineItem(lineItem);
+
+        Session session = stripeClient.v1().checkout().sessions().create(sessionBuilder.build());
+
+        return session.getUrl();
+    }
+
+    private String encodeString(String value) {
+        try {
+            return java.net.URLEncoder.encode(value, "UTF-8");
+        } catch (java.io.UnsupportedEncodingException e) {
+            return value;
+        }
+    }
 }

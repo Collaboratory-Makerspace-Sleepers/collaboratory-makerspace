@@ -3,6 +3,7 @@ package com.makerspace.backend.controller;
 import com.makerspace.backend.config.security.UserSecurity;
 import com.makerspace.backend.controller.dto.*;
 import com.makerspace.backend.services.BillingService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.stripe.exception.StripeException;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -122,5 +123,34 @@ public class BillingController {
     @GetMapping("/me/payments")
     public List<PaymentRecordDTO> showPayments(Authentication auth) {
         return billingService.getPayments(userSecurity.getUserId(auth));
+    }
+
+    @GetMapping("/me/subscription/plan-change-preview")
+    public PlanChangePreviewDTO previewPlanChange(@RequestParam String planCode, Authentication auth) {
+        Long userId = userSecurity.getUserId(auth);
+        try {
+            return billingService.previewPlanChange(userId, planCode);
+        } catch (StripeException e) {
+            log.error("Stripe error previewing plan change for user {}: {}", userId, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Payment provider error");
+        }
+    }
+
+    @PostMapping("/me/subscription/plan-change")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void changePlan(@Valid @RequestBody PlanChangeRequest req, Authentication auth) {
+        Long userId = userSecurity.getUserId(auth);
+        try {
+            billingService.changePlan(userId, req.planCode());
+        } catch (StripeException e) {
+            log.error("Stripe error changing plan for user {}: {}", userId, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Payment provider error");
+        }
+    }
+
+    @GetMapping("/admin/users/{userId}/payments")
+    @PreAuthorize("hasAuthority('MANAGE_USERS')")
+    public List<PaymentRecordDTO> getAdminUserPayments(@PathVariable Long userId) {
+        return billingService.getPayments(userId);
     }
 }

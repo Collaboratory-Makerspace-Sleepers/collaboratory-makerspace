@@ -58,4 +58,9 @@ public class StubEmailService implements EmailService {
         log.warn("[STUB] Payment receipt for {} <{}> — {}{} for {}",
                 fullName, toEmail, currency.toUpperCase(), amountCents / 100.0, description);
     }
+
+    @Override
+    public void sendPaymentFailed(String toEmail, String fullName, String portalUrl) {
+        log.warn("[STUB] Payment failed notification for {} <{}> — portal: {}", fullName, toEmail, portalUrl);
+    }
 }

@@ -33,4 +33,11 @@ public interface EmailService {
      */
     void sendPaymentReceipt(String toEmail, String fullName,
             String description, int amountCents, String currency);
+
+    /**
+     * Notifies the member that their subscription payment failed and prompts them
+     * to update their payment method via the Stripe portal.
+     * portalUrl may be null if the portal session could not be created.
+     */
+    void sendPaymentFailed(String toEmail, String fullName, String portalUrl);
 }

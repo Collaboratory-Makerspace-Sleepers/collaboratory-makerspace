@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 
 const DEFAULT_AVATAR =
@@ -12,6 +12,28 @@ const DEFAULT_AVATAR =
   );
 
 const AVAILABLE_ROLES = ["GUEST", "STUDENT", "RENTEE", "MEMBER", "INSTRUCTOR", "STAFF", "ADMIN"];
+
+const PAYMENT_KIND_LABELS = {
+  MEMBERSHIP: "Membership",
+  DAY_PASS: "Day Pass",
+  CLASS: "Class",
+  RENTAL: "Rental",
+  REFUND: "Refund",
+};
+
+const PAYMENT_STATUS_COLORS = {
+  SUCCEEDED: { color: "green" },
+  PENDING: { color: "orange" },
+  FAILED: { color: "red" },
+  REFUNDED: { color: "gray" },
+};
+
+function formatAmount(cents, currency) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency?.toUpperCase() ?? "USD",
+  }).format(cents / 100);
+}
 
 function formatDate(value) {
   if (!value) return "—";
@@ -62,6 +84,25 @@ export default function UserInformation({ user, onClose: onClosed, onUserUpdated
   const [editingRoles, setEditingRoles] = useState(false);
   const [pendingRoles, setPendingRoles] = useState(user.roles ?? []);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState("info");
+  const [billingPayments, setBillingPayments] = useState(null);
+  const [billingError, setBillingError] = useState("");
+  const [showAllPayments, setShowAllPayments] = useState(false);
+
+  useEffect(() => {
+    if (activeTab !== "billing") return;
+    let cancelled = false;
+    setBillingPayments(null);
+    setBillingError("");
+    authFetch(`/api/v1/billing/admin/users/${user.id}/payments`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Could not load billing history");
+        return res.json();
+      })
+      .then((data) => { if (!cancelled) setBillingPayments(data); })
+      .catch(() => { if (!cancelled) setBillingError("Could not load billing history."); });
+    return () => { cancelled = true; };
+  }, [activeTab, user.id, authFetch]);
 
   const isActive = !!localUser.allowed;
   const name = localUser.name || localUser.email || "Unknown user";
@@ -135,7 +176,89 @@ export default function UserInformation({ user, onClose: onClosed, onUserUpdated
         <h2 className="user-panel__title">User Information</h2>
       </header>
 
+      {/* Tab navigation */}
+      <div style={{ display: "flex", borderBottom: "1px solid #e5e5e5", padding: "0 1rem" }}>
+        {["info", "billing"].map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            style={{
+              padding: "0.5rem 1rem",
+              border: "none",
+              borderBottom: activeTab === tab ? "2px solid #333" : "2px solid transparent",
+              background: "transparent",
+              cursor: "pointer",
+              fontWeight: activeTab === tab ? "600" : "400",
+              fontSize: "0.9rem",
+              textTransform: "capitalize",
+            }}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
       <>
+        {activeTab === "billing" ? (
+          <section style={{ padding: "1rem" }}>
+            <p style={{ fontWeight: 600, marginBottom: "0.75rem" }}>Payment History</p>
+            {billingError && <p style={{ color: "red", fontSize: "0.85rem" }}>{billingError}</p>}
+            {billingPayments === null && !billingError && <p style={{ fontSize: "0.85rem" }}>Loading…</p>}
+            {billingPayments?.length === 0 && <p style={{ fontSize: "0.85rem", color: "#666" }}>No payments found.</p>}
+            {billingPayments && billingPayments.length > 0 && (
+              <>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid #e5e5e5", textAlign: "left" }}>
+                      <th style={{ padding: "0.3rem 0.4rem" }}>Date</th>
+                      <th style={{ padding: "0.3rem 0.4rem" }}>Kind</th>
+                      <th style={{ padding: "0.3rem 0.4rem" }}>Amount</th>
+                      <th style={{ padding: "0.3rem 0.4rem" }}>Status</th>
+                      <th style={{ padding: "0.3rem 0.4rem" }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(showAllPayments ? billingPayments : billingPayments.slice(0, 5)).map((p, i) => (
+                      <tr key={i} style={{ borderBottom: "1px solid #f0f0f0" }}>
+                        <td style={{ padding: "0.3rem 0.4rem", whiteSpace: "nowrap" }}>
+                          {new Date(p.occurredAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        </td>
+                        <td style={{ padding: "0.3rem 0.4rem" }}>
+                          {PAYMENT_KIND_LABELS[p.kind] ?? p.kind}
+                        </td>
+                        <td style={{ padding: "0.3rem 0.4rem", whiteSpace: "nowrap" }}>
+                          {formatAmount(p.amountCents, p.currency)}
+                        </td>
+                        <td style={{ padding: "0.3rem 0.4rem", ...PAYMENT_STATUS_COLORS[p.status] }}>
+                          {p.status.charAt(0) + p.status.slice(1).toLowerCase()}
+                        </td>
+                        <td style={{ padding: "0.3rem 0.4rem" }}>
+                          {p.stripeReceiptUrl && (
+                            <a href={p.stripeReceiptUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: "0.78rem" }}>
+                              Receipt
+                            </a>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {billingPayments.length > 5 && (
+                  <button
+                    type="button"
+                    className="ra-link"
+                    style={{ marginTop: "0.5rem", fontSize: "0.82rem" }}
+                    onClick={() => setShowAllPayments((v) => !v)}
+                  >
+                    {showAllPayments ? "Show less" : `Show all ${billingPayments.length} payments`}
+                  </button>
+                )}
+              </>
+            )}
+          </section>
+        ) : (
+        <>
         <section className="user-panel__profile">
           <img className="user-panel__avatar" src={DEFAULT_AVATAR} alt="" />
           <h3 className="user-panel__name">{name}</h3>
@@ -291,6 +414,8 @@ export default function UserInformation({ user, onClose: onClosed, onUserUpdated
             Close
           </button>
         </footer>
+        </>
+        )}
       </>
     </aside>
   );

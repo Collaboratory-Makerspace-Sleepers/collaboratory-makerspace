@@ -15,6 +15,8 @@ import com.makerspace.backend.repository.StudioAssignmentRepository;
 import com.makerspace.backend.repository.UserRepository;
 import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
+import com.stripe.model.Charge;
+import com.stripe.model.PaymentIntent;
 import com.stripe.model.SetupIntent;
 import com.stripe.model.Subscription;
 import com.stripe.param.CustomerUpdateParams;
@@ -50,6 +52,9 @@ public class StripeEventService {
 
     @Value("${app.billing.grace-period-days:7}")
     private int gracePeriodDays;
+
+    @Value("${app.billing.portal-return-url}")
+    private String portalReturnUrl;
 
     /**
      * Entry point for all inbound Stripe events. Insert-first idempotency guard:
@@ -106,16 +111,19 @@ public class StripeEventService {
                 handleChargeRefunded(cmd);
                 yield EventOutcome.PROCESSED;
             }
-            // Remaining handlers pending Phase 2
-            case "invoice.payment_failed",
-                 "invoice.payment_action_required",
+            case "invoice.payment_failed" -> {
+                handleInvoicePaymentFailed(cmd);
+                yield EventOutcome.PROCESSED;
+            }
+            // Remaining handlers pending Phase 3
+            case "invoice.payment_action_required",
                  "invoice.upcoming",
                  "checkout.session.async_payment_succeeded",
                  "checkout.session.async_payment_failed",
                  "charge.dispute.created",
                  "payment_intent.payment_failed",
                  "customer.deleted" -> {
-                log.info("Stripe event {} type {} received, handler pending Phase 2",
+                log.info("Stripe event {} type {} received, handler pending Phase 3",
                         cmd.eventId(), cmd.type());
                 yield EventOutcome.PROCESSED;
             }
@@ -156,8 +164,11 @@ public class StripeEventService {
         boolean cancelAtPeriodEnd    = sub.path("cancel_at_period_end").asBoolean(false);
         ZonedDateTime canceledAt     = sub.path("canceled_at").isNull() ? null
                                        : epochToUtc(sub.path("canceled_at").asLong());
-        // Use subscription's own `created` timestamp as an ordering signal for stale-event guard.
-        ZonedDateTime updatedAt      = epochToUtc(sub.path("created").asLong());
+        // Use subscription's own `updated` timestamp as an ordering signal for stale-event guard.
+        // Fall back to `created` for events on older API versions that omit `updated`.
+        long updatedEpoch = sub.path("updated").asLong(0);
+        if (updatedEpoch == 0) updatedEpoch = sub.path("created").asLong();
+        ZonedDateTime updatedAt      = epochToUtc(updatedEpoch);
 
         SubscriptionSnapshot snapshot = new SubscriptionSnapshot(
                 user, subscriptionId, stripePriceId, status,
@@ -252,6 +263,7 @@ public class StripeEventService {
         String currency   = invoice.path("currency").asText("usd");
         String invoiceId  = invoice.path("id").asText(null);
         String piId       = invoice.path("payment_intent").asText(null);
+        String chargeId   = invoice.path("charge").asText(null);
         String description = invoice.path("lines").path("data").path(0)
                 .path("description").asText("Membership payment");
         String subscriptionId = invoice.path("subscription").asText(null);
@@ -267,6 +279,16 @@ public class StripeEventService {
             record.setMembership(membership);
             record.setStripeInvoiceId(invoiceId);
             record.setStripePaymentIntentId(piId);
+            if (chargeId != null && !chargeId.isEmpty()) {
+                record.setStripeChargeId(chargeId);
+                try {
+                    Charge charge = stripeClient.v1().charges().retrieve(chargeId);
+                    record.setReceiptUrl(charge.getReceiptUrl());
+                } catch (StripeException e) {
+                    log.warn("Could not retrieve charge {} for receipt URL in event {}: {}",
+                            chargeId, cmd.eventId(), e.getMessage());
+                }
+            }
             record.setKind(PaymentKind.MEMBERSHIP);
             record.setAmountCents(amountPaid);
             record.setCurrency(currency);
@@ -312,6 +334,19 @@ public class StripeEventService {
                     PaymentRecord record = new PaymentRecord();
                     record.setUser(user);
                     record.setStripePaymentIntentId(piId);
+                    // Retrieve charge to get receipt URL
+                    try {
+                        PaymentIntent pi = stripeClient.v1().paymentIntents().retrieve(piId);
+                        String latestChargeId = pi.getLatestCharge();
+                        if (latestChargeId != null) {
+                            Charge charge = stripeClient.v1().charges().retrieve(latestChargeId);
+                            record.setStripeChargeId(latestChargeId);
+                            record.setReceiptUrl(charge.getReceiptUrl());
+                        }
+                    } catch (StripeException e) {
+                        log.warn("Could not retrieve charge for PI {} receipt URL in event {}: {}",
+                                piId, cmd.eventId(), e.getMessage());
+                    }
                     record.setKind(PaymentKind.DAY_PASS);
                     record.setAmountCents(amountTotal);
                     record.setCurrency(currency);
@@ -376,6 +411,53 @@ public class StripeEventService {
                         .build())
                 .build();
         stripeClient.v1().customers().update(customerId, params);
+    }
+
+    private void handleInvoicePaymentFailed(StripeEventCommand cmd) {
+        JsonNode invoice = parseObject(cmd);
+        String stripeCustomerId = invoice.path("customer").asText();
+
+        User user = userRepository.findByStripeCustomerId(stripeCustomerId).orElse(null);
+        if (user == null) {
+            log.warn("No user found for Stripe customer {} in invoice.payment_failed event {}",
+                    stripeCustomerId, cmd.eventId());
+            return;
+        }
+
+        String subscriptionId = invoice.path("subscription").asText(null);
+        if (subscriptionId != null) {
+            membershipRepository.findByStripeSubscriptionId(subscriptionId).ifPresent(m -> {
+                m.setStatus(MembershipStatus.PAST_DUE);
+                membershipRepository.save(m);
+                log.info("Membership {} set to PAST_DUE after payment failure (event {})",
+                        m.getId(), cmd.eventId());
+            });
+        }
+
+        String fullName = user.getProfile() != null
+                ? user.getProfile().getFirstName() + " " + user.getProfile().getLastName()
+                : user.getEmail();
+
+        String portalUrl = null;
+        try {
+            com.stripe.param.billingportal.SessionCreateParams portalParams =
+                    com.stripe.param.billingportal.SessionCreateParams.builder()
+                            .setCustomer(stripeCustomerId)
+                            .setReturnUrl(portalReturnUrl)
+                            .build();
+            com.stripe.model.billingportal.Session portalSession =
+                    stripeClient.v1().billingPortal().sessions().create(portalParams);
+            portalUrl = portalSession.getUrl();
+        } catch (StripeException e) {
+            log.warn("Could not create portal session for user {} in payment_failed event {}: {}",
+                    user.getId(), cmd.eventId(), e.getMessage());
+        }
+
+        try {
+            emailService.sendPaymentFailed(user.getEmail(), fullName, portalUrl);
+        } catch (Exception e) {
+            log.warn("Failed to send payment-failed email for event {}: {}", cmd.eventId(), e.getMessage());
+        }
     }
 
     private void handleChargeRefunded(StripeEventCommand cmd) {

@@ -62,4 +62,10 @@ public class ClassSession {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private ZonedDateTime createdAt = ZonedDateTime.now();
+
+    @Column(name = "stripe_product_id", length = 255)
+    private String stripeProductId;
+
+    @Column(name = "stripe_price_id", length = 255)
+    private String stripePriceId;
 }

@@ -2691,10 +2691,14 @@ p {
 
 .ra-profile-dialog {
   width: min(100%, 480px);
+  max-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
   padding: 20px;
   border-radius: 8px;
   background: #ffffff;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+  overflow-y: auto;
 }
 
 .ra-profile-header {

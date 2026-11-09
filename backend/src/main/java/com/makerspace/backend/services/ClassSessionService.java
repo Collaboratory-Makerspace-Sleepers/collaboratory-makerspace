@@ -7,7 +7,14 @@ import com.makerspace.backend.model.User;
 import com.makerspace.backend.repository.ClassEnrollmentRepository;
 import com.makerspace.backend.repository.ClassSessionRepository;
 import com.makerspace.backend.repository.UserRepository;
+import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
+import com.stripe.model.Price;
+import com.stripe.model.Product;
+import com.stripe.param.PriceCreateParams;
+import com.stripe.param.PriceUpdateParams;
+import com.stripe.param.ProductCreateParams;
+import com.stripe.param.ProductUpdateParams;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -29,6 +36,7 @@ public class ClassSessionService {
     @Autowired private UserRepository userRepository;
     @Autowired private MembershipService membershipService;
     @Autowired private BillingService billingService;
+    @Autowired private StripeClient stripeClient;
 
     // ── Queries ───────────────────────────────────────────────────────────────
 
@@ -88,6 +96,7 @@ public class ClassSessionService {
         ClassSession session = new ClassSession();
         applyCreate(session, req);
         classSessionRepository.save(session);
+        provisionStripeProduct(session);
         return toDTO(session, actingUserId);
     }
 
@@ -105,15 +114,22 @@ public class ClassSessionService {
                     "Instructors may only edit their own sessions");
         }
 
+        String oldTitle      = session.getTitle();
+        int    oldPriceCents = session.getPriceCents();
+        String oldStatus     = session.getStatus();
+
         applyUpdate(session, req);
         classSessionRepository.save(session);
+        syncStripeProduct(session, oldTitle, oldPriceCents, oldStatus);
         return toDTO(session, actingUserId);
     }
 
     public void delete(Long sessionId) {
         ClassSession session = findSession(sessionId);
+        String oldStatus = session.getStatus();
         session.setStatus("CANCELLED");
         classSessionRepository.save(session);
+        syncStripeProduct(session, session.getTitle(), session.getPriceCents(), oldStatus);
     }
 
     // ── Enrollment ────────────────────────────────────────────────────────────
@@ -266,6 +282,62 @@ public class ClassSessionService {
             User instructor = userRepository.findById(req.instructorId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Instructor not found"));
             session.setInstructor(instructor);
+        }
+    }
+
+    private void provisionStripeProduct(ClassSession session) {
+        try {
+            ProductCreateParams productParams = ProductCreateParams.builder()
+                    .setName(session.getTitle())
+                    .setDescription(session.getDescription() != null ? session.getDescription() : "")
+                    .putMetadata("class_session_id", String.valueOf(session.getId()))
+                    .build();
+            Product product = stripeClient.v1().products().create(productParams);
+
+            PriceCreateParams priceParams = PriceCreateParams.builder()
+                    .setProduct(product.getId())
+                    .setCurrency("usd")
+                    .setUnitAmount((long) session.getPriceCents())
+                    .build();
+            Price price = stripeClient.v1().prices().create(priceParams);
+
+            session.setStripeProductId(product.getId());
+            session.setStripePriceId(price.getId());
+            classSessionRepository.save(session);
+        } catch (StripeException e) {
+            log.warn("Could not create Stripe product for class session {}: {}", session.getId(), e.getMessage());
+        }
+    }
+
+    private void syncStripeProduct(ClassSession session, String oldTitle, int oldPriceCents, String oldStatus) {
+        if (session.getStripeProductId() == null) return;
+        try {
+            boolean titleChanged    = !session.getTitle().equals(oldTitle);
+            boolean priceChanged    = session.getPriceCents() != oldPriceCents;
+            boolean justCancelled   = "CANCELLED".equals(session.getStatus())
+                                   && !"CANCELLED".equals(oldStatus);
+
+            if (titleChanged) {
+                stripeClient.v1().products().update(session.getStripeProductId(),
+                        ProductUpdateParams.builder().setName(session.getTitle()).build());
+            }
+            if (priceChanged && session.getStripePriceId() != null) {
+                stripeClient.v1().prices().update(session.getStripePriceId(),
+                        PriceUpdateParams.builder().setActive(false).build());
+                Price newPrice = stripeClient.v1().prices().create(PriceCreateParams.builder()
+                        .setProduct(session.getStripeProductId())
+                        .setCurrency("usd")
+                        .setUnitAmount((long) session.getPriceCents())
+                        .build());
+                session.setStripePriceId(newPrice.getId());
+                classSessionRepository.save(session);
+            }
+            if (justCancelled) {
+                stripeClient.v1().products().update(session.getStripeProductId(),
+                        ProductUpdateParams.builder().setActive(false).build());
+            }
+        } catch (StripeException e) {
+            log.warn("Could not sync Stripe product for class session {}: {}", session.getId(), e.getMessage());
         }
     }
 

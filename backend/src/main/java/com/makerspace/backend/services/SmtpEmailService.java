@@ -149,4 +149,22 @@ public class SmtpEmailService implements EmailService {
         mailSender.send(msg);
         log.info("Payment receipt sent to <{}>", toEmail);
     }
+
+    @Override
+    public void sendPaymentFailed(String toEmail, String fullName, String portalUrl) {
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom(fromAddress);
+        msg.setTo(toEmail);
+        msg.setSubject("Action required — payment failed for your Collaboratory membership");
+        String portalLine = portalUrl != null
+                ? "Please update your payment method here:\n" + portalUrl
+                : "Please sign in to update your payment method: " + frontendBaseUrl + "/dashboard/membership";
+        msg.setText("Hi " + fullName + ",\n\n"
+                + "We were unable to process your membership payment. Your membership has been marked as past due.\n\n"
+                + portalLine + "\n\n"
+                + "If you believe this is an error, please contact us.\n\n"
+                + "— The Collaboratory Makerspace");
+        mailSender.send(msg);
+        log.info("Payment failed notification sent to <{}>", toEmail);
+    }
 }

@@ -21,7 +21,9 @@ public record ClassSessionDTO(
         ZonedDateTime createdAt,
         long enrolledCount,
         long spotsRemaining,
-        int resolvedPriceCents
+        int resolvedPriceCents,
+        String stripeProductId,
+        String stripePriceId
 ) {
     public static ClassSessionDTO from(ClassSession s, long enrolledCount, int resolvedPriceCents) {
         String instructorName = null;
@@ -51,7 +53,9 @@ public record ClassSessionDTO(
                 s.getCreatedAt(),
                 enrolledCount,
                 spotsRemaining,
-                resolvedPriceCents
+                resolvedPriceCents,
+                s.getStripeProductId(),
+                s.getStripePriceId()
         );
     }
 }

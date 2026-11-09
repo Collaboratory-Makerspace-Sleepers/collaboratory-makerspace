@@ -3,6 +3,7 @@ package com.makerspace.backend.services;
 import com.makerspace.backend.controller.dto.MembershipDTO;
 import com.makerspace.backend.controller.dto.PaymentMethodDTO;
 import com.makerspace.backend.controller.dto.PaymentRecordDTO;
+import com.makerspace.backend.controller.dto.PlanChangePreviewDTO;
 import com.makerspace.backend.controller.dto.PlanDTO;
 import com.makerspace.backend.model.*;
 import com.makerspace.backend.repository.MembershipPlanRepository;
@@ -12,11 +13,14 @@ import com.stripe.StripeClient;
 import com.stripe.exception.InvalidRequestException;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
+import com.stripe.model.Invoice;
 import com.stripe.model.PaymentMethod;
+import com.stripe.model.Subscription;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.RequestOptions;
 import com.stripe.param.CustomerCreateParams;
 import com.stripe.param.CustomerUpdateParams;
+import com.stripe.param.InvoiceCreatePreviewParams;
 import com.stripe.param.PaymentMethodListParams;
 import com.stripe.param.SubscriptionUpdateParams;
 import com.stripe.param.checkout.SessionCreateParams;
@@ -281,13 +285,103 @@ public class BillingService {
         Membership membership = membershipService.currentMembership(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No Membership found"));
 
+        MembershipPlan plan = membership.getPlan();
         return new MembershipDTO(
                 membership.getStatus(),
-                membership.getPlan().getCode(),
+                plan.getCode(),
+                plan.getDisplayName(),
+                plan.getAmountCents(),
+                plan.getBillingInterval(),
+                membership.getCurrentPeriodStart(),
                 membership.getCurrentPeriodEnd(),
                 membership.isCancelAtPeriodEnd(),
-                membership.getGracePeriodEndsAt()
+                membership.getGracePeriodEndsAt(),
+                membership.getCreatedAt(),
+                membership.getStripeSubscriptionId()
         );
+    }
+
+    public PlanChangePreviewDTO previewPlanChange(Long userId, String planCode) throws StripeException {
+        MembershipPlan targetPlan = membershipPlanRepository.findByCode(planCode)
+                .filter(MembershipPlan::isActive)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Plan not found"));
+
+        Membership membership = membershipService.currentMembership(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No active membership found"));
+
+        MembershipPlan currentPlan = membership.getPlan();
+        validatePlanChangeGuards(currentPlan, planCode, membership);
+
+        boolean isUpgrade = targetPlan.getAmountCents() > currentPlan.getAmountCents();
+        String subscriptionId = membership.getStripeSubscriptionId();
+
+        Subscription subscription = stripeClient.v1().subscriptions().retrieve(subscriptionId);
+        String itemId = subscription.getItems().getData().get(0).getId();
+
+        if (isUpgrade) {
+            InvoiceCreatePreviewParams params = InvoiceCreatePreviewParams.builder()
+                    .setSubscription(subscriptionId)
+                    .setSubscriptionDetails(
+                            InvoiceCreatePreviewParams.SubscriptionDetails.builder()
+                                    .setProrationBehavior(InvoiceCreatePreviewParams.SubscriptionDetails.ProrationBehavior.ALWAYS_INVOICE)
+                                    .addItem(InvoiceCreatePreviewParams.SubscriptionDetails.Item.builder()
+                                            .setId(itemId)
+                                            .setPrice(targetPlan.getStripePriceId())
+                                            .build())
+                                    .build())
+                    .build();
+            Invoice upcoming = stripeClient.v1().invoices().createPreview(params);
+            return new PlanChangePreviewDTO("UPGRADE", upcoming.getAmountDue().intValue(),
+                    upcoming.getCurrency(), null);
+        } else {
+            return new PlanChangePreviewDTO("DOWNGRADE", 0,
+                    currentPlan.getCurrency(), membership.getCurrentPeriodEnd());
+        }
+    }
+
+    public void changePlan(Long userId, String planCode) throws StripeException {
+        MembershipPlan targetPlan = membershipPlanRepository.findByCode(planCode)
+                .filter(MembershipPlan::isActive)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Plan not found"));
+
+        Membership membership = membershipService.currentMembership(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No active membership found"));
+
+        MembershipPlan currentPlan = membership.getPlan();
+        validatePlanChangeGuards(currentPlan, planCode, membership);
+
+        boolean isUpgrade = targetPlan.getAmountCents() > currentPlan.getAmountCents();
+        String subscriptionId = membership.getStripeSubscriptionId();
+
+        Subscription subscription = stripeClient.v1().subscriptions().retrieve(subscriptionId);
+        String itemId = subscription.getItems().getData().get(0).getId();
+
+        SubscriptionUpdateParams params = SubscriptionUpdateParams.builder()
+                .setProrationBehavior(isUpgrade
+                        ? SubscriptionUpdateParams.ProrationBehavior.ALWAYS_INVOICE
+                        : SubscriptionUpdateParams.ProrationBehavior.NONE)
+                .addItem(SubscriptionUpdateParams.Item.builder()
+                        .setId(itemId)
+                        .setPrice(targetPlan.getStripePriceId())
+                        .build())
+                .build();
+
+        stripeClient.v1().subscriptions().update(subscriptionId, params);
+    }
+
+    private void validatePlanChangeGuards(MembershipPlan currentPlan, String targetPlanCode,
+            Membership membership) {
+        if (currentPlan.getCode().equals(targetPlanCode)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "You are already on this plan");
+        }
+        if (membership.getStripeSubscriptionId() == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "No Stripe subscription linked to this membership");
+        }
+        if (membership.isCancelAtPeriodEnd()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Cannot change plan while cancellation is pending");
+        }
     }
 
     public List<PlanDTO> getPlans() {
@@ -390,14 +484,22 @@ public class BillingService {
     public List<PaymentRecordDTO> getPayments(Long userId) {
         return paymentRecordRepository.findByUserIdOrderByOccurredAtDesc(userId)
                 .stream()
-                .map(paymentRecord -> new PaymentRecordDTO(
-                        paymentRecord.getKind(),
-                        paymentRecord.getStatus(),
-                        paymentRecord.getAmountCents(),
-                        paymentRecord.getCurrency(),
-                        paymentRecord.getDescription(),
-                        paymentRecord.getOccurredAt()
-                ))
+                .map(pr -> {
+                    String piId = pr.getStripePaymentIntentId();
+                    String referenceId = piId != null
+                            ? piId.substring(Math.max(0, piId.length() - 8))
+                            : null;
+                    return new PaymentRecordDTO(
+                            pr.getKind(),
+                            pr.getStatus(),
+                            pr.getAmountCents(),
+                            pr.getCurrency(),
+                            pr.getDescription(),
+                            pr.getOccurredAt(),
+                            pr.getReceiptUrl(),
+                            referenceId
+                    );
+                })
                 .toList();
     }
 }

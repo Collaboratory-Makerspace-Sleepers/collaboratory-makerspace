@@ -49,8 +49,10 @@ public class EquipmentService {
         existing.setCategory(updated.getCategory());
         existing.setImageUrl(updated.getImageUrl());
         existing.setStatus(updated.getStatus());
-        existing.setTrainingRequired(updated.isTrainingRequired());
+        existing.setRequiresTraining(updated.isRequiresTraining());
         existing.setRequiresWaiver(updated.isRequiresWaiver());
+        existing.setTrainingVideoUrl(updated.getTrainingVideoUrl());
+        existing.setCurrentWaiverVersion(updated.getCurrentWaiverVersion());
         return equipmentRepository.save(existing);
     }
 

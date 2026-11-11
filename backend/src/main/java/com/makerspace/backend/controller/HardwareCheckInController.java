@@ -40,15 +40,15 @@ public class HardwareCheckInController {
     public ResponseEntity<HardwareCheckInDTO> handleCheckIn(
             @RequestBody Map<String, Object> body,
             HttpServletRequest request) {
-        
+
         log.info("Hardware check-in request received");
-        
+
         Long userId = getLongFromBody(body, "userId");
         Long equipmentId = getLongFromBody(body, "equipmentId");
         String deviceId = (String) body.get("deviceId");
 
         if (userId == null || equipmentId == null || deviceId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "userId, equipmentId, and deviceId are required");
         }
 
@@ -65,9 +65,9 @@ public class HardwareCheckInController {
     public ResponseEntity<Page<HardwareCheckInDTO>> getPendingWaivers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        
+
         log.info("Fetching pending waivers - page: {}, size: {}", page, size);
-        
+
         Pageable pageable = PageRequest.of(page, size);
         Page<HardwareCheckIn> checkIns = checkInService.getPendingWaivers(pageable);
         return ResponseEntity.ok(checkIns.map(HardwareCheckInDTO::new));
@@ -82,9 +82,9 @@ public class HardwareCheckInController {
     public ResponseEntity<Page<HardwareCheckInDTO>> getRecentCheckIns(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        
+
         log.info("Fetching recent check-ins - page: {}, size: {}", page, size);
-        
+
         Pageable pageable = PageRequest.of(page, size);
         Page<HardwareCheckIn> checkIns = checkInService.getRecentCheckIns(pageable);
         return ResponseEntity.ok(checkIns.map(HardwareCheckInDTO::new));
@@ -101,9 +101,9 @@ public class HardwareCheckInController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             HttpServletRequest request) {
-        
+
         log.info("Fetching check-ins for user {} - page: {}, size: {}", userId, page, size);
-        
+
         Pageable pageable = PageRequest.of(page, size);
         Page<HardwareCheckIn> checkIns = checkInService.getUserCheckIns(userId, pageable);
         return ResponseEntity.ok(checkIns.map(HardwareCheckInDTO::new));
@@ -118,9 +118,9 @@ public class HardwareCheckInController {
     public ResponseEntity<HardwareCheckInDTO> approveWaiver(
             @PathVariable Long checkInId,
             Authentication auth) {
-        
+
         log.info("Approving waiver for check-in {}", checkInId);
-        
+
         HardwareCheckIn checkIn = checkInService.approveWaiver(checkInId, currentUserId(auth));
         return ResponseEntity.ok(new HardwareCheckInDTO(checkIn));
     }
@@ -134,10 +134,10 @@ public class HardwareCheckInController {
     public ResponseEntity<HardwareCheckInDTO> denyAccess(
             @PathVariable Long checkInId,
             @RequestBody Map<String, String> body) {
-        
+
         String reason = body.get("reason");
         log.info("Denying access for check-in {} - reason: {}", checkInId, reason);
-        
+
         HardwareCheckIn checkIn = checkInService.denyAccess(checkInId, reason);
         return ResponseEntity.ok(new HardwareCheckInDTO(checkIn));
     }
@@ -151,14 +151,14 @@ public class HardwareCheckInController {
             @PathVariable Long checkInId,
             @RequestBody Map<String, String> body,
             Authentication auth) {
-        
+
         String signedName = body.get("signedName");
         if (signedName == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "signedName is required");
         }
-        
+
         log.info("Signing waiver for check-in {}", checkInId);
-        
+
         boolean isStaff = auth.getAuthorities().stream()
                 .anyMatch(a -> "MANAGE_EQUIPMENT".equals(a.getAuthority()));
         HardwareCheckIn checkIn = checkInService.signWaiver(checkInId, signedName, currentUserId(auth), isStaff);
@@ -193,7 +193,6 @@ public class HardwareCheckInController {
     public ResponseEntity<HardwareCheckInDTO> submitWaiver(
             @RequestBody Map<String, Object> body, Authentication auth) {
         Long equipmentId = getLongFromBody(body, "equipmentId");
-        // The signer defaults to the member's own account name when none is typed.
         String signedName = body.get("signedName") instanceof String n ? n : null;
         if (equipmentId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "equipmentId is required");
@@ -274,16 +273,6 @@ public class HardwareCheckInController {
             }
         }
         return null;
-    }
-
-    private User extractUserFromToken(HttpServletRequest request) {
-        String token = extractToken(request);
-        if (token == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No token provided");
-        }
-        // In a real implementation, extract the user from token
-        // For now, return a placeholder
-        return new User();
     }
 
     private Long currentUserId(Authentication auth) {

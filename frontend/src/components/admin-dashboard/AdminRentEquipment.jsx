@@ -36,6 +36,7 @@ export default function AdminRentEquipment() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          requiresTraining: form.trainingRequired,
           name: form.name.trim(),
           category: form.category.trim() || null,
           imageUrl: form.imageUrl.trim() || null,

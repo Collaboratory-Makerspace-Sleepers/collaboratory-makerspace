@@ -6,6 +6,7 @@ import com.makerspace.backend.model.MembershipPlan;
 import com.makerspace.backend.model.MembershipStatus;
 import com.makerspace.backend.repository.MembershipPlanRepository;
 import com.makerspace.backend.repository.MembershipRepository;
+import com.makerspace.backend.repository.StudioAssignmentRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +25,7 @@ public class MembershipService {
 
     @Autowired private MembershipRepository membershipRepository;
     @Autowired private MembershipPlanRepository membershipPlanRepository;
+    @Autowired private StudioAssignmentRepository studioAssignmentRepository;
 
     @Value("${app.billing.past-due-retains-access:true}")
     private boolean pastDueRetainsAccess;
@@ -94,6 +96,10 @@ public class MembershipService {
             m.setStatus(MembershipStatus.CANCELED);
             m.setUpdatedAt(ZonedDateTime.now());
         }
+    }
+
+    public boolean hasMachineRateWaiver(Long userId) {
+        return studioAssignmentRepository.existsByUserId(userId);
     }
 
     private boolean isBookingEligible(MembershipStatus status) {

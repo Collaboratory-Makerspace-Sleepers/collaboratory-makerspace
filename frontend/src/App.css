@@ -1000,6 +1000,37 @@ p {
   height: auto;
 }
 
+.my-reservations .reservation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.my-reservations .reservation-grid > .Dash3 {
+  min-width: 0;
+  height: 100%;
+}
+
+.my-reservations .reservation-grid .Dash4 {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.my-reservations .reservation-grid .Dash5 {
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+.my-reservations .reservation-grid .CalendarWrap {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
 .checkout-actions {
   flex-wrap: wrap;
   gap: 10px;

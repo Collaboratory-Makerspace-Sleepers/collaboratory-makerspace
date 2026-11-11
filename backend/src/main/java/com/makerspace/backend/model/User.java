@@ -35,6 +35,7 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.CHAR)
     @Column(name = "email_digest", length = 64)
     private String emailDigest;
 
@@ -67,6 +68,10 @@ public class User {
 
     @Column(name = "stripe_customer_id", nullable = true)
     private String stripeCustomerId;
+
+    /** NFC/RFID card UID assigned by staff for building check-in. */
+    @Column(name = "nfc_card_id", unique = true)
+    private String nfcCardId;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();

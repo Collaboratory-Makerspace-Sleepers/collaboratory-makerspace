@@ -8,5 +8,6 @@ import java.time.ZonedDateTime;
 public record CreateReservationRequest(
         @NotNull Long equipmentId,
         @NotNull @Future ZonedDateTime startTime,
-        @NotNull @Future ZonedDateTime endTime
+        @NotNull @Future ZonedDateTime endTime,
+        @NotNull Long waiverSignatureId
 ) {}

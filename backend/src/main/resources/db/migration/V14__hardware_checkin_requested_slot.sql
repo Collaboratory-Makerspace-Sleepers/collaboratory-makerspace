@@ -1,3 +1,0 @@
-ALTER TABLE hardware_checkins
-ADD COLUMN IF NOT EXISTS requested_start TIMESTAMPTZ,
-ADD COLUMN IF NOT EXISTS requested_end TIMESTAMPTZ;

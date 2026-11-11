@@ -1,5 +1,6 @@
 package com.makerspace.backend.config;
 
+import com.makerspace.backend.config.security.DeviceKeyFilter;
 import com.makerspace.backend.config.security.InternalAuthFilter;
 import com.makerspace.backend.model.Permission;
 import com.makerspace.backend.security.JwtAuthFilter;
@@ -36,6 +37,7 @@ public class SecurityConfig {
 
     @Autowired private JwtAuthFilter jwtAuthFilter;
     @Autowired private InternalAuthFilter internalAuthFilter;
+    @Autowired private DeviceKeyFilter deviceKeyFilter;
     @Autowired private OAuth2SuccessHandler oAuth2SuccessHandler;
     @Autowired private OAuth2FailureHandler oAuth2FailureHandler;
 
@@ -63,10 +65,6 @@ public class SecurityConfig {
                         .requestMatchers(POST, "/api/v1/auth/otp/exists").permitAll()
                         .requestMatchers(POST, "/api/v1/auth/otp/send").permitAll()
                         .requestMatchers(POST, "/api/v1/auth/otp/verify").permitAll()
-                        .requestMatchers(GET, "/api/v1/auth/card/check-by-uid").permitAll()
-                        .requestMatchers(POST, "/api/v1/auth/card/verify-otp").permitAll()
-                        .requestMatchers(POST, "/api/v1/auth/card/send-otp").permitAll()
-                        .requestMatchers(POST, "/api/v1/auth/card/activate").authenticated()
                         .requestMatchers("/api/v1/auth/me").authenticated()
                         // Apple sends the OAuth2 callback as a POST (response_mode=form_post)
                         .requestMatchers(POST, "/login/oauth2/code/apple").permitAll()
@@ -183,7 +181,58 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // -------------------------------------------------------------------------
+    // Order 8 — Hardware devices (NFC readers, door controllers)
+    // Only device-ingress endpoints use the shared device key.
+    // -------------------------------------------------------------------------
     @Bean @Order(8)
+    public SecurityFilterChain hardwareDeviceChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(deviceKeyFilter, UsernamePasswordAuthenticationFilter.class)
+                .securityMatcher("/api/v1/hardware/card-scan", "/api/v1/hardware/checkin")
+                .anonymous(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().hasAuthority("SCOPE_HARDWARE")
+                )
+                .exceptionHandling(e -> e.authenticationEntryPoint(
+                        (req, res, ex) -> res.sendError(HttpServletResponse.SC_UNAUTHORIZED)));
+        return http.build();
+    }
+
+    // -------------------------------------------------------------------------
+    // Order 9 — Signed-in hardware dashboard and waiver endpoints
+    // Fine-grained admin access is enforced by controller @PreAuthorize rules.
+    // -------------------------------------------------------------------------
+    @Bean @Order(9)
+    public SecurityFilterChain hardwareUserChain(HttpSecurity http) throws Exception {
+        applyShared(http)
+                .securityMatcher("/api/v1/hardware/**")
+                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+                .exceptionHandling(e -> e.authenticationEntryPoint(
+                        (req, res, ex) -> res.sendError(HttpServletResponse.SC_UNAUTHORIZED)));
+        return http.build();
+    }
+
+    // -------------------------------------------------------------------------
+    // Order 10 — Class Sessions
+    // Public GET for browsing; write endpoints require authentication.
+    // Fine-grained access (@PreAuthorize) is enforced on the controller.
+    // -------------------------------------------------------------------------
+    @Bean @Order(10)
+    public SecurityFilterChain classSessionChain(HttpSecurity http) throws Exception {
+        applyShared(http)
+                .securityMatcher("/api/v1/class-sessions/**")
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(GET, "/api/v1/class-sessions").permitAll()
+                        .requestMatchers(GET, "/api/v1/class-sessions/*").permitAll()
+                        .anyRequest().authenticated()
+                );
+        return http.build();
+    }
+
+    @Bean @Order(11)
     public SecurityFilterChain devWebhookChain(HttpSecurity http) throws Exception {
         applyShared(http)
                 .securityMatcher("/api/dev/**")
@@ -193,24 +242,10 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // Raspberry Pi readers POST check-ins without a user JWT; everything else
-    // under /hardware needs a JWT (fine-grained rules live on the controller).
-    @Bean @Order(9)
-    public SecurityFilterChain hardwareChain(HttpSecurity http) throws Exception {
-        applyShared(http)
-                .securityMatcher("/api/v1/hardware/**")
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(POST, "/api/v1/hardware/checkin").permitAll()
-                        .requestMatchers(POST, "/api/v1/hardware/card-scan").permitAll()
-                        .anyRequest().authenticated()
-                );
-        return http.build();
-    }
-
     // -------------------------------------------------------------------------
-    // Order 100 — Fallback
+    // Order 101 — Fallback
     // -------------------------------------------------------------------------
-    @Bean @Order(100)
+    @Bean @Order(101)
     public SecurityFilterChain fallbackChain(HttpSecurity http) throws Exception {
         applyShared(http)
                 .authorizeHttpRequests(auth -> auth

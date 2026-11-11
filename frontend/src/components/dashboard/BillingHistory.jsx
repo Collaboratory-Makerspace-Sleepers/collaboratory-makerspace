@@ -9,6 +9,14 @@ const KIND_LABELS = {
   REFUND: "Refund",
 };
 
+const KIND_FILTERS = [
+  { key: "ALL", label: "All" },
+  { key: "MEMBERSHIP", label: "Membership" },
+  { key: "DAY_PASS", label: "Day Pass" },
+  { key: "RENTAL", label: "Equipment" },
+  { key: "CLASS", label: "Classes" },
+];
+
 const STATUS_COLORS = {
   SUCCEEDED: { color: "green" },
   PENDING: { color: "orange" },
@@ -27,31 +35,115 @@ export default function BillingHistory() {
   const { authFetch } = useAuth();
   const [payments, setPayments] = useState(null);
   const [error, setError] = useState("");
+  const [activeFilter, setActiveFilter] = useState("ALL");
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalError, setPortalError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  async function openInvoices() {
+    setPortalError("");
+    setPortalLoading(true);
+    try {
+      const res = await authFetch("/api/v1/billing/portal-session", { method: "POST" });
+      if (!res.ok) throw new Error("Could not open invoices");
+      const { portalUrl } = await res.json();
+      window.location.href = portalUrl;
+    } catch (err) {
+      setPortalError(err.message || "Something went wrong.");
+      setPortalLoading(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
-    authFetch("/api/v1/billing/me/payments")
-      .then((res) => {
-        if (!res.ok) throw new Error("Could not load payment history");
-        return res.json();
-      })
-      .then((data) => { if (!cancelled) setPayments(data); })
-      .catch(() => { if (!cancelled) setError("Could not load payment history."); });
+    async function load() {
+      try {
+        const cached = await authFetch("/api/v1/billing/me/payments");
+        if (!cached.ok) throw new Error("Could not load payment history.");
+        const saved = await cached.json();
+        if (!cancelled) setPayments(saved);
+        const synced = await authFetch("/api/v1/billing/me/payments/sync", {
+          method: "POST",
+          signal: AbortSignal.timeout(30000),
+        });
+        if (!synced.ok) {
+          const body = await synced.json().catch(() => ({}));
+          throw new Error(body.message || "Could not synchronize recent payments. Showing saved history; refresh to retry.");
+        }
+        const data = await synced.json();
+        if (!cancelled) { setPayments(data); setError(""); }
+      } catch (err) {
+        if (!cancelled) setError(err.name === "TimeoutError"
+          ? "Payment synchronization timed out. Showing saved history; refresh to retry."
+          : err.message);
+      }
+    }
+    load();
     return () => { cancelled = true; };
-  }, [authFetch]);
+  }, [authFetch, refreshKey]);
+
+  const filtered = payments?.filter(
+    (p) => activeFilter === "ALL" || p.kind === activeFilter
+  );
 
   return (
     <div className="DashHome1">
-      <div className="Dash2">
+      <div className="Dash2" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <p>Billing History</p>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.25rem" }}>
+          <button onClick={() => { setError(""); setRefreshKey((value) => value + 1); }}>
+            Refresh payments
+          </button>
+          <button
+            onClick={openInvoices}
+            disabled={portalLoading}
+            style={{ fontSize: "0.85rem" }}
+          >
+            {portalLoading ? "Opening…" : "View invoices →"}
+          </button>
+          {portalError && <p style={{ color: "red", fontSize: "0.8rem", margin: 0 }}>{portalError}</p>}
+        </div>
       </div>
 
       <div className="Dash3">
+        {/* Filter tabs */}
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem" }}>
+          {KIND_FILTERS.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setActiveFilter(key)}
+              style={{
+                padding: "0.3rem 0.8rem",
+                borderRadius: "1rem",
+                border: "1px solid #ccc",
+                background: activeFilter === key ? "#333" : "transparent",
+                color: activeFilter === key ? "#fff" : "inherit",
+                cursor: "pointer",
+                fontSize: "0.85rem",
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         {error && <p style={{ color: "red" }}>{error}</p>}
         {payments === null && !error && <p>Loading…</p>}
-        {payments?.length === 0 && <p>No payments yet.</p>}
-        {payments?.map((p, i) => (
-          <div className="Dash4" key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+
+        {filtered?.length === 0 && (
+          <p style={{ color: "#666" }}>
+            {activeFilter === "ALL"
+              ? "No payments yet."
+              : `No ${KIND_LABELS[activeFilter] ?? activeFilter} payments found.`}
+          </p>
+        )}
+
+        {filtered?.map((p, i) => (
+          <div
+            className="Dash4"
+            key={i}
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}
+          >
             <div>
               <p><strong>{KIND_LABELS[p.kind] ?? p.kind}</strong></p>
               <p style={{ fontSize: "0.85rem", color: "#666" }}>{p.description}</p>
@@ -59,13 +151,26 @@ export default function BillingHistory() {
                 {new Date(p.occurredAt).toLocaleDateString("en-US", {
                   year: "numeric", month: "short", day: "numeric",
                 })}
+                {p.referenceId && (
+                  <span style={{ marginLeft: "0.5rem" }}>· #{p.referenceId}</span>
+                )}
               </p>
             </div>
-            <div style={{ textAlign: "right" }}>
+            <div style={{ textAlign: "right", flexShrink: 0 }}>
               <p><strong>{formatAmount(p.amountCents, p.currency)}</strong></p>
               <p style={{ fontSize: "0.85rem", ...STATUS_COLORS[p.status] }}>
                 {p.status.charAt(0) + p.status.slice(1).toLowerCase()}
               </p>
+              {p.stripeReceiptUrl && (
+                <a
+                  href={p.stripeReceiptUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: "0.8rem" }}
+                >
+                  View receipt →
+                </a>
+              )}
             </div>
           </div>
         ))}

@@ -15,24 +15,29 @@ public interface EmailService {
     void sendOtp(String toEmail, String code);
 
     /**
-     * Sends a one-time passcode for card activation to the given email address.
-     */
-    void sendCardActivationOtp(String toEmail, String code, String cardUid);
-
-    /**
      * Sends a reservation confirmation to the user with equipment and time details.
+     * equipmentCategory is the raw category code (e.g. "3D_PRINTER"); the implementation
+     * is responsible for rendering it as a human-readable label.
      */
     void sendReservationConfirmation(String toEmail, String fullName,
-            String equipmentName, java.time.ZonedDateTime startTime, java.time.ZonedDateTime endTime);
+            String equipmentName, String equipmentCategory,
+            java.time.ZonedDateTime startTime, java.time.ZonedDateTime endTime);
 
-    /**
-     * Sends a payment receipt after a successful charge.
-     */
     void sendWaiverSigned(String toEmail, String fullName, String equipmentName,
             String signedName, byte[] pdf);
 
     void sendAccountInvite(String toEmail, String fullName, String roleLabel, String code);
 
+    /**
+     * Sends a payment receipt after a successful charge.
+     */
     void sendPaymentReceipt(String toEmail, String fullName,
             String description, int amountCents, String currency);
+
+    /**
+     * Notifies the member that their subscription payment failed and prompts them
+     * to update their payment method via the Stripe portal.
+     * portalUrl may be null if the portal session could not be created.
+     */
+    void sendPaymentFailed(String toEmail, String fullName, String portalUrl);
 }

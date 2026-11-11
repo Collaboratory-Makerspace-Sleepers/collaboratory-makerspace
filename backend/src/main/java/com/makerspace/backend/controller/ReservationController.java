@@ -13,6 +13,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -20,11 +23,19 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@Slf4j
 @RequestMapping("/api/v1/reservations")
 public class ReservationController {
 
     @Autowired private ReservationService reservationService;
     @Autowired private UserSecurity userSecurity;
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<java.util.Map<String, String>> reservationError(ResponseStatusException error) {
+        log.warn("Reservation request rejected (HTTP {}): {}", error.getStatusCode().value(), error.getReason());
+        return ResponseEntity.status(error.getStatusCode()).body(java.util.Map.of(
+                "message", error.getReason() == null ? "Reservation request failed" : error.getReason()));
+    }
 
     // -------------------------------------------------------------------------
     // User-facing
@@ -35,7 +46,8 @@ public class ReservationController {
     public ReservationDTO create(@Valid @RequestBody CreateReservationRequest req, Authentication auth) {
         Long userId = userSecurity.getUserId(auth);
         return ReservationDTO.from(
-                reservationService.create(userId, req.equipmentId(), req.startTime(), req.endTime()));
+                reservationService.create(userId, req.equipmentId(), req.startTime(), req.endTime(),
+                        req.waiverSignatureId()));
     }
 
     /** IDs of equipment booked by anyone right now, so lists can show only what is free. */
@@ -64,6 +76,12 @@ public class ReservationController {
     @GetMapping("/me/{id}")
     public ReservationDTO myReservation(@PathVariable Long id, Authentication auth) {
         return ReservationDTO.from(reservationService.findByIdForUser(id, userSecurity.getPrincipal(auth)));
+    }
+
+    @PostMapping("/{id}/training-attest")
+    public ReservationDTO trainingAttest(@PathVariable Long id, Authentication auth) {
+        Long userId = userSecurity.getUserId(auth);
+        return ReservationDTO.from(reservationService.trainingAttest(id, userId));
     }
 
     @PatchMapping("/{id}/cancel")

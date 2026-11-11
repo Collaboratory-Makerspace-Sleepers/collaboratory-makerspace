@@ -56,6 +56,55 @@ cp src/main/resources/application.properties.example src/main/resources/applicat
 ./mvnw test
 ```
 
+### Sharing the local database with main
+
+`frontendAdmin` uses main's backend migration history and booking APIs. For the
+existing local Docker database, launch the backend from `backend/` with
+`--spring.datasource.url=jdbc:postgresql://localhost:5434/collab_app_clean`
+and `--spring.jpa.hibernate.ddl-auto=validate`. Supply database credentials via
+local configuration, never committed files.
+
+Keep Flyway validation enabled. Do not repair migration history or enable
+Hibernate schema updates to connect an incompatible branch. Test compatibility
+on a separate database copy before reconnecting to the shared database.
+
+After membership checkout, the payment return page verifies the subscription,
+creates the pending equipment reservation, and opens My Reservations. Failed
+confirmation keeps the booking details available for retry without another
+payment. Retries using the same waiver and booking interval return the existing
+reservation.
+
+Booking signatures expire after 30 minutes. Returning to an approved waiver and
+continuing to checkout requests a current signature; signing again does not
+reuse an expired signature or rewrite the original signing timestamp. Reservation
+errors include the rejection reason so users can re-sign without repeating payment.
+
+Billing History synchronizes paid Stripe invoices and completed one-time
+checkouts through `POST /api/v1/billing/me/payments/sync`. Existing records are
+updated rather than duplicated, and Stripe receipt or hosted invoice links are
+displayed. A synchronization failure is reported while retaining saved history.
+
+The admin home uses `GET /api/v1/users/activity/summary` for upcoming equipment
+bookings, signed waivers awaiting approval, upcoming enrolled class seats, and
+successful payment counts. `GET /api/v1/users/activity/feed` shows database-backed
+bookings/cancellations, waiver statuses, class enrollments, completed training,
+payments with saved receipt links, and card scans. These are current record
+snapshots, not an immutable audit log. Payment activity appears after a webhook
+or billing-history synchronization saves it to the database.
+
+Admin totals, recent activity, and the hardware waiver queue refresh every five
+seconds while visible and immediately when returning to the tab. Refresh dashboard
+reloads totals and activity on demand. No admin activity or totals are stored in
+localStorage; API failures are displayed instead of placeholder capacity values.
+
+Account and Membership share database-backed membership polling, including an
+active paid day pass (24 hours after purchase). Opening either page or selecting
+Check again synchronizes Stripe subscriptions; no subscription is represented by
+HTTP 204. Recurring upgrades are prorated immediately. Downgrades take effect
+immediately without a prorated refund, with the cheaper price at next renewal.
+Confirmed Stripe plan changes and cancellations update the local membership
+record directly rather than depending on webhook delivery.
+
 ### Documentation
 
 - [`STATE.md`](backend/STATE.md) — detailed architecture reference: package structure, auth flow, access control matrix, caching, known issues

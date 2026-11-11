@@ -33,15 +33,11 @@ public class StubEmailService implements EmailService {
     }
 
     @Override
-    public void sendCardActivationOtp(String toEmail, String code, String cardUid) {
-        log.warn("[STUB] Card activation OTP for <{}> — card UID: {} — code: {}", toEmail, cardUid, code);
-    }
-
-    @Override
     public void sendReservationConfirmation(String toEmail, String fullName,
-            String equipmentName, ZonedDateTime startTime, ZonedDateTime endTime) {
-        log.warn("[STUB] Reservation confirmation for {} <{}> — {} from {} to {}",
-                fullName, toEmail, equipmentName, startTime, endTime);
+            String equipmentName, String equipmentCategory,
+            ZonedDateTime startTime, ZonedDateTime endTime) {
+        log.warn("[STUB] Reservation confirmation for {} <{}> — {} ({}) from {} to {}",
+                fullName, toEmail, equipmentName, equipmentCategory, startTime, endTime);
     }
 
     @Override
@@ -61,5 +57,10 @@ public class StubEmailService implements EmailService {
             String description, int amountCents, String currency) {
         log.warn("[STUB] Payment receipt for {} <{}> — {}{} for {}",
                 fullName, toEmail, currency.toUpperCase(), amountCents / 100.0, description);
+    }
+
+    @Override
+    public void sendPaymentFailed(String toEmail, String fullName, String portalUrl) {
+        log.warn("[STUB] Payment failed notification for {} <{}> — portal: {}", fullName, toEmail, portalUrl);
     }
 }

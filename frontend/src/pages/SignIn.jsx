@@ -1,7 +1,5 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import EmailOtpForm from "../components/EmailOtpForm";
-import CardSignInForm from "../components/CardSignInForm";
 import OAuthButtons from "../components/OAuthButtons";
 
 import { useSearchParams } from "react-router-dom";
@@ -23,7 +21,6 @@ const OAUTH_ERRORS = {
 export default function SignIn() {
   const [params] = useSearchParams();
   const { authError } = useAuth();
-  const [signInMode, setSignInMode] = useState("oauth"); // oauth | email | card
   const errorCode = params.get("error");
   const errorMessage = errorCode ? OAUTH_ERRORS[errorCode] ?? OAUTH_ERRORS.failed : null;
 
@@ -42,58 +39,18 @@ export default function SignIn() {
           </p>
         )}
 
-        {/* Sign-in mode tabs */}
-        <div className="signin-tabs">
-          <button
-            className={`tab ${signInMode === "oauth" ? "active" : ""}`}
-            onClick={() => setSignInMode("oauth")}
-          >
-            OAuth
-          </button>
-          <button
-            className={`tab ${signInMode === "email" ? "active" : ""}`}
-            onClick={() => setSignInMode("email")}
-          >
-            Email
-          </button>
-          <button
-            className={`tab ${signInMode === "card" ? "active" : ""}`}
-            onClick={() => setSignInMode("card")}
-          >
-            Card
-          </button>
+        {/* OAuth Sign In */}
+        <OAuthButtons />
+
+        {/* Divider */}
+        <div className="Or">
+          <div className="line"></div>
+          <p>Or</p>
+          <div className="line"></div>
         </div>
 
-        {/* OAuth Sign In */}
-        {signInMode === "oauth" && (
-          <>
-            <OAuthButtons />
-
-            {/* Divider */}
-            <div className="Or">
-              <div className="line"></div>
-              <p>Or</p>
-              <div className="line"></div>
-            </div>
-
-            {/* Email OTP Form */}
-            <EmailOtpForm redirectNewToSignUp />
-          </>
-        )}
-
-        {/* Email OTP Sign In */}
-        {signInMode === "email" && (
-          <>
-            <EmailOtpForm redirectNewToSignUp />
-          </>
-        )}
-
-        {/* Card-based Sign In */}
-        {signInMode === "card" && (
-          <>
-            <CardSignInForm />
-          </>
-        )}
+        {/* OTP Form */}
+        <EmailOtpForm redirectNewToSignUp />
 
         {/* Footer Links */}
         <div className="forgot">

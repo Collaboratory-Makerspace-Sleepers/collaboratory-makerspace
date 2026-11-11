@@ -1,7 +1,6 @@
 package com.makerspace.backend.controller.dto;
 
 import com.makerspace.backend.model.HardwareCheckIn;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.Instant;
 
@@ -31,8 +30,8 @@ public class HardwareCheckInDTO {
     public HardwareCheckInDTO(HardwareCheckIn checkIn) {
         this.id = checkIn.getId();
         this.userId = checkIn.getUser().getId();
-        this.userName = checkIn.getUser().getProfile() != null 
-            ? checkIn.getUser().getProfile().getFirstName() + " " + 
+        this.userName = checkIn.getUser().getProfile() != null
+            ? checkIn.getUser().getProfile().getFirstName() + " " +
               (checkIn.getUser().getProfile().getLastName() != null ? checkIn.getUser().getProfile().getLastName() : "")
             : checkIn.getUser().getEmail();
         this.userEmail = checkIn.getUser().getEmail();
@@ -52,10 +51,10 @@ public class HardwareCheckInDTO {
         this.approvalTime = checkIn.getApprovalTime();
         this.requestedStart = checkIn.getRequestedStart();
         this.requestedEnd = checkIn.getRequestedEnd();
-        
+
         if (checkIn.getApprovedByAdmin() != null) {
             this.approvedByUserId = checkIn.getApprovedByAdmin().getId();
-            this.approvedByUserName = checkIn.getApprovedByAdmin().getProfile() != null 
+            this.approvedByUserName = checkIn.getApprovedByAdmin().getProfile() != null
                 ? checkIn.getApprovedByAdmin().getProfile().getFirstName()
                 : checkIn.getApprovedByAdmin().getEmail();
         }

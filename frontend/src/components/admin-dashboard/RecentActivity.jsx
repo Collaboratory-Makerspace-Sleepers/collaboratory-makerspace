@@ -24,11 +24,13 @@ const TYPE_LABELS = {
   WAIVER: "Waiver",
   PAYMENT: "Payment",
   CARD_TAP: "Card tap",
+  CLASS_ENROLLMENT: "Class booking",
+  TRAINING: "Training completed",
 };
 
-const REFRESH_MS = 15000;
+const REFRESH_MS = 5000;
 
-export default function RecentActivity() {
+export default function RecentActivity({ refreshKey = 0 }) {
   const { authFetch } = useAuth();
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(0);
@@ -37,32 +39,44 @@ export default function RecentActivity() {
 
   useEffect(() => {
     let cancelled = false;
-    const load = () =>
-      authFetch("/api/v1/users/activity/feed?limit=60")
+    let inFlight = false;
+    const controller = new AbortController();
+    const load = () => {
+      if (inFlight) return;
+      inFlight = true;
+      return authFetch("/api/v1/users/activity/feed?limit=60", { signal: controller.signal, cache: "no-store" })
         .then(async (response) => {
           if (!response.ok) throw new Error("Could not load recent user activity.");
           return response.json();
         })
         .then((result) => {
           if (cancelled) return;
-          setItems(Array.isArray(result) ? result : []);
+          if (!Array.isArray(result)) throw new Error("Invalid activity response.");
+          setItems(result);
+          setPage((current) => Math.min(current, Math.max(0, Math.ceil(result.length / PAGE_SIZE) - 1)));
           setError("");
         })
         .catch((loadError) => {
           if (!cancelled) setError(loadError.message || "Could not load recent user activity.");
         })
         .finally(() => {
+          inFlight = false;
           if (!cancelled) setLoading(false);
         });
-    load();
-    const timer = setInterval(() => {
+    };
+    const onVisible = () => {
       if (!document.hidden) load();
-    }, REFRESH_MS);
+    };
+    load();
+    const timer = setInterval(onVisible, REFRESH_MS);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
+      controller.abort();
       clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [authFetch]);
+  }, [authFetch, refreshKey]);
 
   const totalPages = Math.ceil(items.length / PAGE_SIZE);
   const visible = items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
@@ -122,9 +136,15 @@ export default function RecentActivity() {
               <tbody>
                 {visible.map((item, index) => (
                   <tr key={`${item.type}-${item.time}-${index}`}>
-                    <td>{item.userName || item.userEmail || "Unknown"}</td>
+                    <td>
+                      {item.userName || item.userEmail || "Unknown"}
+                      {item.userName && item.userEmail && <div>{item.userEmail}</div>}
+                    </td>
                     <td>{TYPE_LABELS[item.type] || item.type}</td>
-                    <td>{item.detail}</td>
+                    <td>
+                      {item.detail}
+                      {item.receiptUrl && <div><a href={item.receiptUrl} target="_blank" rel="noopener noreferrer">View receipt</a></div>}
+                    </td>
                     <td>{formatCreatedAt(item.time)}</td>
                     <td>{item.status}</td>
                   </tr>

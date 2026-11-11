@@ -15,10 +15,12 @@ import AdminAccount from "./components/admin-dashboard/AdminAccount";
 import HardwareCheckIns from "./components/admin-dashboard/HardwareCheckIns";
 import DashboardHome from "./components/dashboard/DashboardHome";
 import RentEquipment from "./components/dashboard/RentEquipment";
+import EquipmentCategoryPage from "./components/dashboard/EquipmentCategoryPage";
 import ReserveEquipment from "./components/dashboard/ReserveEquipment";
 import ReservationCheckout from "./components/dashboard/ReservationCheckout";
 import LaserWaiver from "./components/dashboard/LaserWaiver";
 import BookClasses from "./components/dashboard/BookClasses";
+import ClassSessionDetail from "./components/dashboard/ClassSessionDetail";
 import Account from "./components/dashboard/Account";
 import Membership from "./components/dashboard/Membership";
 import MembershipCheckout from "./components/dashboard/MembershipCheckout";
@@ -47,10 +49,12 @@ function App() {
         <Route index element={<DashboardLanding />} />
         <Route path="home" element={<DashboardHome />} />
         <Route path="rentequipment" element={<RentEquipment />} />
+        <Route path="rentequipment/category/:category" element={<EquipmentCategoryPage />} />
         <Route path="rentequipment/:id" element={<ReserveEquipment />} />
         <Route path="rentequipment/:id/waiver" element={<LaserWaiver />} />
         <Route path="rentequipment/:id/checkout" element={<ReservationCheckout />} />
         <Route path="bookclasses" element={<BookClasses />} />
+        <Route path="bookclasses/session/:id" element={<ClassSessionDetail />} />
         <Route path="account" element={<Account />} />
         <Route path="membership" element={<Membership />} />
         <Route path="membership/checkout" element={<MembershipCheckout />} />

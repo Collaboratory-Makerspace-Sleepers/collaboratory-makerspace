@@ -59,6 +59,7 @@ public class PaymentRecord {
     @Column(name = "amount_cents", nullable = false)
     private int amountCents;
 
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.CHAR)
     @Column(name = "currency", nullable = false, length = 3)
     private String currency = "usd";
 
@@ -71,6 +72,12 @@ public class PaymentRecord {
 
     @Column(name = "occurred_at", nullable = false)
     private ZonedDateTime occurredAt;
+
+    @Column(name = "receipt_url", length = 500)
+    private String receiptUrl;
+
+    @Column(name = "stripe_refund_id", length = 255)
+    private String stripeRefundId;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private ZonedDateTime createdAt = ZonedDateTime.now();

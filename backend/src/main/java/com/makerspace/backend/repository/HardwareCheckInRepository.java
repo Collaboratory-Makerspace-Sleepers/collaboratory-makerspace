@@ -9,11 +9,18 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface HardwareCheckInRepository extends JpaRepository<HardwareCheckIn, Long> {
+
+    @Query("SELECT h FROM HardwareCheckIn h ORDER BY COALESCE(h.updatedAt, h.checkinTime) DESC")
+    Page<HardwareCheckIn> findRecentActivity(Pageable pageable);
+
+    long countByStatus(HardwareCheckIn.CheckInStatus status);
+    long countByStatusIn(Collection<HardwareCheckIn.CheckInStatus> statuses);
 
     Page<HardwareCheckIn> findByUserIdOrderByCheckinTimeDesc(Long userId, Pageable pageable);
 
@@ -24,20 +31,19 @@ public interface HardwareCheckInRepository extends JpaRepository<HardwareCheckIn
     List<HardwareCheckIn> findByStatusAndWaiverApprovedByAdminIsTrueOrderByCheckinTimeDesc(HardwareCheckIn.CheckInStatus status);
 
     Page<HardwareCheckIn> findByCheckinTimeBetweenOrderByCheckinTimeDesc(
-            Instant startTime, Instant endTime, Pageable pageable
-    );
+            Instant startTime, Instant endTime, Pageable pageable);
 
-    @Query("SELECT h FROM HardwareCheckIn h WHERE h.status = 'NEEDS_WAIVER' OR (h.waiverSigned = true AND h.waiverApprovedByAdmin = false)")
+    @Query("SELECT h FROM HardwareCheckIn h WHERE h.status IN ('NEEDS_WAIVER', 'WAIVER_SIGNED')")
     Page<HardwareCheckIn> findPendingWaivers(Pageable pageable);
 
     Optional<HardwareCheckIn> findByDeviceIdAndUserIdOrderByCheckinTimeDesc(String deviceId, Long userId);
 
     Optional<HardwareCheckIn> findFirstByUserIdAndEquipmentIdAndStatusInOrderByCheckinTimeDesc(
-            Long userId, Long equipmentId, java.util.Collection<HardwareCheckIn.CheckInStatus> statuses);
+            Long userId, Long equipmentId, Collection<HardwareCheckIn.CheckInStatus> statuses);
 
-    java.util.List<HardwareCheckIn> findByUserIdAndStatusInAndCheckinTimeAfterOrderByCheckinTimeDesc(
-            Long userId, java.util.Collection<HardwareCheckIn.CheckInStatus> statuses, java.time.Instant after);
+    List<HardwareCheckIn> findByUserIdAndStatusInAndCheckinTimeAfterOrderByCheckinTimeDesc(
+            Long userId, Collection<HardwareCheckIn.CheckInStatus> statuses, Instant after);
 
-    java.util.List<HardwareCheckIn> findByUserIdAndEquipmentIdAndStatusInOrderByCheckinTimeDesc(
-            Long userId, Long equipmentId, java.util.Collection<HardwareCheckIn.CheckInStatus> statuses);
+    List<HardwareCheckIn> findByUserIdAndEquipmentIdAndStatusInOrderByCheckinTimeDesc(
+            Long userId, Long equipmentId, Collection<HardwareCheckIn.CheckInStatus> statuses);
 }

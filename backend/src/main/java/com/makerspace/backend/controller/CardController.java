@@ -53,7 +53,6 @@ public class CardController {
         out.put("approved", r.approved());
         out.put("status", r.approved() ? "APPROVED" : "DENIED");
         out.put("message", r.message());
-        // The name is only revealed for approved taps.
         out.put("memberName", r.approved() ? r.memberName() : null);
         return ResponseEntity.ok(out);
     }

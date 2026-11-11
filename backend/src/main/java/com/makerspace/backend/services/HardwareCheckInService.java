@@ -6,6 +6,7 @@ import com.makerspace.backend.model.User;
 import com.makerspace.backend.repository.EquipmentRepository;
 import com.makerspace.backend.repository.HardwareCheckInRepository;
 import com.makerspace.backend.repository.UserRepository;
+import com.makerspace.backend.repository.WaiverDocumentRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -22,37 +23,23 @@ import java.util.List;
 @Service
 public class HardwareCheckInService {
 
-
     private static final List<HardwareCheckIn.CheckInStatus> WAIVER_STATUSES = List.of(
             HardwareCheckIn.CheckInStatus.NEEDS_WAIVER,
             HardwareCheckIn.CheckInStatus.WAIVER_SIGNED,
             HardwareCheckIn.CheckInStatus.WAIVER_APPROVED,
             HardwareCheckIn.CheckInStatus.DENIED);
 
-    @Autowired
-    private HardwareCheckInRepository checkInRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private MembershipService membershipService;
-
-    @Autowired
-    private ReservationService reservationService;
-
-    @Autowired
-    private WaiverPdfService waiverPdfService;
-
-    @Autowired
-    private EmailService emailService;
-
-    @Autowired
-    private EquipmentRepository equipmentRepository;
+    @Autowired private HardwareCheckInRepository checkInRepository;
+    @Autowired private UserRepository userRepository;
+    @Autowired private MembershipService membershipService;
+    @Autowired private ReservationService reservationService;
+    @Autowired private WaiverPdfService waiverPdfService;
+    @Autowired private EmailService emailService;
+    @Autowired private EquipmentRepository equipmentRepository;
+    @Autowired private WaiverDocumentRepository waiverDocumentRepository;
 
     /**
      * Handle hardware check-in from Raspberry Pi device.
-     * Checks user permissions, waiver status, and equipment access.
      */
     @Transactional
     public HardwareCheckIn checkIn(Long userId, Long equipmentId, String deviceId) {
@@ -64,14 +51,12 @@ public class HardwareCheckInService {
 
         HardwareCheckIn checkIn = new HardwareCheckIn(user, equipment, deviceId);
 
-        // Check if equipment requires waiver
         if (equipment.isRequiresWaiver()) {
-            // Check if user has approved waiver for this equipment
             List<HardwareCheckIn> approvedCheckIns = checkInRepository
                     .findByStatusAndWaiverApprovedByAdminIsTrueOrderByCheckinTimeDesc(HardwareCheckIn.CheckInStatus.WAIVER_APPROVED);
 
             boolean hasValidWaiver = approvedCheckIns.stream()
-                    .anyMatch(c -> c.getUser().getId().equals(userId) && 
+                    .anyMatch(c -> c.getUser().getId().equals(userId) &&
                                   c.getEquipment().getId().equals(equipmentId));
 
             if (!hasValidWaiver) {
@@ -82,7 +67,6 @@ public class HardwareCheckInService {
             }
         }
 
-        // Check user permissions via user roles
         boolean hasAccess = hasFacilityAccess(user);
 
         checkIn.setStatus(hasAccess ? HardwareCheckIn.CheckInStatus.SUCCESS : HardwareCheckIn.CheckInStatus.FAILED);
@@ -100,59 +84,28 @@ public class HardwareCheckInService {
 
     /** Staff, legacy ADMIN/MEMBER roles, an active membership, or a Day Pass in the last 24h. */
     public boolean hasFacilityAccess(User user) {
-        log.debug("Checking facility access for user {} ({})", user.getId(), user.getEmail());
-        
         boolean roleOk = user.getRoles().stream()
                 .anyMatch(r -> r.getCode().equals("ADMIN") || r.getCode().equals("MEMBER"))
                 || user.effectivePermissions().contains("MANAGE_EQUIPMENT");
-        
-        if (roleOk) {
-            log.debug("User {} has facility access via role/permission", user.getId());
-            return true;
-        }
-        
-        log.debug("User {} has {} roles: {}", user.getId(), user.getRoles().size(), 
-                user.getRoles().stream().map(r -> r.getCode()).toList());
-        
-        boolean hasMembership = membershipService.hasActiveMembership(user.getId());
-        log.debug("User {} has active membership: {}", user.getId(), hasMembership);
-        if (hasMembership) return true;
-        
-        boolean hasDayPass = reservationService.hasRecentDayPass(user.getId());
-        log.debug("User {} has recent day pass: {}", user.getId(), hasDayPass);
-        if (hasDayPass) return true;
-        
-        log.debug("User {} denied facility access", user.getId());
-        return false;
+        return roleOk || membershipService.hasActiveMembership(user.getId())
+                || reservationService.hasRecentDayPass(user.getId());
     }
 
-    /**
-     * Get all pending hardware check-ins that require waiver approval
-     */
     @Transactional(readOnly = true)
     public Page<HardwareCheckIn> getPendingWaivers(Pageable pageable) {
         return checkInRepository.findPendingWaivers(pageable);
     }
 
-    /**
-     * Get recent check-ins
-     */
     @Transactional(readOnly = true)
     public Page<HardwareCheckIn> getRecentCheckIns(Pageable pageable) {
         return checkInRepository.findAll(pageable);
     }
 
-    /**
-     * Get check-ins for a specific user
-     */
     @Transactional(readOnly = true)
     public Page<HardwareCheckIn> getUserCheckIns(Long userId, Pageable pageable) {
         return checkInRepository.findByUserIdOrderByCheckinTimeDesc(userId, pageable);
     }
 
-    /**
-     * Approve waiver for a hardware check-in
-     */
     @Transactional
     public HardwareCheckIn approveWaiver(Long checkInId, Long approverId) {
         HardwareCheckIn checkIn = checkInRepository.findById(checkInId)
@@ -175,9 +128,6 @@ public class HardwareCheckInService {
         return checkInRepository.save(checkIn);
     }
 
-    /**
-     * Deny access for a hardware check-in
-     */
     @Transactional
     public HardwareCheckIn denyAccess(Long checkInId, String reason) {
         HardwareCheckIn checkIn = checkInRepository.findById(checkInId)
@@ -191,9 +141,6 @@ public class HardwareCheckInService {
         return checkInRepository.save(checkIn);
     }
 
-    /**
-     * Mark waiver as signed with rabbit signature
-     */
     @Transactional
     public HardwareCheckIn signWaiver(Long checkInId, String signedNameInput, Long requesterId, boolean isStaff) {
         HardwareCheckIn checkIn = checkInRepository.findById(checkInId)
@@ -218,13 +165,12 @@ public class HardwareCheckInService {
         checkIn.setWaiverSigned(true);
         checkIn.setStatus(HardwareCheckIn.CheckInStatus.WAIVER_SIGNED);
 
-        log.info("Waiver signed for check-in {} by name", checkInId);
+        log.info("Waiver signed for check-in {}", checkInId);
         HardwareCheckIn saved = checkInRepository.save(checkIn);
         emailSignedWaiver(saved);
         return saved;
     }
 
-    /** Emails the signed-waiver PDF in the background; mail problems never block signing. */
     private void emailSignedWaiver(HardwareCheckIn c) {
         User user = c.getUser();
         String email = user.getEmail();
@@ -244,10 +190,6 @@ public class HardwareCheckInService {
         });
     }
 
-    /**
-     * The user's latest waiver request for a piece of equipment (null if none), which
-     * lets the reservation waiver page resume at the waiting or approved step.
-     */
     @Transactional(readOnly = true)
     public java.util.Optional<HardwareCheckIn> getLatestForEquipment(
             Long userId, Long equipmentId, Instant slotStart) {
@@ -258,10 +200,6 @@ public class HardwareCheckInService {
                 .findFirst();
     }
 
-    /**
-     * The user's waiver requests from the last 7 days, one per equipment and time slot,
-     * newest first. Requests for slots that already ended are left out.
-     */
     @Transactional(readOnly = true)
     public List<HardwareCheckIn> getMyWaiverRequests(Long userId) {
         Instant now = Instant.now();
@@ -275,11 +213,6 @@ public class HardwareCheckInService {
         return new java.util.ArrayList<>(latest.values());
     }
 
-    /**
-     * Records a waiver signed from the reservation flow for a specific time slot so it shows
-     * up for staff on the hardware dashboard. Reuses the open or approved request for the
-     * same equipment and slot; a different slot gets its own request.
-     */
     @Transactional
     public HardwareCheckIn submitWaiver(Long userId, Long equipmentId, Instant slotStart,
                                         Instant slotEnd, String signedName) {
@@ -331,9 +264,6 @@ public class HardwareCheckInService {
     }
 
     private static final long MAX_DOCUMENT_BYTES = 10L * 1024 * 1024;
-
-    @Autowired
-    private com.makerspace.backend.repository.WaiverDocumentRepository waiverDocumentRepository;
 
     @Transactional
     public void attachSignedDocument(Long checkInId, org.springframework.web.multipart.MultipartFile file, Long staffId) {

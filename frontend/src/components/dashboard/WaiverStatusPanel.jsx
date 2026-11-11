@@ -15,13 +15,22 @@ export default function WaiverStatusPanel() {
   const { authFetch } = useAuth();
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
+  const [reservations, setReservations] = useState([]);
+  const [error, setError] = useState("");
 
   const load = useCallback(async () => {
     try {
-      const res = await authFetch("/api/v1/hardware/checkins/me/waivers");
-      if (res.ok) setItems(await res.json());
-    } catch {
-      // the next poll retries
+      const [res, bookings] = await Promise.all([
+        authFetch("/api/v1/hardware/checkins/me/waivers"),
+        authFetch("/api/v1/reservations/me"),
+      ]);
+      if (!res.ok || !bookings.ok) throw new Error("Could not refresh waiver and reservation status.");
+      const [waivers, savedReservations] = await Promise.all([res.json(), bookings.json()]);
+      setItems(waivers);
+      setReservations(savedReservations);
+      setError("");
+    } catch (err) {
+      setError(err.message || "Could not refresh waiver status.");
     }
   }, [authFetch]);
 
@@ -36,9 +45,24 @@ export default function WaiverStatusPanel() {
     };
   }, [load]);
 
+  if (error) return <p role="alert">{error}</p>;
   if (items.length === 0) return null;
 
+  function bookedReservation(item) {
+    if (!item.requestedStart || !item.requestedEnd) return null;
+    return reservations.find((reservation) =>
+      reservation.equipmentId === item.equipmentId
+      && ["ACTIVE", "TRAINING_PENDING", "COMPLETED"].includes(reservation.status)
+      && new Date(reservation.startTime).getTime() === new Date(item.requestedStart).getTime()
+      && new Date(reservation.endTime).getTime() === new Date(item.requestedEnd).getTime()
+    );
+  }
+
   function open(item) {
+    if (bookedReservation(item)) {
+      navigate("/dashboard/reservations");
+      return;
+    }
     if (item.requestedStart && item.requestedEnd) {
       const start = new Date(item.requestedStart);
       navigate(`/dashboard/rentequipment/${item.equipmentId}/waiver`, {
@@ -75,7 +99,10 @@ export default function WaiverStatusPanel() {
       <p>Waiver Status</p>
       <div className="WaiverStatusGrid">
       {items.map((item) => {
-        const label = LABELS[item.status] ?? { text: item.status, cls: "pending" };
+        const booked = bookedReservation(item);
+        const label = booked
+          ? { text: "Booked — view my reservations", cls: "approved" }
+          : LABELS[item.status] ?? { text: item.status, cls: "pending" };
         return (
           <button
             className={`Dash4 WaiverStatusItem ${label.cls}`}

@@ -92,157 +92,62 @@ public class HardwareCheckIn {
         updatedAt = Instant.now();
     }
 
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
 
-    public User getUser() {
-        return user;
-    }
+    public Equipment getEquipment() { return equipment; }
+    public void setEquipment(Equipment equipment) { this.equipment = equipment; }
 
-    public void setUser(User user) {
-        this.user = user;
-    }
+    public CheckInStatus getStatus() { return status; }
+    public void setStatus(CheckInStatus status) { this.status = status; }
 
-    public Equipment getEquipment() {
-        return equipment;
-    }
+    public Instant getCheckinTime() { return checkinTime; }
+    public void setCheckinTime(Instant checkinTime) { this.checkinTime = checkinTime; }
 
-    public void setEquipment(Equipment equipment) {
-        this.equipment = equipment;
-    }
+    public Boolean getAccessGranted() { return accessGranted; }
+    public void setAccessGranted(Boolean accessGranted) { this.accessGranted = accessGranted; }
 
-    public CheckInStatus getStatus() {
-        return status;
-    }
+    public String getErrorMessage() { return errorMessage; }
+    public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
 
-    public void setStatus(CheckInStatus status) {
-        this.status = status;
-    }
+    public String getDeviceId() { return deviceId; }
+    public void setDeviceId(String deviceId) { this.deviceId = deviceId; }
 
-    public Instant getCheckinTime() {
-        return checkinTime;
-    }
+    public Boolean getWaiverSigned() { return waiverSigned; }
+    public void setWaiverSigned(Boolean waiverSigned) { this.waiverSigned = waiverSigned; }
 
-    public void setCheckinTime(Instant checkinTime) {
-        this.checkinTime = checkinTime;
-    }
+    public Boolean getWaiverApprovedByAdmin() { return waiverApprovedByAdmin; }
+    public void setWaiverApprovedByAdmin(Boolean waiverApprovedByAdmin) { this.waiverApprovedByAdmin = waiverApprovedByAdmin; }
 
-    public Boolean getAccessGranted() {
-        return accessGranted;
-    }
+    public String getSignatureData() { return signatureData; }
+    public void setSignatureData(String signatureData) { this.signatureData = signatureData; }
 
-    public void setAccessGranted(Boolean accessGranted) {
-        this.accessGranted = accessGranted;
-    }
+    public String getSignedName() { return signedName; }
+    public void setSignedName(String signedName) { this.signedName = signedName; }
 
-    public String getErrorMessage() {
-        return errorMessage;
-    }
+    public Instant getSignedAt() { return signedAt; }
+    public void setSignedAt(Instant signedAt) { this.signedAt = signedAt; }
 
-    public void setErrorMessage(String errorMessage) {
-        this.errorMessage = errorMessage;
-    }
+    public Instant getRequestedStart() { return requestedStart; }
+    public void setRequestedStart(Instant requestedStart) { this.requestedStart = requestedStart; }
 
-    public String getDeviceId() {
-        return deviceId;
-    }
+    public Instant getRequestedEnd() { return requestedEnd; }
+    public void setRequestedEnd(Instant requestedEnd) { this.requestedEnd = requestedEnd; }
 
-    public void setDeviceId(String deviceId) {
-        this.deviceId = deviceId;
-    }
+    public User getApprovedByAdmin() { return approvedByAdmin; }
+    public void setApprovedByAdmin(User approvedByAdmin) { this.approvedByAdmin = approvedByAdmin; }
 
-    public Boolean getWaiverSigned() {
-        return waiverSigned;
-    }
+    public Instant getApprovalTime() { return approvalTime; }
+    public void setApprovalTime(Instant approvalTime) { this.approvalTime = approvalTime; }
 
-    public void setWaiverSigned(Boolean waiverSigned) {
-        this.waiverSigned = waiverSigned;
-    }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 
-    public Boolean getWaiverApprovedByAdmin() {
-        return waiverApprovedByAdmin;
-    }
-
-    public String getSignedName() {
-        return signedName;
-    }
-
-    public void setSignedName(String signedName) {
-        this.signedName = signedName;
-    }
-
-    public Instant getSignedAt() {
-        return signedAt;
-    }
-
-    public void setSignedAt(Instant signedAt) {
-        this.signedAt = signedAt;
-    }
-
-    public Instant getRequestedStart() {
-        return requestedStart;
-    }
-
-    public void setRequestedStart(Instant requestedStart) {
-        this.requestedStart = requestedStart;
-    }
-
-    public Instant getRequestedEnd() {
-        return requestedEnd;
-    }
-
-    public void setRequestedEnd(Instant requestedEnd) {
-        this.requestedEnd = requestedEnd;
-    }
-
-    public String getSignatureData() {
-        return signatureData;
-    }
-
-    public void setSignatureData(String signatureData) {
-        this.signatureData = signatureData;
-    }
-
-    public void setWaiverApprovedByAdmin(Boolean waiverApprovedByAdmin) {
-        this.waiverApprovedByAdmin = waiverApprovedByAdmin;
-    }
-
-    public User getApprovedByAdmin() {
-        return approvedByAdmin;
-    }
-
-    public void setApprovedByAdmin(User approvedByAdmin) {
-        this.approvedByAdmin = approvedByAdmin;
-    }
-
-    public Instant getApprovalTime() {
-        return approvalTime;
-    }
-
-    public void setApprovalTime(Instant approvalTime) {
-        this.approvalTime = approvalTime;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+    public Instant getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 
     public enum CheckInStatus {
         PENDING,

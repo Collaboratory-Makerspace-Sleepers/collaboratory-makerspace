@@ -1,17 +1,35 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { CATEGORY_LABELS } from "./RentEquipment";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
-const TIME_SLOTS = [
-  "9:00 AM", "10:00 AM", "11:00 AM",
-  "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM",
-];
-const SLOT_HOURS = { "9:00 AM": 9, "10:00 AM": 10, "11:00 AM": 11, "1:00 PM": 13, "2:00 PM": 14, "3:00 PM": 15, "4:00 PM": 16 };
+const DURATION_OPTIONS = [1, 2, 3, 4];
+
+// Training-required equipment: 6 AM – 11 PM (close at 23:00)
+// General equipment: 24/7 (close at 24:00, i.e. end of day)
+const HOURS_TRAINING = { openingHour: 6,  closingHour: 23 };
+const HOURS_ALL_DAY  = { openingHour: 0,  closingHour: 24 };
+
+function formatHour(hour) {
+  if (hour === 0 || hour === 24) return "12:00 AM";
+  if (hour === 12) return "12:00 PM";
+  if (hour > 12) return `${hour - 12}:00 PM`;
+  return `${hour}:00 AM`;
+}
+
+/** Returns { "6:00 AM": 6, "7:00 AM": 7, … } for the given range. */
+function buildSlotHours(openingHour, closingHour) {
+  const map = {};
+  for (let h = openingHour; h < closingHour; h++) {
+    map[formatHour(h)] = h;
+  }
+  return map;
+}
 
 export default function ReserveEquipment() {
   const { id } = useParams();
@@ -21,6 +39,7 @@ export default function ReserveEquipment() {
   const [item, setItem] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [durationHours, setDurationHours] = useState(1);
 
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
@@ -42,14 +61,13 @@ export default function ReserveEquipment() {
         if (cancelled) return;
         setLoadError("Equipment not found.");
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [authFetch, id]);
 
   const [booked, setBooked] = useState([]);
+  const [monthBooked, setMonthBooked] = useState([]);
 
-  // Load what other members already booked on the chosen day so those slots are blocked.
+  // Load booked ranges for the selected day so those time slots are blocked.
   useEffect(() => {
     if (!selectedDate) return undefined;
     let cancelled = false;
@@ -63,9 +81,7 @@ export default function ReserveEquipment() {
     return () => { cancelled = true; };
   }, [authFetch, id, selectedDate]);
 
-  const [monthBooked, setMonthBooked] = useState([]);
-
-  // Booked ranges for the visible month, used to colour days on the calendar.
+  // Booked ranges for the visible month, used to colour calendar days.
   useEffect(() => {
     let cancelled = false;
     const from = new Date(viewYear, viewMonth, 1);
@@ -80,20 +96,14 @@ export default function ReserveEquipment() {
 
   function goPrevMonth() {
     setViewMonth((m) => {
-      if (m === 0) {
-        setViewYear((y) => y - 1);
-        return 11;
-      }
+      if (m === 0) { setViewYear((y) => y - 1); return 11; }
       return m - 1;
     });
   }
 
   function goNextMonth() {
     setViewMonth((m) => {
-      if (m === 11) {
-        setViewYear((y) => y + 1);
-        return 0;
-      }
+      if (m === 11) { setViewYear((y) => y + 1); return 0; }
       return m + 1;
     });
   }
@@ -120,57 +130,72 @@ export default function ReserveEquipment() {
     );
   }
 
+  const { openingHour, closingHour } = item?.requiresTraining ? HOURS_TRAINING : HOURS_ALL_DAY;
+  const slotHours = item ? buildSlotHours(openingHour, closingHour) : {};
+  const timeSlots = Object.keys(slotHours);
+
   function slotBooked(time) {
     if (!selectedDate) return false;
     const start = new Date(
-      selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), SLOT_HOURS[time]
+      selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), slotHours[time]
     );
-    const end = new Date(start.getTime() + 60 * 60 * 1000);
+    const end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
     return booked.some((b) => new Date(b.startTime) < end && new Date(b.endTime) > start);
   }
 
-  // "full" when every slot that day is taken, "partial" when at least one is.
+  // "full" when every slot is taken that day, "partial" when at least one is.
   function dayBookingState(day) {
-    const taken = TIME_SLOTS.filter((time) => {
-      const start = new Date(viewYear, viewMonth, day, SLOT_HOURS[time]);
+    const taken = timeSlots.filter((time) => {
+      const start = new Date(viewYear, viewMonth, day, slotHours[time]);
       const end = new Date(start.getTime() + 60 * 60 * 1000);
       return monthBooked.some((b) => new Date(b.startTime) < end && new Date(b.endTime) > start);
     }).length;
     if (taken === 0) return null;
-    return taken >= TIME_SLOTS.length ? "full" : "partial";
+    return taken >= timeSlots.length ? "full" : "partial";
   }
 
   function slotDisabled(time) {
-    return (isTodaySelected() && SLOT_HOURS[time] <= today.getHours()) || slotBooked(time);
+    return (isTodaySelected() && slotHours[time] <= today.getHours()) || slotBooked(time);
+  }
+
+  function durationDisabled(hours) {
+    if (!selectedSlot) return true;
+    return slotHours[selectedSlot] + hours > closingHour;
   }
 
   function handleReserve() {
     if (!selectedDate || !selectedSlot) return;
-    const hour = SLOT_HOURS[selectedSlot];
+    const startHour = slotHours[selectedSlot];
+    const endHour = startHour + durationHours;
     const start = new Date(
-      selectedDate.getFullYear(),
-      selectedDate.getMonth(),
-      selectedDate.getDate(),
-      hour, 0, 0
+      selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(),
+      startHour, 0, 0
     );
-    const end = new Date(start.getTime() + 60 * 60 * 1000);
-    const waiverRequired = true;
-    const reservationState = {
-      equipmentId: Number(id),
-      equipmentName: item.name,
-      waiverRequired,
-      trainingRequired: item.trainingRequired,
-      startTime: start.toISOString(),
-      endTime: end.toISOString(),
-      displayDate: selectedDate.toLocaleDateString(undefined, {
-        weekday: "long", month: "long", day: "numeric", year: "numeric",
-      }),
-      displayTime: selectedSlot,
-    };
+    const end = new Date(
+      selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(),
+      endHour, 0, 0
+    );
+    const displayTime = `${selectedSlot} – ${formatHour(endHour)} (${durationHours} hr${durationHours > 1 ? "s" : ""})`;
+
     navigate(
-      `/dashboard/rentequipment/${id}/${waiverRequired ? "waiver" : "checkout"}`,
+      `/dashboard/rentequipment/${id}/waiver`,
       {
-        state: reservationState,
+        state: {
+          equipmentId: Number(id),
+          equipmentName: item.name,
+          requiresTraining: item.requiresTraining,
+          trainingVideoUrl: item.trainingVideoUrl || null,
+          currentWaiverVersion: item.currentWaiverVersion ?? 1,
+          hourlyRateCents: item.hourlyRateCents,
+          durationHours,
+          waiverRequired: true,
+          startTime: start.toISOString(),
+          endTime: end.toISOString(),
+          displayDate: selectedDate.toLocaleDateString(undefined, {
+            weekday: "long", month: "long", day: "numeric", year: "numeric",
+          }),
+          displayTime,
+        },
       }
     );
   }
@@ -185,27 +210,38 @@ export default function ReserveEquipment() {
   }
 
   if (!item) {
-    return (
-      <div className="DashHome1">
-        <p>Loading…</p>
-      </div>
-    );
+    return <div className="DashHome1"><p>Loading…</p></div>;
   }
+
+  const rateLabel = item.hourlyRateCents > 0
+    ? `$${(item.hourlyRateCents / 100).toFixed(0)}/hr`
+    : "Free";
+
+  const estimatedTotal = selectedSlot
+    ? ((item.hourlyRateCents / 100) * durationHours).toFixed(2)
+    : null;
 
   return (
     <div className="DashHome1">
       <div className="ReserveHeader">
-        <button onClick={() => navigate("/dashboard/rentequipment")}>Back</button>
+        <button
+          onClick={() =>
+            navigate(
+              item.category
+                ? `/dashboard/rentequipment/category/${item.category}`
+                : "/dashboard/rentequipment"
+            )
+          }
+        >
+          ← Back to {CATEGORY_LABELS[item.category] ?? "Equipment"}
+        </button>
         <p>{item.name}</p>
-        <p>Select a date</p>
+        <p>Select a date and time</p>
       </div>
-
 
       <div className="CalendarWrap">
         <div className="CalendarHeader">
-          <p>
-            {MONTHS[viewMonth]} {viewYear}
-          </p>
+          <p>{MONTHS[viewMonth]} {viewYear}</p>
           <div className="CalendarArrows">
             <button onClick={goPrevMonth}>&lt;</button>
             <button onClick={goNextMonth}>&gt;</button>
@@ -213,9 +249,7 @@ export default function ReserveEquipment() {
         </div>
 
         <div className="CalendarWeekdays">
-          {WEEKDAYS.map((day) => (
-            <p key={day}>{day}</p>
-          ))}
+          {WEEKDAYS.map((day) => <p key={day}>{day}</p>)}
         </div>
 
         <div className="CalendarDays">
@@ -225,7 +259,7 @@ export default function ReserveEquipment() {
             ) : (
               <button
                 key={day}
-                disabled={isPastDay(day) || dayBookingState(day) === "full"}
+                disabled={isPastDay(day)}
                 className={
                   isPastDay(day)
                     ? "CalendarDay CalendarDayDisabled"
@@ -234,18 +268,12 @@ export default function ReserveEquipment() {
                       selectedDate.getMonth() === viewMonth &&
                       selectedDate.getDate() === day
                     ? "CalendarDay CalendarDaySelected"
-                    : `CalendarDay${dayBookingState(day) ? ` CalendarDay-${dayBookingState(day)}` : ""}`
-                }
-                title={
-                  dayBookingState(day) === "full"
-                    ? "Fully booked"
-                    : dayBookingState(day) === "partial"
-                    ? "Some times are booked"
-                    : undefined
+                    : "CalendarDay"
                 }
                 onClick={() => {
                   setSelectedDate(new Date(viewYear, viewMonth, day));
                   setSelectedSlot(null);
+                  setDurationHours(1);
                 }}
               >
                 {day}
@@ -253,32 +281,44 @@ export default function ReserveEquipment() {
             )
           )}
         </div>
-        <div className="CalendarLegend">
-          <span className="legend-partial">Some times booked</span>
-          <span className="legend-full">Fully booked</span>
-        </div>
       </div>
 
       {selectedDate && (
         <div className="AvailableTimesWrap">
           <p>
-            Available times for {selectedDate.getMonth() + 1}/
+            Start time for {selectedDate.getMonth() + 1}/
             {selectedDate.getDate()}/{selectedDate.getFullYear()}
           </p>
           <div className="AvailableTimesGrid">
-            {TIME_SLOTS.map((time) => (
+            {timeSlots.map((time) => (
               <button
                 key={time}
                 disabled={slotDisabled(time)}
-                className={
-                  selectedSlot === time ? "TimeSlotButton TimeSlotSelected" : "TimeSlotButton"
-                }
+                className={selectedSlot === time ? "TimeSlotButton TimeSlotSelected" : "TimeSlotButton"}
                 onClick={() => {
                   setSelectedSlot(time);
+                  setDurationHours(1);
                 }}
               >
                 {time}
-                {slotBooked(time) && <span className="SlotBookedLabel"> · Booked</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {selectedSlot && (
+        <div className="AvailableTimesWrap">
+          <p>Duration</p>
+          <div className="AvailableTimesGrid">
+            {DURATION_OPTIONS.map((hrs) => (
+              <button
+                key={hrs}
+                disabled={durationDisabled(hrs)}
+                className={durationHours === hrs && !durationDisabled(hrs) ? "TimeSlotButton TimeSlotSelected" : "TimeSlotButton"}
+                onClick={() => setDurationHours(hrs)}
+              >
+                {hrs} hr{hrs > 1 ? "s" : ""}
               </button>
             ))}
           </div>
@@ -287,17 +327,19 @@ export default function ReserveEquipment() {
 
       <div className="ReserveSummary">
         <div className="ReserveSummaryTop">
-          <div className="Rent4">
-            <p>Available</p>
-          </div>
-          <p>$7/hr</p>
+          <div className="Rent4"><p>Available</p></div>
+          <p>{rateLabel}</p>
         </div>
         <div className="ReserveSummaryBottom">
-          <p>{item.name}</p>
-          <button
-            disabled={!selectedDate || !selectedSlot}
-            onClick={handleReserve}
-          >
+          <div>
+            <p>{item.name}</p>
+            {estimatedTotal && item.hourlyRateCents > 0 && (
+              <p className="Dash5-sub">
+                Est. total: ${estimatedTotal} ({durationHours} hr{durationHours > 1 ? "s" : ""})
+              </p>
+            )}
+          </div>
+          <button disabled={!selectedDate || !selectedSlot} onClick={handleReserve}>
             Reserve
           </button>
         </div>

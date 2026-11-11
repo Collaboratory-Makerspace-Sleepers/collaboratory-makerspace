@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useMembership } from "../../hooks/useMembership";
 import {
   useDashboard,
   displayName,
@@ -12,7 +13,7 @@ export default function Account() {
   const { authFetch } = useAuth();
   const { user, reservations, loading, error } = useDashboard();
 
-  const [plan, setPlan] = useState(null);
+  const { membership: plan, error: planError, active: hasActiveMembership, refresh } = useMembership();
   const [firstNameVal, setFirstNameVal] = useState("");
   const [lastNameVal, setLastNameVal] = useState("");
   const [saveLoading, setSaveLoading] = useState(false);
@@ -26,18 +27,6 @@ export default function Account() {
       setLastNameVal(user.lastName || "");
     }
   }, [user]);
-
-  useEffect(() => {
-    let cancelled = false;
-    authFetch("/api/v1/billing/me/subscription")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (cancelled) return;
-        setPlan(data);
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [authFetch]);
 
   async function handleUpdate(e) {
     e.preventDefault();
@@ -80,8 +69,11 @@ export default function Account() {
             <p>{loading ? "…" : displayName(user) || "Your name"}</p>
             <p>
               Makerspace Member ·{" "}
-              {plan ? `${plan.planCode} plan` : "No active membership"}
+              {planError ? "Membership unavailable"
+                : plan === undefined ? "Loading membership..."
+                : hasActiveMembership ? `${plan.planName || plan.planCode} plan` : "No active membership"}
             </p>
+            {planError && <><p role="alert">{planError}</p><button onClick={refresh}>Check again</button></>}
           </div>
 
           <div className="AccountD5">

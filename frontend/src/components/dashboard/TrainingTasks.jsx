@@ -1,159 +1,146 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 
-// Placeholder shared by every training until real videos exist.
 const PLACEHOLDER_VIDEO_URL =
   "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
 
-export default function TrainingTasks() {
+/**
+ * Shows a card for every TRAINING_PENDING reservation so the user can watch the
+ * required safety video and activate their booking.
+ *
+ * Props:
+ *   reservations – array from useDashboard() (may be empty while loading)
+ *   loading      – boolean from useDashboard()
+ */
+export default function TrainingTasks({ reservations, loading }) {
   const { authFetch } = useAuth();
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [busyTaskId, setBusyTaskId] = useState(null);
-  const [error, setError] = useState("");
-  const watchedUntil = useRef({});
+
+  // Derived list of pending tasks; updated when parent reservations change.
+  const [pendingTasks, setPendingTasks] = useState([]);
+  // { [reservationId]: true } — set client-side when video finishes.
+  const [videoWatched, setVideoWatched] = useState({});
+  // Checkbox "I watched the full video" per task.
   const [confirmed, setConfirmed] = useState({});
-  const trainingVideoUrl =
-    import.meta.env.VITE_LASER_TRAINING_VIDEO_URL || PLACEHOLDER_VIDEO_URL;
+  const [busyId, setBusyId] = useState(null);
+  const [error, setError] = useState("");
+  // Tracks how far through the video the user has watched (prevents skip-ahead).
+  const watchedUntil = useRef({});
 
   useEffect(() => {
-    let cancelled = false;
-    authFetch("/api/v1/training-tasks/me")
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Unable to load training tasks.");
-        return response.json();
-      })
-      .then((data) => {
-        if (!cancelled) setTasks(data);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err.message || "Unable to load training tasks.");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [authFetch]);
+    setPendingTasks(
+      (reservations || []).filter((r) => r.status === "TRAINING_PENDING")
+    );
+  }, [reservations]);
 
-  async function recordVideoCompletion(task, event) {
+  function trackVideoProgress(reservationId, event) {
     const video = event.currentTarget;
-    const completedThrough = watchedUntil.current[task.id] ?? 0;
-    if (!Number.isFinite(video.duration) || video.duration - completedThrough > 1.5) {
-      video.currentTime = completedThrough;
-      return;
-    }
-
-    setBusyTaskId(task.id);
-    setError("");
-    try {
-      const response = await authFetch(`/api/v1/training-tasks/${task.id}/video-completed`, {
-        method: "POST",
-      });
-      if (!response.ok) throw new Error("Unable to save video completion.");
-      const updatedTask = await response.json();
-      setTasks((current) => current.map((item) => item.id === task.id ? updatedTask : item));
-    } catch (err) {
-      setError(err.message || "Unable to save video completion.");
-    } finally {
-      setBusyTaskId(null);
-    }
-  }
-
-  function trackVideoProgress(taskId, event) {
-    const video = event.currentTarget;
-    const previous = watchedUntil.current[taskId] ?? 0;
+    const previous = watchedUntil.current[reservationId] ?? 0;
     if (!video.paused && video.currentTime <= previous + 1.5) {
-      watchedUntil.current[taskId] = Math.max(previous, video.currentTime);
+      watchedUntil.current[reservationId] = Math.max(previous, video.currentTime);
     }
   }
 
-  function preventSeekingAhead(taskId, event) {
+  function preventSeekingAhead(reservationId, event) {
     const video = event.currentTarget;
-    const completedThrough = watchedUntil.current[taskId] ?? 0;
+    const completedThrough = watchedUntil.current[reservationId] ?? 0;
     if (video.currentTime > completedThrough + 1.5) {
       video.currentTime = completedThrough;
     }
   }
 
-  async function markTaskComplete(task) {
-    setBusyTaskId(task.id);
+  function handleVideoEnded(reservationId, event) {
+    const video = event.currentTarget;
+    const completedThrough = watchedUntil.current[reservationId] ?? 0;
+    // Guard against seeking to the very end to bypass the check.
+    if (Number.isFinite(video.duration) && video.duration - completedThrough > 1.5) {
+      video.currentTime = completedThrough;
+      return;
+    }
+    setVideoWatched((prev) => ({ ...prev, [reservationId]: true }));
+  }
+
+  async function handleComplete(task) {
+    setBusyId(task.id);
     setError("");
     try {
-      const response = await authFetch(`/api/v1/training-tasks/${task.id}/complete`, {
+      const res = await authFetch(`/api/v1/reservations/${task.id}/training-attest`, {
         method: "POST",
       });
-      if (!response.ok) throw new Error("Watch the full training video before completing this task.");
-      const updatedTask = await response.json();
-      setTasks((current) => current.map((item) => item.id === task.id ? updatedTask : item));
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || "Could not complete training.");
+      }
+      // Remove the completed task from the list.
+      setPendingTasks((prev) => prev.filter((t) => t.id !== task.id));
     } catch (err) {
-      setError(err.message || "Unable to complete this task.");
+      setError(err.message || "Could not complete training.");
     } finally {
-      setBusyTaskId(null);
+      setBusyId(null);
     }
   }
+
+  // Don't render anything while loading or when there are no pending tasks.
+  if (loading || pendingTasks.length === 0) return null;
 
   return (
     <section aria-labelledby="training-tasks-title" className="training-tasks">
       <div className="training-tasks-heading">
         <h2 id="training-tasks-title">Required training</h2>
-        <span>{tasks.filter((task) => !task.completed).length} pending</span>
+        <span>{pendingTasks.length} pending</span>
       </div>
 
-      {loading && <p>Loading training tasks…</p>}
       {error && <p className="training-task-error" role="alert">{error}</p>}
-      {!loading && !error && tasks.length === 0 && <p>No training tasks are pending.</p>}
 
-      {tasks.map((task) => (
-        <article className="training-task" key={task.id}>
-          <div className="training-task-heading">
-            <div>
-              <h3>{task.equipmentName} safety training</h3>
-              <p>{task.completed ? "Completed" : task.videoCompleted ? "Video watched" : "Pending"}</p>
-            </div>
-            {!task.completed && <span className="training-task-pending">Required</span>}
-          </div>
+      {pendingTasks.map((task) => {
+        const watched = Boolean(videoWatched[task.id]);
+        const videoUrl = task.trainingVideoUrl || PLACEHOLDER_VIDEO_URL;
 
-          {task.completed ? (
-            <p className="training-task-complete">Training completed.</p>
-          ) : task.videoCompleted ? (
-            <div className="training-task-confirm">
-              <label>
-                <input
-                  checked={Boolean(confirmed[task.id])}
-                  onChange={(event) => setConfirmed((c) => ({ ...c, [task.id]: event.target.checked }))}
-                  type="checkbox"
-                />
-                <span>I watched the full training video.</span>
-              </label>
-              <button
-                disabled={busyTaskId === task.id || !confirmed[task.id]}
-                onClick={() => markTaskComplete(task)}
-              >
-                {busyTaskId === task.id ? "Saving…" : "Mark complete"}
-              </button>
+        return (
+          <article className="training-task" key={task.id}>
+            <div className="training-task-heading">
+              <div>
+                <h3>{task.equipmentName} safety training</h3>
+                <p>{watched ? "Video watched — confirm below" : "Watch the video to activate your reservation"}</p>
+              </div>
+              <span className="training-task-pending">Required</span>
             </div>
-          ) : trainingVideoUrl ? (
-            <div className="training-task-player">
-              <video
-                controls
-                onEnded={(event) => recordVideoCompletion(task, event)}
-                onSeeking={(event) => preventSeekingAhead(task.id, event)}
-                onTimeUpdate={(event) => trackVideoProgress(task.id, event)}
-                preload="metadata"
-                src={trainingVideoUrl}
-              >
-                Your browser does not support video playback.
-              </video>
-            </div>
-          ) : (
-            <p className="training-task-unavailable">
-              Training video is unavailable. This task cannot be completed yet.
-            </p>
-          )}
-        </article>
-      ))}
+
+            {watched ? (
+              <div className="training-task-confirm">
+                <label>
+                  <input
+                    checked={Boolean(confirmed[task.id])}
+                    onChange={(e) =>
+                      setConfirmed((c) => ({ ...c, [task.id]: e.target.checked }))
+                    }
+                    type="checkbox"
+                  />
+                  <span>I watched the full training video and understand safe operation.</span>
+                </label>
+                <button
+                  disabled={busyId === task.id || !confirmed[task.id]}
+                  onClick={() => handleComplete(task)}
+                >
+                  {busyId === task.id ? "Saving…" : "Mark complete"}
+                </button>
+              </div>
+            ) : (
+              <div className="training-task-player">
+                <video
+                  controls
+                  onEnded={(e) => handleVideoEnded(task.id, e)}
+                  onSeeking={(e) => preventSeekingAhead(task.id, e)}
+                  onTimeUpdate={(e) => trackVideoProgress(task.id, e)}
+                  preload="metadata"
+                  src={videoUrl}
+                >
+                  Your browser does not support video playback.
+                </video>
+              </div>
+            )}
+          </article>
+        );
+      })}
     </section>
   );
 }

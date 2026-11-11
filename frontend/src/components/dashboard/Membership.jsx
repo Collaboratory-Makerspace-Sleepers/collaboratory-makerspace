@@ -1,48 +1,48 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import {
-  useDashboard,
-  todaySentence,
-  reservationSentence,
-} from "../../hooks/useDashboard";
+import { useMembership } from "../../hooks/useMembership";
 
-const PLAN_DETAILS = {
-  MONTHLY: {
-    name: "Member",
-    features: [
-      "Rent equipment for free",
-      "Access to common space",
-      "Book classes for free",
-      "Access to events and discounts",
-    ],
-  },
-  ANNUAL: {
-    name: "Member with Private Studio Space",
-    features: [
-      "Rent equipment for free",
-      "Access to common space",
-      "Book classes for free",
-      "Access to events and discounts",
-      "Private studio space",
-    ],
-  },
-  STUDENT: {
-    name: "Student",
-    features: [
-      "Rent equipment for free",
-      "Book classes for free",
-      "Access to events and discounts",
-    ],
-  },
-  DAY_PASS: {
-    name: "Day Pass",
-    features: [
-      "Full access for one day",
-      "Rent equipment",
-      "Book classes",
-    ],
-  },
+// Feature bullets are UI copy — not data — so they stay hardcoded here.
+const PLAN_FEATURES = {
+  MONTHLY: [
+    "Equipment access at member rates",
+    "Access to common space",
+    "50% off classes",
+    "Access to events and discounts",
+  ],
+  STUDENT: [
+    "Equipment access at member rates",
+    "50% off classes",
+    "Access to events and discounts",
+    "Requires .edu email address",
+  ],
+  DAY_PASS: [
+    "Full access for one day",
+    "Equipment at standard rates",
+    "Class access",
+  ],
+  STUDIO_SMALL: [
+    "Private small maker studio",
+    "Machine rate waiver — equipment included",
+    "Access to common space",
+    "50% off classes",
+    "Access to events and discounts",
+  ],
+  STUDIO_MEDIUM: [
+    "Private medium maker studio",
+    "Machine rate waiver — equipment included",
+    "Access to common space",
+    "50% off classes",
+    "Access to events and discounts",
+  ],
+  STUDIO_LARGE: [
+    "Private large maker studio",
+    "Machine rate waiver — equipment included",
+    "Access to common space",
+    "50% off classes",
+    "Access to events and discounts",
+  ],
 };
 
 function formatPrice(amountCents, billingInterval) {
@@ -75,13 +75,13 @@ const STATUS_COLORS = {
 };
 
 export default function Membership() {
-  const { authFetch } = useAuth();
-  const { reservations, loading, error } = useDashboard();
+  const { authFetch, user } = useAuth();
+
+  const isStudentEligible = user?.email?.toLowerCase().endsWith(".edu") ?? false;
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [membership, setMembership] = useState(undefined); // undefined = loading, null = none
-  const [membershipError, setMembershipError] = useState("");
+  const { membership, error: membershipError, refresh: loadMembership, active: hasActiveMembership } = useMembership();
   const [plans, setPlans] = useState([]);
   const [plansError, setPlansError] = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState(null);
@@ -89,25 +89,6 @@ export default function Membership() {
   const [cancelConfirm, setCancelConfirm] = useState(false);
 
   const banner = location.state?.banner;
-
-  useEffect(() => {
-    let cancelled = false;
-    authFetch("/api/v1/billing/me/subscription")
-      .then((res) => {
-        if (res.status === 404) return null;
-        if (!res.ok) throw new Error("Could not load membership");
-        return res.json();
-      })
-      .then((data) => {
-        if (cancelled) return;
-        setMembership(data);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setMembershipError("Could not load membership status.");
-      });
-    return () => { cancelled = true; };
-  }, [authFetch]);
 
   useEffect(() => {
     let cancelled = false;
@@ -125,28 +106,8 @@ export default function Membership() {
     return () => { cancelled = true; };
   }, []);
 
-  const hasActiveMembership =
-    membership &&
-    ["ACTIVE", "TRIALING", "PAST_DUE"].includes(membership.status);
-
   function handleUpgrade(plan) {
-    navigate("/dashboard/membership/checkout", { state: { plan } });
-  }
-
-  async function handlePortal() {
-    setCheckoutError("");
-    setCheckoutLoading("portal");
-    try {
-      const res = await authFetch("/api/v1/billing/portal-session", {
-        method: "POST",
-      });
-      if (!res.ok) throw new Error("Could not open billing portal");
-      const { portalUrl } = await res.json();
-      window.location.href = portalUrl;
-    } catch (err) {
-      setCheckoutError(err.message || "Something went wrong.");
-      setCheckoutLoading(null);
-    }
+    navigate("/dashboard/membership/checkout", { state: { plan, currentMembership: membership } });
   }
 
   async function handleCancel() {
@@ -155,7 +116,7 @@ export default function Membership() {
     try {
       const res = await authFetch("/api/v1/billing/cancel", { method: "POST" });
       if (!res.ok) throw new Error("Could not cancel membership");
-      setMembership((m) => ({ ...m, cancelAtPeriodEnd: true }));
+      loadMembership();
       setCancelConfirm(false);
     } catch (err) {
       setCheckoutError(err.message || "Something went wrong.");
@@ -166,12 +127,41 @@ export default function Membership() {
 
   return (
     <div className="DashHome1">
+      {cancelConfirm && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center" }}
+          onClick={() => setCancelConfirm(false)}
+        >
+          <div
+            style={{ background: "#fff", borderRadius: "8px", padding: "1.5rem", maxWidth: "380px", width: "90%", display: "flex", flexDirection: "column", gap: "1rem" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p style={{ fontWeight: 600, margin: 0 }}>Cancel membership?</p>
+            <p style={{ margin: 0, color: "#555", fontSize: "0.9rem" }}>
+              Your access continues until{" "}
+              {membership?.currentPeriodEnd
+                ? new Date(membership.currentPeriodEnd).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+                : "the end of your billing period"}.
+            </p>
+            {checkoutError && <p style={{ color: "red", margin: 0, fontSize: "0.85rem" }}>{checkoutError}</p>}
+            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+              <button onClick={() => setCancelConfirm(false)} disabled={!!checkoutLoading}>
+                Keep membership
+              </button>
+              <button
+                onClick={handleCancel}
+                disabled={checkoutLoading === "cancel"}
+                style={{ color: "red" }}
+              >
+                {checkoutLoading === "cancel" ? "Cancelling…" : "Yes, cancel"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="Dash2">
-        <p>Membership</p>
-        <p>
-          Welcome back. {todaySentence()}{" "}
-          {!loading && !error && reservationSentence(reservations)}
-        </p>
+        <h1>Membership</h1>
       </div>
 
       {banner && (
@@ -185,57 +175,58 @@ export default function Membership() {
         <div className="Dash4">
           {membership === undefined && !membershipError && <p>Loading…</p>}
           {membershipError && <p>{membershipError}</p>}
-          {membership === null && <p>Guest — no active membership</p>}
+          {membership === null && (
+            <>
+              <p>No active membership</p>
+            </>
+          )}
           {membership && (
             <>
-              <p>{PLAN_DETAILS[membership.planCode]?.name ?? membership.planCode}</p>
+              <p>
+                <strong>{membership.planName ?? membership.planCode}</strong>
+                {membership.amountCents != null && membership.billingInterval && (
+                  <span style={{ marginLeft: "0.5rem", color: "#555" }}>
+                    · {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(membership.amountCents / 100)}/{membership.billingInterval.toLowerCase()}
+                  </span>
+                )}
+              </p>
               <p style={STATUS_COLORS[membership.status]}>
                 {STATUS_LABELS[membership.status] || membership.status}
               </p>
+              {membership.currentPeriodStart && membership.currentPeriodEnd && (
+                <p style={{ fontSize: "0.85rem", color: "#666" }}>
+                  Billing period: {new Date(membership.currentPeriodStart).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  {" – "}
+                  {new Date(membership.currentPeriodEnd).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </p>
+              )}
               {membership.currentPeriodEnd && (
-                <p>
+                <p style={{ fontSize: "0.85rem" }}>
                   {["CANCELED", "GRACE"].includes(membership.status)
                     ? "Expired"
                     : membership.cancelAtPeriodEnd
                     ? "Cancels"
-                    : "Renews"}{" "}
-                  {new Date(membership.currentPeriodEnd).toLocaleDateString()}
+                    : membership.planCode === "DAY_PASS" ? "Access expires" : "Next billing"}{" "}
+                  {new Date(membership.currentPeriodEnd).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </p>
+              )}
+              {membership.createdAt && (
+                <p style={{ fontSize: "0.8rem", color: "#999" }}>
+                  Member since {new Date(membership.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                 </p>
               )}
             </>
           )}
-          {hasActiveMembership && (
+          {hasActiveMembership && membership?.stripeSubscriptionId && !membership?.cancelAtPeriodEnd && (
             <div className="Dash5">
-              {checkoutError && <p style={{ color: "red" }}>{checkoutError}</p>}
-              <button
-                onClick={handlePortal}
-                disabled={!!checkoutLoading}
-              >
-                {checkoutLoading === "portal" ? "Opening…" : "Manage billing"}
+              <button onClick={() => setCancelConfirm(true)} disabled={!!checkoutLoading}>
+                Cancel membership
               </button>
-              {!membership?.cancelAtPeriodEnd && (
-                cancelConfirm ? (
-                  <>
-                    <p>Cancel at end of billing period?</p>
-                    <button
-                      onClick={handleCancel}
-                      disabled={checkoutLoading === "cancel"}
-                      style={{ color: "red" }}
-                    >
-                      {checkoutLoading === "cancel" ? "Cancelling…" : "Yes, cancel"}
-                    </button>
-                    <button onClick={() => setCancelConfirm(false)} disabled={!!checkoutLoading}>
-                      Keep membership
-                    </button>
-                  </>
-                ) : (
-                  <button onClick={() => setCancelConfirm(true)} disabled={!!checkoutLoading}>
-                    Cancel membership
-                  </button>
-                )
-              )}
             </div>
           )}
+          <button onClick={loadMembership} style={{ marginTop: "0.5rem", fontSize: "0.85rem" }}>
+            Check again
+          </button>
         </div>
       </div>
 
@@ -243,15 +234,31 @@ export default function Membership() {
       <div className="CollaR1">
         {plansError && <p role="alert">{plansError}</p>}
         {plans.map((catalogPlan) => {
-          const details = PLAN_DETAILS[catalogPlan.code];
-          if (!details) return null;
+          const features = PLAN_FEATURES[catalogPlan.code];
+          if (!features) return null;
+          if (catalogPlan.code === "STUDENT" && !isStudentEligible) return null;
           const plan = {
             ...catalogPlan,
-            ...details,
+            features,
             price: formatPrice(catalogPlan.amountCents, catalogPlan.billingInterval),
           };
           const isCurrent =
             membership?.planCode === plan.code && hasActiveMembership;
+          const sameInterval =
+            catalogPlan.billingInterval === membership?.billingInterval;
+          const isUpgrade =
+            !isCurrent && hasActiveMembership && sameInterval &&
+            catalogPlan.amountCents > (membership?.amountCents ?? 0);
+          const isDowngrade =
+            !isCurrent && hasActiveMembership && sameInterval &&
+            catalogPlan.amountCents < (membership?.amountCents ?? 0);
+          const buttonLabel = isCurrent
+            ? "Current Plan"
+            : isUpgrade
+            ? "Upgrade"
+            : isDowngrade
+            ? "Downgrade"
+            : "Select";
           return (
             <div className="colla6" key={plan.code}>
               <div className="collar2">
@@ -259,7 +266,7 @@ export default function Membership() {
                   <p>{isCurrent ? "Current Plan" : "Membership"}</p>
                 </div>
                 <div className="colla4">
-                  <p>{plan.name}</p>
+                  <p>{plan.displayName}</p>
                   <p>{plan.price}</p>
                 </div>
               </div>
@@ -269,10 +276,10 @@ export default function Membership() {
                 ))}
               </div>
               <button
-                disabled={isCurrent}
+                disabled={isCurrent || membership === undefined}
                 onClick={() => !isCurrent && handleUpgrade(plan)}
               >
-                {isCurrent ? "Current Plan" : "Upgrade"}
+                {buttonLabel}
               </button>
             </div>
           );

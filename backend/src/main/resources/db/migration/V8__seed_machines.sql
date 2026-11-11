@@ -57,15 +57,15 @@ WHERE NOT EXISTS (SELECT 1 FROM equipment WHERE name = 'Corrine');
 
 -- Medium maker studios
 INSERT INTO equipment (name, description, category, image_url, status)
-SELECT 'Coruscant', 'Medium maker studio', 'STUDIO_MED', 'https://picsum.photos/seed/coruscant/480/360', 'AVAILABLE'
+SELECT 'Coruscant', 'Medium maker studio', 'STUDIO_MEDIUM', 'https://picsum.photos/seed/coruscant/480/360', 'AVAILABLE'
 WHERE NOT EXISTS (SELECT 1 FROM equipment WHERE name = 'Coruscant');
 
 INSERT INTO equipment (name, description, category, image_url, status)
-SELECT 'Alderaan', 'Medium maker studio', 'STUDIO_MED', 'https://picsum.photos/seed/alderaan/480/360', 'AVAILABLE'
+SELECT 'Alderaan', 'Medium maker studio', 'STUDIO_MEDIUM', 'https://picsum.photos/seed/alderaan/480/360', 'AVAILABLE'
 WHERE NOT EXISTS (SELECT 1 FROM equipment WHERE name = 'Alderaan');
 
 INSERT INTO equipment (name, description, category, image_url, status)
-SELECT 'Corellia', 'Medium maker studio', 'STUDIO_MED', 'https://picsum.photos/seed/corellia/480/360', 'AVAILABLE'
+SELECT 'Corellia', 'Medium maker studio', 'STUDIO_MEDIUM', 'https://picsum.photos/seed/corellia/480/360', 'AVAILABLE'
 WHERE NOT EXISTS (SELECT 1 FROM equipment WHERE name = 'Corellia');
 
 -- Large maker studios

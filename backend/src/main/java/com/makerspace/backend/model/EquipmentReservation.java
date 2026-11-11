@@ -52,4 +52,18 @@ public class EquipmentReservation {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private ZonedDateTime createdAt = ZonedDateTime.now();
+
+    /**
+     * The per-hour rate in cents that applied to this booking at the time it was created.
+     * Snapshotted so price changes do not retroactively affect existing reservations.
+     */
+    @Column(name = "quoted_rate_cents", nullable = false)
+    private int quotedRateCents = 0;
+
+    /**
+     * Estimated total cost in cents based on the duration and quoted rate.
+     * Actual charge may differ if the reservation is extended or shortened.
+     */
+    @Column(name = "estimated_cost_cents", nullable = false)
+    private int estimatedCostCents = 0;
 }

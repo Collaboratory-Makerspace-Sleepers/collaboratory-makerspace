@@ -2,7 +2,7 @@ package com.makerspace.backend.model;
 
 public enum ReservationStatus {
     ACTIVE,
-    PENDING,
+    TRAINING_PENDING,
     CANCELLED,
     COMPLETED
 }

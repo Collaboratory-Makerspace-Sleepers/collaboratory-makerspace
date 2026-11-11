@@ -11,6 +11,8 @@ public record PaymentRecordDTO(
         int amountCents,
         String currency,
         String description,
-        ZonedDateTime occurredAt
+        ZonedDateTime occurredAt,
+        String stripeReceiptUrl,
+        String referenceId
 ) {
 }

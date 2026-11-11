@@ -94,7 +94,6 @@ public class AdminRegistrationService {
         try {
             emailService.sendAccountInvite(user.getEmail(), fullName, roleLabel, code);
         } catch (RuntimeException e) {
-            // The account exists either way; staff can resend the invite.
             log.warn("Could not email invite to {}: {}", user.getEmail(), e.getMessage());
             return false;
         }

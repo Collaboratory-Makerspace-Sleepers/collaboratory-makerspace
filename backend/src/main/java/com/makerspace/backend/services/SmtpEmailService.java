@@ -9,8 +9,10 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 /**
  * Real SMTP email service — activated when spring.mail.host is configured to a non-empty value.
@@ -34,6 +36,21 @@ public class SmtpEmailService implements EmailService {
 
     @Value("${app.mail.from:noreply@makerspace.local}")
     private String fromAddress;
+
+    private static final ZoneId NY = ZoneId.of("America/New_York");
+
+    private static final Map<String, String> CATEGORY_LABELS = Map.ofEntries(
+            Map.entry("3D_PRINTER",    "3D Printer"),
+            Map.entry("LASER",         "Laser Cutter"),
+            Map.entry("CNC_LARGE",     "CNC Router (Large)"),
+            Map.entry("CNC_SMALL",     "CNC Router (Small)"),
+            Map.entry("METAL_LATHE",   "Metal Lathe"),
+            Map.entry("WOOD_LATHE",    "Wood Lathe"),
+            Map.entry("STUDIO_SMALL",  "Small Studio"),
+            Map.entry("STUDIO_MEDIUM", "Medium Studio"),
+            Map.entry("STUDIO_LARGE",  "Large Studio"),
+            Map.entry("CLASS",         "Class")
+    );
 
     @Override
     public void sendRegistrationInvite(String toEmail, String fullName, String rawToken) {
@@ -60,33 +77,20 @@ public class SmtpEmailService implements EmailService {
     }
 
     @Override
-    public void sendCardActivationOtp(String toEmail, String code, String cardUid) {
-        SimpleMailMessage msg = new SimpleMailMessage();
-        msg.setFrom(fromAddress);
-        msg.setTo(toEmail);
-        msg.setSubject("Activate your Collaboratory access card");
-        msg.setText("Hi there,\n\nAn administrator has assigned a new access card to your account (Card UID: " + cardUid + ").\n\n"
-                + "To activate it, sign in at " + frontendBaseUrl + "/signin and enter this code:\n\n    " + code + "\n\n"
-                + "This code expires in 1 hour.\n\n"
-                + "Then, tap the card at the reader and you'll have access to equipment based on your membership and training.\n\n"
-                + "— The Collaboratory Makerspace");
-        mailSender.send(msg);
-        log.info("Card activation OTP sent to <{}>", toEmail);
-    }
-
-    @Override
     public void sendReservationConfirmation(String toEmail, String fullName,
-            String equipmentName, ZonedDateTime startTime, ZonedDateTime endTime) {
+            String equipmentName, String equipmentCategory,
+            ZonedDateTime startTime, ZonedDateTime endTime) {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("EEE, MMM d yyyy 'at' h:mm a z");
+        String typeLabel = CATEGORY_LABELS.getOrDefault(equipmentCategory, equipmentCategory);
         SimpleMailMessage msg = new SimpleMailMessage();
         msg.setFrom(fromAddress);
         msg.setTo(toEmail);
         msg.setSubject("Reservation confirmed — " + equipmentName);
         msg.setText("Hi " + fullName + ",\n\n"
                 + "Your reservation has been confirmed.\n\n"
-                + "Equipment: " + equipmentName + "\n"
-                + "Start:     " + startTime.format(fmt) + "\n"
-                + "End:       " + endTime.format(fmt) + "\n\n"
+                + "Equipment: " + equipmentName + " (" + typeLabel + ")\n"
+                + "Start:     " + startTime.withZoneSameInstant(NY).format(fmt) + "\n"
+                + "End:       " + endTime.withZoneSameInstant(NY).format(fmt) + "\n\n"
                 + "View or manage your reservations at: " + frontendBaseUrl + "/dashboard/reservations\n\n"
                 + "— The Collaboratory Makerspace");
         mailSender.send(msg);
@@ -144,5 +148,23 @@ public class SmtpEmailService implements EmailService {
                 + "— The Collaboratory Makerspace");
         mailSender.send(msg);
         log.info("Payment receipt sent to <{}>", toEmail);
+    }
+
+    @Override
+    public void sendPaymentFailed(String toEmail, String fullName, String portalUrl) {
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom(fromAddress);
+        msg.setTo(toEmail);
+        msg.setSubject("Action required — payment failed for your Collaboratory membership");
+        String portalLine = portalUrl != null
+                ? "Please update your payment method here:\n" + portalUrl
+                : "Please sign in to update your payment method: " + frontendBaseUrl + "/dashboard/membership";
+        msg.setText("Hi " + fullName + ",\n\n"
+                + "We were unable to process your membership payment. Your membership has been marked as past due.\n\n"
+                + portalLine + "\n\n"
+                + "If you believe this is an error, please contact us.\n\n"
+                + "— The Collaboratory Makerspace");
+        mailSender.send(msg);
+        log.info("Payment failed notification sent to <{}>", toEmail);
     }
 }

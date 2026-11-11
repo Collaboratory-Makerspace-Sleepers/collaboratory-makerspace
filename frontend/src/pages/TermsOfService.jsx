@@ -27,10 +27,6 @@ export default function TermsOfService() {
       <div className="secondDiv">
         {/* Navigation Bar */}
         <div className="NavBar">
-          <p className="logo" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
-            The Collaboratory
-          </p>
-
           <div className="links">
             <Link to="/" className="nav-link">Home</Link>
             <Link to="/pricing" className="nav-link">Pricing</Link>

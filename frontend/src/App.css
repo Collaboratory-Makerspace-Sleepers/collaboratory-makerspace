@@ -29,6 +29,35 @@ p {
   margin: 0;
 }
 
+.brand-logo {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 196px;
+  height: 56px;
+  padding: 6px 9px;
+  border: 1px solid rgba(69, 11, 0, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 3px 12px rgba(69, 11, 0, 0.1);
+}
+
+.brand-logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.brand-logo:focus-visible {
+  outline: 3px solid #e75710;
+  outline-offset: 3px;
+}
+
 /* ========================================
    HOME LAYOUT
 ======================================== */
@@ -849,7 +878,7 @@ p {
   gap: 32px;
   width: 220px;
   min-height: 100vh;
-  padding: 32px 20px;
+  padding: 88px 20px 32px;
   border-right: 1px solid #e5e5e5;
   background-color: #ffffff;
   flex-shrink: 0;

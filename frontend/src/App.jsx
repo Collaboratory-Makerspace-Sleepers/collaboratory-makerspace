@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import "./App.css";
+import BrandLogo from "./components/BrandLogo";
 import Home from "./pages/Home";
 import Pricing from "./pages/Pricing";
 import SignUp from "./pages/SignUp";
@@ -37,59 +38,62 @@ import TermsOfService from "./pages/TermsOfService"; //added this import for Ter
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/pricing" element={<Pricing />} />
-      <Route path="/signup" element={<SignUp />} />
-      <Route path="/signin" element={<SignIn />} />
-      <Route path="/login" element={<SignIn />} />
-      <Route path="/terms" element={<TermsOfService />} /> //added this route for Terms of Service page
-      <Route path="/oauth-callback" element={<OAuthCallback />} />
-      <Route path="/billing/success" element={<BillingSuccess />} />
-      <Route path="/billing/cancel" element={<BillingCancel />} />
-      <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>}>
-        <Route index element={<DashboardLanding />} />
-        <Route path="home" element={<DashboardHome />} />
-        <Route path="rentequipment" element={<RentEquipment />} />
-        <Route path="rentequipment/category/:category" element={<EquipmentCategoryPage />} />
-        <Route path="rentequipment/:id" element={<ReserveEquipment />} />
-        <Route path="rentequipment/:id/waiver" element={<LaserWaiver />} />
-        <Route path="rentequipment/:id/checkout" element={<ReservationCheckout />} />
-        <Route path="bookclasses" element={<BookClasses />} />
-        <Route path="bookclasses/session/:id" element={<ClassSessionDetail />} />
-        <Route path="account" element={<Account />} />
-        <Route path="membership" element={<Membership />} />
-        <Route path="membership/checkout" element={<MembershipCheckout />} />
-        <Route path="reservations" element={<MyReservations />} />
-        <Route path="payment-methods" element={<PaymentMethods />} />
-        <Route path="billing-history" element={<BillingHistory />} />
-        <Route path="hardware-approvals" element={
-          <RequirePermission anyOf={["MANAGE_EQUIPMENT"]}>
-            <HardwareCheckIns />
-          </RequirePermission>
-        } />
-      </Route>
-      <Route
-        path="/admin-dashboard"
-        element={
-          <RequireAuth>
-            <RequirePermission anyOf={["MANAGE_ROLES", "MANAGE_CLASSES"]}>
-              <AdminDashboard />
+    <>
+      <BrandLogo />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/signin" element={<SignIn />} />
+        <Route path="/login" element={<SignIn />} />
+        <Route path="/terms" element={<TermsOfService />} /> //added this route for Terms of Service page
+        <Route path="/oauth-callback" element={<OAuthCallback />} />
+        <Route path="/billing/success" element={<BillingSuccess />} />
+        <Route path="/billing/cancel" element={<BillingCancel />} />
+        <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>}>
+          <Route index element={<DashboardLanding />} />
+          <Route path="home" element={<DashboardHome />} />
+          <Route path="rentequipment" element={<RentEquipment />} />
+          <Route path="rentequipment/category/:category" element={<EquipmentCategoryPage />} />
+          <Route path="rentequipment/:id" element={<ReserveEquipment />} />
+          <Route path="rentequipment/:id/waiver" element={<LaserWaiver />} />
+          <Route path="rentequipment/:id/checkout" element={<ReservationCheckout />} />
+          <Route path="bookclasses" element={<BookClasses />} />
+          <Route path="bookclasses/session/:id" element={<ClassSessionDetail />} />
+          <Route path="account" element={<Account />} />
+          <Route path="membership" element={<Membership />} />
+          <Route path="membership/checkout" element={<MembershipCheckout />} />
+          <Route path="reservations" element={<MyReservations />} />
+          <Route path="payment-methods" element={<PaymentMethods />} />
+          <Route path="billing-history" element={<BillingHistory />} />
+          <Route path="hardware-approvals" element={
+            <RequirePermission anyOf={["MANAGE_EQUIPMENT"]}>
+              <HardwareCheckIns />
             </RequirePermission>
-          </RequireAuth>
-        }
-      >
-        <Route index element={<Navigate to="home" replace />} />
-        <Route path="home" element={<AdminHome />} />
-        <Route path="user" element={<AdminUsers />} />
-        <Route path="rentequipment" element={<AdminRentEquipment />} />
-        <Route path="bookclasses" element={<AdminBookClasses />} />
-        <Route path="account" element={<AdminAccount />} />
-        <Route path="hardware" element={<HardwareCheckIns />} />
-        <Route path="roles" element={<AdminRoles />} />
-        <Route path="cancellations" element={<AdminCancellations />} />
-      </Route>
-    </Routes>
+          } />
+        </Route>
+        <Route
+          path="/admin-dashboard"
+          element={
+            <RequireAuth>
+              <RequirePermission anyOf={["MANAGE_ROLES", "MANAGE_CLASSES"]}>
+                <AdminDashboard />
+              </RequirePermission>
+            </RequireAuth>
+          }
+        >
+          <Route index element={<Navigate to="home" replace />} />
+          <Route path="home" element={<AdminHome />} />
+          <Route path="user" element={<AdminUsers />} />
+          <Route path="rentequipment" element={<AdminRentEquipment />} />
+          <Route path="bookclasses" element={<AdminBookClasses />} />
+          <Route path="account" element={<AdminAccount />} />
+          <Route path="hardware" element={<HardwareCheckIns />} />
+          <Route path="roles" element={<AdminRoles />} />
+          <Route path="cancellations" element={<AdminCancellations />} />
+        </Route>
+      </Routes>
+    </>
   );
 }
 

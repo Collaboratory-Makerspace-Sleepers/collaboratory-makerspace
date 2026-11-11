@@ -30,8 +30,6 @@ export default function Pricing() {
     <div className="bigdiv">
       <div className="secondDiv">
         <div className="NavBar">
-          <p>The Collaboratory</p>
-
           <div className="links">
             <Link to="/">Home</Link>
             <Link to="/pricing">Pricing</Link>

@@ -153,13 +153,16 @@ function CheckInLog() {
     return statusMap[status] || "default";
   };
 
-  if (loading) return <div className="HardwareLoading">Loading check-ins...</div>;
-  if (error) return <div className="HardwareError">Error: {error}</div>;
+  if (loading) {
+    return <div className="HardwareLoading">Loading check-ins...</div>;
+  }
+  if (error) {
+    return <div className="HardwareError">Error: {error}</div>;
+  }
 
   return (
     <div className="HardwareCheckInsContainer">
       <div className="HWHeader">
-        <h2>Hardware Access Logs</h2>
         <div className="HWFilters">
           <button
             className={`FilterBtn ${filter === "all" ? "active" : ""}`}
@@ -354,23 +357,26 @@ const TABS = [
 export default function HardwareCheckIns() {
   const [tab, setTab] = useState("taps");
   return (
-    <div className="HardwareTabs">
-      <div className="HWTabBar" role="tablist">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            role="tab"
-            aria-selected={tab === t.id}
-            className={`HWTab ${tab === t.id ? "active" : ""}`}
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
+    <div className="DashHome1">
+      <h1 className="admin-page-title">Hardware Access</h1>
+      <div className="HardwareTabs">
+        <div className="HWTabBar" role="tablist">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              role="tab"
+              aria-selected={tab === t.id}
+              className={`HWTab ${tab === t.id ? "active" : ""}`}
+              onClick={() => setTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        {tab === "taps" && <CardScansLive onAssigned={() => setTab("cards")} />}
+        {tab === "cards" && <CardManager />}
+        {tab === "log" && <CheckInLog />}
       </div>
-      {tab === "taps" && <CardScansLive onAssigned={() => setTab("cards")} />}
-      {tab === "cards" && <CardManager />}
-      {tab === "log" && <CheckInLog />}
     </div>
   );
 }

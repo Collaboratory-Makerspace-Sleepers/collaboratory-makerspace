@@ -97,7 +97,13 @@ export default function ReservationCheckout() {
       if (!res.ok) {
         sessionStorage.removeItem(PENDING_RESERVATION_KEY);
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.message || "Could not start checkout");
+        throw new Error(
+          body.detail ||
+            body.message ||
+            (res.status === 502
+              ? "The payment provider rejected checkout. Check the backend Stripe key and Day Pass price configuration."
+              : "Could not start checkout")
+        );
       }
       const { sessionUrl } = await res.json();
       window.location.href = sessionUrl;

@@ -16,6 +16,7 @@ export default function LaserWaiver() {
   const { authFetch } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [request, setRequest] = useState(null);
+  const [waiverSignatureId, setWaiverSignatureId] = useState(null);
   const [signError, setSignError] = useState("");
   const equipmentId = state?.equipmentId;
   const slotStart = state?.startTime;
@@ -79,12 +80,24 @@ export default function LaserWaiver() {
         setSignError(data.message || "Could not submit the waiver. Please try again.");
         return;
       }
-      setRequest(await res.json());
-      // Keep the existing training-waiver record so checkout still sees the signature.
-      await authFetch(`/api/v1/training-waivers/${state.equipmentId}/sign`, {
+      const waiverRequest = await res.json();
+      const signatureRes = await authFetch(`/api/v1/training-waivers/${state.equipmentId}/sign`, {
         method: "POST",
-        body: JSON.stringify({ signerName: "RabbitSign" }),
-      }).catch(() => {});
+        body: JSON.stringify({
+          signerName: "RabbitSign",
+          startTime: state.startTime,
+          endTime: state.endTime,
+          waiverVersion: state.currentWaiverVersion,
+        }),
+      });
+      if (!signatureRes.ok) {
+        const data = await signatureRes.json().catch(() => ({}));
+        setSignError(data.message || "Could not save your signed waiver. Please try again.");
+        return;
+      }
+      const signature = await signatureRes.json();
+      setWaiverSignatureId(signature.waiverSignatureId);
+      setRequest(waiverRequest);
     } catch {
       setSignError("Could not reach the server. Please try again.");
     } finally {
@@ -92,10 +105,45 @@ export default function LaserWaiver() {
     }
   }
 
-  function handleContinueToCheckout() {
+  async function handleContinueToCheckout() {
     if (!approved) return;
+    let signatureId = waiverSignatureId;
+    if (!signatureId) {
+      setSubmitting(true);
+      setSignError("");
+      try {
+        const res = await authFetch(`/api/v1/training-waivers/${state.equipmentId}/sign`, {
+          method: "POST",
+          body: JSON.stringify({
+            signerName: "RabbitSign",
+            startTime: state.startTime,
+            endTime: state.endTime,
+            waiverVersion: state.currentWaiverVersion,
+          }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.message || "Could not save your signed waiver. Please try again.");
+        }
+        const data = await res.json();
+        signatureId = data.waiverSignatureId;
+        if (!signatureId) throw new Error("The server did not return your waiver signature.");
+        setWaiverSignatureId(signatureId);
+      } catch (error) {
+        setSignError(error.message || "Could not save your signed waiver. Please try again.");
+        setSubmitting(false);
+        return;
+      }
+      setSubmitting(false);
+    }
+
     navigate(`/dashboard/rentequipment/${state.equipmentId}/checkout`, {
-      state: { ...state, waiverSigned: true, waiverSignature: signature },
+      state: {
+        ...state,
+        waiverSigned: true,
+        waiverSignature: signature,
+        waiverSignatureId: signatureId,
+      },
     });
   }
 
@@ -183,10 +231,10 @@ export default function LaserWaiver() {
 
       <button
         className="laser-waiver-finish"
-        disabled={!approved}
+        disabled={!approved || submitting}
         onClick={handleContinueToCheckout}
       >
-        {approved ? "Continue to checkout" : "Waiting for staff approval"}
+        {submitting ? "Saving waiver…" : approved ? "Continue to checkout" : "Waiting for staff approval"}
       </button>
     </div>
   );

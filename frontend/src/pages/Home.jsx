@@ -9,8 +9,6 @@ export default function Home() {
     <div className="bigdiv">
       <div className="secondDiv">
         <div className="NavBar">
-          <p className="logo">The Collaboratory</p>
-
           <div className="links">
             <Link to="/" className="nav-link active">Home</Link>
             <Link to="/pricing" className="nav-link">Pricing</Link>

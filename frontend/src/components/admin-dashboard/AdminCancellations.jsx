@@ -171,7 +171,7 @@ export default function AdminCancellations() {
   return (
     <div className="DashHome1">
       <div className="Dash2">
-        <p className="admin-page-title">Cancellation Requests</p>
+        <h1 className="admin-page-title">Cancellation Requests</h1>
       </div>
 
       {error && <p style={{ color: "red" }}>{error}</p>}

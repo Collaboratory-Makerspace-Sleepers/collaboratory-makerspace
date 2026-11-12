@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { confirmCheckout } from "../hooks/confirmCheckout";
 
 const PENDING_RESERVATION_KEY = "pendingReservationAfterPayment";
 const PENDING_RESERVATION_TTL_MS = 2 * 60 * 60 * 1000;
@@ -20,7 +21,7 @@ const CONTENT = {
   membership: {
     title: "Membership activated",
     subtitle:
-      "Your membership is being activated. It may take a moment to reflect — check your membership page in a few seconds.",
+      "Your membership and payment history have been synchronized.",
     link: "/dashboard/membership",
     label: "View membership",
   },
@@ -115,31 +116,13 @@ function CompletePaidBooking({ reservation, type, stripeSessionId }) {
   const operation = useRef(null);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
+  const [confirmed, setConfirmed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     async function complete() {
-      if (type === "daypass") {
-        const payment = await authFetch("/api/v1/billing/me/payments/sync", {
-          method: "POST",
-          signal: AbortSignal.timeout(30000),
-        });
-        if (!payment.ok) {
-          const body = await payment.json().catch(() => ({}));
-          throw new Error(body.message || "Could not verify your day pass. Do not pay again; retry confirmation.");
-        }
-      }
-      if (type === "membership") {
-        const membership = await authFetch("/api/v1/billing/checkout-session/confirm-membership", {
-          method: "POST",
-          body: JSON.stringify({ sessionId: stripeSessionId }),
-          signal: AbortSignal.timeout(30000),
-        });
-        if (!membership.ok) {
-          const body = await membership.json().catch(() => ({}));
-          throw new Error(body.message || "Membership activation could not be verified. Do not pay again.");
-        }
-      }
+      await confirmCheckout(authFetch, type, stripeSessionId);
+      if (!reservation) return;
       const response = await authFetch("/api/v1/reservations", {
         method: "POST",
         signal: AbortSignal.timeout(30000),
@@ -161,7 +144,10 @@ function CompletePaidBooking({ reservation, type, stripeSessionId }) {
     }
     if (!operation.current) operation.current = complete();
     operation.current.then(() => {
-      if (!cancelled) navigate("/dashboard/reservations", { replace: true });
+      if (!cancelled) {
+        if (reservation) navigate("/dashboard/reservations", { replace: true });
+        else setConfirmed(true);
+      }
     }).catch((err) => {
       if (!cancelled) setError(err.name === "TimeoutError"
         ? "Confirmation timed out. Retry confirmation without paying again."
@@ -170,9 +156,23 @@ function CompletePaidBooking({ reservation, type, stripeSessionId }) {
     return () => { cancelled = true; };
   }, [authFetch, navigate, reservation, type, stripeSessionId, attempt]);
 
+  if (confirmed) {
+    const content = CONTENT[type];
+    return (
+      <div className="DashHome1">
+        <h1>{content.title}</h1>
+        <p>{content.subtitle}</p>
+        <Link to={content.link}>{content.label}</Link>
+        <p><Link to="/dashboard/billing-history">View payment and receipt</Link></p>
+        <p><Link to="/dashboard/payment-methods">View saved cards</Link></p>
+      </div>
+    );
+  }
+
   return (
     <div className="DashHome1">
-      <h1>{error ? "Reservation needs attention" : "Finalizing your reservation..."}</h1>
+      <h1>{error ? (reservation ? "Reservation needs attention" : "Payment confirmation needs attention")
+        : (reservation ? "Finalizing your reservation..." : "Confirming your checkout...")}</h1>
       {error ? (
         <>
           <p role="alert">{error}</p>
@@ -182,11 +182,13 @@ function CompletePaidBooking({ reservation, type, stripeSessionId }) {
             setAttempt((value) => value + 1);
           }}>Retry confirmation</button>
           <Link to="/dashboard/billing-history">View payment and receipt</Link>
-          <Link to={`/dashboard/rentequipment/${reservation.equipmentId}/waiver`} state={reservation}>
+          {reservation && <Link to={`/dashboard/rentequipment/${reservation.equipmentId}/waiver`} state={reservation}>
             Review waiver
-          </Link>
+          </Link>}
         </>
-      ) : <p role="status">Verifying payment and booking {reservation.equipmentName}. Please wait.</p>}
+      ) : <p role="status">{reservation
+        ? `Verifying payment and booking ${reservation.equipmentName}. Please wait.`
+        : "Verifying checkout and updating your account. Please wait."}</p>}
     </div>
   );
 }
@@ -209,8 +211,9 @@ export default function BillingSuccess() {
     );
   }
 
-  if (pendingReservation) {
-    return <CompletePaidBooking reservation={pendingReservation} type={type} stripeSessionId={stripeSessionId} />;
+  if (["membership", "daypass", "setup"].includes(type)) {
+    return <CompletePaidBooking key={`${type}:${stripeSessionId ?? "legacy"}`}
+      reservation={pendingReservation} type={type} stripeSessionId={stripeSessionId} />;
   }
   const content = CONTENT[type] ?? {
         title: "Payment received",

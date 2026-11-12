@@ -61,7 +61,8 @@ public class ReservationService {
 
         if (!membershipService.hasActiveMembership(userId) && !hasRecentDayPass(userId)) {
             throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED,
-                    "An active membership is required to reserve equipment");
+                    "An active membership or a paid day pass from the last 24 hours is required. "
+                            + "If you just paid, refresh payment confirmation; do not pay again.");
         }
 
         Equipment equipment = equipmentRepository.findById(equipmentId)

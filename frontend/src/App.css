@@ -1025,6 +1025,24 @@ p {
   margin-top: auto;
 }
 
+.my-reservations .Dash5 button {
+  background-color: #ffffff;
+  color: #450b00;
+  border-color: #895b50;
+}
+
+.my-reservations .Dash5 button:hover:not(:disabled) {
+  background-color: #fff0e5;
+  border-color: #450b00;
+}
+
+.my-reservations .Dash5 button:disabled {
+  background-color: #e7e7e7;
+  color: #595959;
+  border-color: #b7b7b7;
+  cursor: not-allowed;
+}
+
 .my-reservations .reservation-grid .CalendarWrap {
   width: 100%;
   max-width: none;

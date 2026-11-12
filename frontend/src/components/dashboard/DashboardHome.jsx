@@ -44,8 +44,6 @@ export default function DashboardHome() {
         </p>
       </div>
 
-      <WaiverStatusPanel />
-
       <div className="Dash3">
         <p>Upcoming Reservations</p>
         {loading && <p>Loading…</p>}
@@ -66,6 +64,8 @@ export default function DashboardHome() {
             </div>
           ))}
       </div>
+
+      <WaiverStatusPanel />
 
         <TrainingTasks />
 

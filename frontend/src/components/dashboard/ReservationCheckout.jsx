@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { confirmCheckout } from "../../hooks/confirmCheckout";
 
 const PENDING_RESERVATION_KEY = "pendingReservationAfterPayment";
 const PENDING_RESERVATION_TTL_MS = 2 * 60 * 60 * 1000;
@@ -28,6 +29,7 @@ export default function ReservationCheckout() {
   const [errorMsg, setErrorMsg] = useState("");
   const [daypassLoading, setDaypassLoading] = useState(false);
   const [waiverError, setWaiverError] = useState(false);
+  const [saveCard, setSaveCard] = useState(true);
 
   if (!state?.equipmentId) {
     navigate("/dashboard/rentequipment", { replace: true });
@@ -65,19 +67,8 @@ export default function ReservationCheckout() {
       });
       let res = await create();
       if (res.status === 402) {
-        const membershipRes = await authFetch("/api/v1/billing/checkout-session/confirm-membership", {
-          method: "POST",
-          signal: AbortSignal.timeout(30000),
-          body: JSON.stringify({ sessionId: membershipCheckoutSessionId ?? null }),
-        });
-        if (membershipRes.status === 402) {
-          setStatus("needs_membership");
-          return;
-        }
-        if (!membershipRes.ok) {
-          const body = await membershipRes.json().catch(() => ({}));
-          throw new Error(body.message || "Could not verify your membership payment.");
-        }
+        await confirmCheckout(authFetch, "membership", membershipCheckoutSessionId);
+        await confirmCheckout(authFetch, "daypass", null);
         res = await create();
       }
 
@@ -117,7 +108,7 @@ export default function ReservationCheckout() {
       }));
       const res = await authFetch("/api/v1/billing/checkout-session", {
         method: "POST",
-        body: JSON.stringify({ planCode: "DAY_PASS", saveCard: false }),
+        body: JSON.stringify({ planCode: "DAY_PASS", saveCard }),
       });
       if (!res.ok) {
         sessionStorage.removeItem(PENDING_RESERVATION_KEY);
@@ -178,8 +169,13 @@ export default function ReservationCheckout() {
       {status === "needs_membership" ? (
         <div className="Dash3">
           <div className="Dash4">
-            <p>You don't have an active membership.</p>
+            <p>No active membership or day pass was found after checking your payments.</p>
+            <p>The day pass costs $25 for 24 hours of access. The waiver itself is free.</p>
             <p>Members reserve equipment at the member rate.</p>
+            <label>
+              <input type="checkbox" checked={saveCard} onChange={(event) => setSaveCard(event.target.checked)} />
+              Save this card securely with Stripe for future payments
+            </label>
           </div>
           {errorMsg && <p style={{ color: "red" }}>{errorMsg}</p>}
           <div className="Dash5 checkout-actions">
@@ -200,7 +196,7 @@ export default function ReservationCheckout() {
               onClick={handleDayPass}
               disabled={daypassLoading}
             >
-              {daypassLoading ? "Redirecting to payment…" : `Pay ${priceLabel} (day pass)`}
+              {daypassLoading ? "Redirecting to payment…" : "Buy day pass ($25)"}
             </button>
           </div>
         </div>

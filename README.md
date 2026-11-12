@@ -105,6 +105,17 @@ immediately without a prorated refund, with the cheaper price at next renewal.
 Confirmed Stripe plan changes and cancellations update the local membership
 record directly rather than depending on webhook delivery.
 
+Stripe returns now include the checkout session ID for day passes and saved-card
+setup as well as subscriptions. The authenticated confirmation endpoint verifies
+ownership and payment, saves the specific paid checkout and receipt, then allows
+booking. Legacy return links and manual reservation retries reconcile saved
+payments before requesting another purchase. Day passes expire 24 hours after
+the actual charge; a signed waiver alone is not a payment or membership.
+Reservation day-pass checkout offers a visible Save card option. Consented cards
+are vaulted by Stripe and set as the default after confirmation. The dashboard
+shows only brand, last four digits, and expiry. Previously unsaved cards can be
+added through Payment Methods without buying another pass.
+
 ### Documentation
 
 - [`STATE.md`](backend/STATE.md) — detailed architecture reference: package structure, auth flow, access control matrix, caching, known issues

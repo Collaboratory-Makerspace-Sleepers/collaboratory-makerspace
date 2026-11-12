@@ -11,6 +11,7 @@ export default function PaymentMethods() {
 
   const loadMethods = useCallback(() => {
     setLoading(true);
+    setError("");
     authFetch("/api/v1/billing/payment-methods")
       .then((res) => {
         if (!res.ok) throw new Error();
@@ -20,7 +21,12 @@ export default function PaymentMethods() {
       .catch(() => { setError("Could not load payment methods."); setLoading(false); });
   }, [authFetch]);
 
-  useEffect(() => { loadMethods(); }, [loadMethods]);
+  useEffect(() => {
+    loadMethods();
+    const onVisible = () => { if (!document.hidden) loadMethods(); };
+    window.addEventListener("focus", onVisible);
+    return () => window.removeEventListener("focus", onVisible);
+  }, [loadMethods]);
 
   async function handleAddCard() {
     setActionError("");
@@ -69,6 +75,8 @@ export default function PaymentMethods() {
       <div className="Dash2">
         <p>Payment Methods</p>
         <p>Manage your saved cards.</p>
+        <p>Cards are stored securely with Stripe. Only masked card details appear here.
+          A card used without selecting Save card is not automatically saved.</p>
       </div>
 
       {error && <p>{error}</p>}
@@ -83,7 +91,7 @@ export default function PaymentMethods() {
               {pm.brand.toUpperCase()} •••• {pm.last4} — expires {pm.expMonth}/{pm.expYear}
               {pm.isDefault && " (Default)"}
             </p>
-            <div className="Dash5">
+            <div className="Dash5 checkout-actions">
               {!pm.isDefault && (
                 <button
                   onClick={() => handleSetDefault(pm.id)}
@@ -103,9 +111,12 @@ export default function PaymentMethods() {
         ))}
       </div>
 
-      <button onClick={handleAddCard} disabled={busy === "setup"}>
-        {busy === "setup" ? "Opening…" : "Add a card"}
-      </button>
+      <div className="Dash5 checkout-actions">
+        <button onClick={handleAddCard} disabled={busy === "setup"}>
+          {busy === "setup" ? "Opening…" : "Add a card"}
+        </button>
+        <button onClick={loadMethods} disabled={loading}>Refresh cards</button>
+      </div>
     </div>
   );
 }

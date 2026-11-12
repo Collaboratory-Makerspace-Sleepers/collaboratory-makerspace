@@ -70,19 +70,39 @@ public class PaymentHistoryService {
         for (Session session : sessions.autoPagingIterable()) {
             if (!"payment".equals(session.getMode()) || !"paid".equals(session.getPaymentStatus())
                     || session.getPaymentIntent() == null) continue;
-            PaymentRecord record = findRecord(user, session.getPaymentIntent(), session.getInvoice());
-            boolean isClass = (session.getMetadata() != null
-                    && "CLASS".equals(session.getMetadata().get("kind")))
-                    || (session.getSuccessUrl() != null && session.getSuccessUrl().contains("type=class"));
-            record.setKind(isClass ? PaymentKind.CLASS : PaymentKind.DAY_PASS);
-            record.setDescription(isClass ? "Class booking" : "Day pass");
-            record.setAmountCents(Math.toIntExact(session.getAmountTotal()));
-            record.setCurrency(session.getCurrency());
-            record.setOccurredAt(Instant.ofEpochSecond(session.getCreated()).atZone(ZoneOffset.UTC));
-            record.setStatus(PaymentStatus.SUCCEEDED);
-            populateCharge(record, session.getPaymentIntent(), user);
-            paymentRepository.save(record);
+            saveCheckout(user, session);
         }
+    }
+
+    @Transactional
+    public void confirmCheckout(Long userId, String sessionId) throws StripeException {
+        User user = userRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        Session session = stripeClient.v1().checkout().sessions().retrieve(sessionId);
+        if (user.getStripeCustomerId() == null
+                || !user.getStripeCustomerId().equals(session.getCustomer())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Checkout belongs to another account");
+        }
+        if (!"complete".equals(session.getStatus()) || !"paid".equals(session.getPaymentStatus())
+                || !"payment".equals(session.getMode()) || session.getPaymentIntent() == null) {
+            throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED, "Checkout payment is not complete");
+        }
+        saveCheckout(user, session);
+    }
+
+    private void saveCheckout(User user, Session session) throws StripeException {
+        PaymentRecord record = findRecord(user, session.getPaymentIntent(), session.getInvoice());
+        boolean isClass = (session.getMetadata() != null
+                && "CLASS".equals(session.getMetadata().get("kind")))
+                || (session.getSuccessUrl() != null && session.getSuccessUrl().contains("type=class"));
+        record.setKind(isClass ? PaymentKind.CLASS : PaymentKind.DAY_PASS);
+        record.setDescription(isClass ? "Class booking" : "Day pass");
+        record.setAmountCents(Math.toIntExact(session.getAmountTotal()));
+        record.setCurrency(session.getCurrency());
+        record.setOccurredAt(Instant.ofEpochSecond(session.getCreated()).atZone(ZoneOffset.UTC));
+        record.setStatus(PaymentStatus.SUCCEEDED);
+        populateCharge(record, session.getPaymentIntent(), user);
+        paymentRepository.save(record);
     }
 
     private PaymentRecord findRecord(User user, String paymentIntentId, String invoiceId) {
@@ -109,6 +129,9 @@ public class PaymentHistoryService {
         }
         if (intent.getLatestCharge() == null) return;
         Charge charge = stripeClient.v1().charges().retrieve(intent.getLatestCharge());
+        if (charge.getCreated() != null) {
+            record.setOccurredAt(Instant.ofEpochSecond(charge.getCreated()).atZone(ZoneOffset.UTC));
+        }
         record.setStripeChargeId(charge.getId());
         if (charge.getReceiptUrl() != null) record.setReceiptUrl(charge.getReceiptUrl());
         if (Boolean.TRUE.equals(charge.getRefunded())) record.setStatus(PaymentStatus.REFUNDED);

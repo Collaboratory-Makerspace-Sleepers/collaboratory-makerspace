@@ -55,6 +55,21 @@ public class BillingController {
             log.error("Stripe error confirming membership checkout for user {}: {}", userId, e.getMessage());
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Payment provider error");
         }
+
+    }
+
+    @PostMapping("/checkout-session/confirm")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void confirmCheckout(
+            @Valid @RequestBody CheckoutSessionConfirmationRequest req, Authentication auth) {
+        Long userId = userSecurity.getUserId(auth);
+        try {
+            billingService.confirmCheckout(userId, req.sessionId());
+        } catch (StripeException e) {
+            log.error("Stripe error confirming checkout for user {}: {}", userId, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Could not verify checkout. Do not pay again; retry confirmation.");
+        }
     }
 
     @PostMapping("/portal-session")

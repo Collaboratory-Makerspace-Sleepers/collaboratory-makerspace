@@ -123,13 +123,16 @@ public class BillingService {
                 : SessionCreateParams.Mode.SUBSCRIPTION;
 
         String typedSuccessUrl = successUrl + (mode == SessionCreateParams.Mode.SUBSCRIPTION
-                ? "?type=membership&session_id={CHECKOUT_SESSION_ID}" : "?type=daypass");
+                ? "?type=membership&session_id={CHECKOUT_SESSION_ID}"
+                : "?type=daypass&session_id={CHECKOUT_SESSION_ID}");
 
         SessionCreateParams.Builder sessionBuilder = SessionCreateParams.builder()
                 .setCustomer(stripeCustomerId)
                 .setMode(mode)
                 .setSuccessUrl(typedSuccessUrl)
                 .setCancelUrl(cancelUrl)
+                .putMetadata("kind", mode == SessionCreateParams.Mode.SUBSCRIPTION ? "MEMBERSHIP" : "DAY_PASS")
+                .putMetadata("saveCard", Boolean.toString(saveCard))
                 .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
                 .addLineItem(lineItem);
 
@@ -146,6 +149,49 @@ public class BillingService {
         Session session = stripeClient.v1().checkout().sessions().create(sessionBuilder.build());
 
         return session.getUrl();
+    }
+
+    public void confirmCheckout(Long userId, String sessionId) throws StripeException {
+        if (sessionId == null || sessionId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Checkout session is required");
+        }
+        User user = userRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        Session session = stripeClient.v1().checkout().sessions().retrieve(sessionId);
+        if (user.getStripeCustomerId() == null
+                || !user.getStripeCustomerId().equals(session.getCustomer())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Checkout belongs to another account");
+        }
+        if (!"complete".equals(session.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED, "Checkout is not complete");
+        }
+        switch (session.getMode()) {
+            case "payment" -> paymentHistoryService.confirmCheckout(userId, sessionId);
+            case "subscription" -> {
+                confirmMembershipCheckout(userId, sessionId);
+                paymentHistoryService.synchronize(userId);
+            }
+            case "setup" -> {
+                if (session.getSetupIntent() == null) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Card setup is not available");
+                }
+                var setup = stripeClient.v1().setupIntents().retrieve(session.getSetupIntent());
+                if (!user.getStripeCustomerId().equals(setup.getCustomer())
+                        || !"succeeded".equals(setup.getStatus()) || setup.getPaymentMethod() == null) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Card setup could not be verified");
+                }
+                setDefaultPaymentMethod(userId, setup.getPaymentMethod());
+            }
+            default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported checkout mode");
+        }
+        if ("payment".equals(session.getMode()) && session.getMetadata() != null
+                && "true".equals(session.getMetadata().get("saveCard"))) {
+            var intent = stripeClient.v1().paymentIntents().retrieve(session.getPaymentIntent());
+            if (!user.getStripeCustomerId().equals(intent.getCustomer()) || intent.getPaymentMethod() == null) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Saved card could not be verified");
+            }
+            setDefaultPaymentMethod(userId, intent.getPaymentMethod());
+        }
     }
 
     public MembershipDTO confirmMembershipCheckout(Long userId, String stripeSessionId)
@@ -354,7 +400,7 @@ public class BillingService {
                 .setMode(SessionCreateParams.Mode.SETUP)
                 .setCustomer(stripeCustomerId)
                 .setCurrency("usd")
-                .setSuccessUrl(successUrl + "?type=setup")
+                .setSuccessUrl(successUrl + "?type=setup&session_id={CHECKOUT_SESSION_ID}")
                 .setCancelUrl(cancelUrl)
                 .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
                 .build();

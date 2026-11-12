@@ -6,10 +6,13 @@ import com.makerspace.backend.repository.ReservationRepository;
 import com.makerspace.backend.repository.TrainingCompletionRepository;
 import com.makerspace.backend.repository.TrainingWaiverSignatureRepository;
 import com.makerspace.backend.repository.UserRepository;
+import com.makerspace.backend.repository.PaymentRecordRepository;
 import com.makerspace.backend.services.MembershipService;
 import com.makerspace.backend.services.ReservationService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -35,6 +38,7 @@ class ReservationServiceTest {
     @Mock private MembershipService membershipService;
     @Mock private TrainingCompletionRepository trainingCompletionRepository;
     @Mock private TrainingWaiverSignatureRepository waiverSignatureRepository;
+    @Mock private PaymentRecordRepository paymentRecordRepository;
 
     @InjectMocks
     private ReservationService reservationService;
@@ -96,7 +100,7 @@ class ReservationServiceTest {
     void create_throws400_whenWaiverNotFound() {
         when(membershipService.hasActiveMembership(1L)).thenReturn(true);
         when(equipmentRepository.findById(1L)).thenReturn(Optional.of(activeEquipment()));
-        when(waiverSignatureRepository.findByIdAndUserIdAndEquipmentIdAndReservationIdIsNull(
+        when(waiverSignatureRepository.findForBooking(
                 WAIVER_ID, 1L, 1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> reservationService.create(1L, 1L, START, END, WAIVER_ID))
@@ -114,7 +118,7 @@ class ReservationServiceTest {
 
         when(membershipService.hasActiveMembership(1L)).thenReturn(true);
         when(equipmentRepository.findById(1L)).thenReturn(Optional.of(equipment));
-        when(waiverSignatureRepository.findByIdAndUserIdAndEquipmentIdAndReservationIdIsNull(
+        when(waiverSignatureRepository.findForBooking(
                 WAIVER_ID, 1L, 1L)).thenReturn(Optional.of(staleWaiver));
 
         assertThatThrownBy(() -> reservationService.create(1L, 1L, START, END, WAIVER_ID))
@@ -130,7 +134,7 @@ class ReservationServiceTest {
 
         when(membershipService.hasActiveMembership(1L)).thenReturn(true);
         when(equipmentRepository.findById(1L)).thenReturn(Optional.of(equipment));
-        when(waiverSignatureRepository.findByIdAndUserIdAndEquipmentIdAndReservationIdIsNull(
+        when(waiverSignatureRepository.findForBooking(
                 WAIVER_ID, 1L, 1L)).thenReturn(Optional.of(expiredWaiver));
 
         assertThatThrownBy(() -> reservationService.create(1L, 1L, START, END, WAIVER_ID))
@@ -138,12 +142,20 @@ class ReservationServiceTest {
                 .hasMessageContaining("expired");
     }
 
-    @Test
-    void create_succeeds_withActiveMembership() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void create_succeeds_withActiveMembershipOrPaidDayPass(boolean activeMembership) {
         Equipment equipment = activeEquipment();
-        when(membershipService.hasActiveMembership(1L)).thenReturn(true);
+        when(membershipService.hasActiveMembership(1L)).thenReturn(activeMembership);
+        if (!activeMembership) {
+            PaymentRecord pass = new PaymentRecord();
+            pass.setKind(PaymentKind.DAY_PASS);
+            pass.setStatus(PaymentStatus.SUCCEEDED);
+            pass.setOccurredAt(ZonedDateTime.now().minusMinutes(1));
+            when(paymentRecordRepository.findByUserIdOrderByOccurredAtDesc(1L)).thenReturn(List.of(pass));
+        }
         when(equipmentRepository.findById(1L)).thenReturn(Optional.of(equipment));
-        when(waiverSignatureRepository.findByIdAndUserIdAndEquipmentIdAndReservationIdIsNull(
+        when(waiverSignatureRepository.findForBooking(
                 WAIVER_ID, 1L, 1L)).thenReturn(Optional.of(freshWaiver(equipment)));
         when(reservationRepository.findOverlappingByStatuses(any(), any(), any(), any(), any()))
                 .thenReturn(List.of());
@@ -162,7 +174,7 @@ class ReservationServiceTest {
         Equipment equipment = trainingEquipment();
         when(membershipService.hasActiveMembership(1L)).thenReturn(true);
         when(equipmentRepository.findById(1L)).thenReturn(Optional.of(equipment));
-        when(waiverSignatureRepository.findByIdAndUserIdAndEquipmentIdAndReservationIdIsNull(
+        when(waiverSignatureRepository.findForBooking(
                 WAIVER_ID, 1L, 1L)).thenReturn(Optional.of(freshWaiver(equipment)));
         when(trainingCompletionRepository.existsByUserIdAndEquipmentId(1L, 1L)).thenReturn(false);
         when(reservationRepository.findOverlappingByStatuses(any(), any(), any(), any(), any()))
@@ -181,7 +193,7 @@ class ReservationServiceTest {
         Equipment equipment = trainingEquipment();
         when(membershipService.hasActiveMembership(1L)).thenReturn(true);
         when(equipmentRepository.findById(1L)).thenReturn(Optional.of(equipment));
-        when(waiverSignatureRepository.findByIdAndUserIdAndEquipmentIdAndReservationIdIsNull(
+        when(waiverSignatureRepository.findForBooking(
                 WAIVER_ID, 1L, 1L)).thenReturn(Optional.of(freshWaiver(equipment)));
         when(trainingCompletionRepository.existsByUserIdAndEquipmentId(1L, 1L)).thenReturn(true);
         when(reservationRepository.findOverlappingByStatuses(any(), any(), any(), any(), any()))

@@ -72,6 +72,42 @@ class PaymentHistoryServiceTest {
     }
 
     @Test
+    void confirmsExactPaidCheckoutWithoutScanningHistoryAndUsesActualChargeTime() throws Exception {
+        Session session = new Session();
+        session.setCustomer("cus_test");
+        session.setMode("payment");
+        session.setStatus("complete");
+        session.setPaymentStatus("paid");
+        session.setPaymentIntent("pi_today");
+        session.setAmountTotal(2500L);
+        session.setCurrency("usd");
+        session.setCreated(1700000000L);
+        PaymentIntent intent = new PaymentIntent();
+        intent.setCustomer("cus_test");
+        intent.setLatestCharge("ch_today");
+        Charge charge = new Charge();
+        charge.setId("ch_today");
+        charge.setCreated(1700003600L);
+        charge.setReceiptUrl("https://pay.stripe.com/receipts/today");
+        when(stripe.v1().checkout().sessions().retrieve("cs_today")).thenReturn(session);
+        when(stripe.v1().paymentIntents().retrieve("pi_today")).thenReturn(intent);
+        when(stripe.v1().charges().retrieve("ch_today")).thenReturn(charge);
+
+        service.confirmCheckout(1L, "cs_today");
+        service.confirmCheckout(1L, "cs_today");
+
+        assertEquals(1, saved.size());
+        assertEquals(PaymentKind.DAY_PASS, saved.get("pi_today").getKind());
+        assertEquals(1700003600L, saved.get("pi_today").getOccurredAt().toEpochSecond());
+        assertEquals(charge.getReceiptUrl(), saved.get("pi_today").getReceiptUrl());
+        session.setCustomer("cus_other");
+        assertThrows(ResponseStatusException.class, () -> service.confirmCheckout(1L, "cs_today"));
+        session.setCustomer("cus_test");
+        session.setPaymentStatus("unpaid");
+        assertThrows(ResponseStatusException.class, () -> service.confirmCheckout(1L, "cs_today"));
+    }
+
+    @Test
     void paidInvoiceHasReceiptAndRepeatedSyncDoesNotDuplicateIt() throws Exception {
         Invoice invoice = new Invoice();
         invoice.setId("in_test");

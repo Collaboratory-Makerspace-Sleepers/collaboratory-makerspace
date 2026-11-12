@@ -233,9 +233,6 @@ public class ClassSessionService {
         if (membershipService.hasMachineRateWaiver(userId)) {
             return session.getPriceCents() / 2;
         }
-        if (membershipService.hasActiveMembership(userId)) {
-            return session.getMemberPriceCents();
-        }
         return session.getPriceCents();
     }
 

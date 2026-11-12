@@ -118,9 +118,8 @@ public class ReservationService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        boolean isMember = membershipService.hasActiveMembership(userId);
         boolean isStudioMember = membershipService.hasMachineRateWaiver(userId);
-        int quotedRate = resolveRate(equipment, isMember, isStudioMember);
+        int quotedRate = resolveRate(equipment, isStudioMember);
         long durationMinutes = Duration.between(startTime, endTime).toMinutes();
         int estimatedCost = Math.round((float) quotedRate * durationMinutes / 60);
 
@@ -321,12 +320,10 @@ public class ReservationService {
      *
      * Priority:
      *  1. Studio members (active studio_assignment) → 0 (all machines free)
-     *  2. Active members booking CLASS equipment → 50% off
-     *  3. Everyone else → hourly_rate_cents
+     *  2. Everyone else → hourly_rate_cents
      */
-    private int resolveRate(Equipment equipment, boolean isMember, boolean isStudioMember) {
+    private int resolveRate(Equipment equipment, boolean isStudioMember) {
         if (isStudioMember) return 0;
-        if (isMember && "CLASS".equals(equipment.getCategory())) return equipment.getHourlyRateCents() / 2;
         return equipment.getHourlyRateCents();
     }
 

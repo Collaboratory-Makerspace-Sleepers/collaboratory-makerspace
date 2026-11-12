@@ -122,7 +122,13 @@ public class StripeEventService {
                  "checkout.session.async_payment_failed",
                  "charge.dispute.created",
                  "payment_intent.payment_failed",
-                 "customer.deleted" -> {
+                 "customer.deleted",
+                 // Fired by Stripe for every product/price created or updated via API
+                 "product.created", "product.updated", "product.deleted",
+                 "price.created",   "price.updated",
+                 // Routine charge/payment lifecycle — no action needed at this layer
+                 "payment_intent.created", "payment_intent.succeeded",
+                 "charge.succeeded", "charge.updated" -> {
                 log.info("Stripe event {} type {} received, handler pending Phase 3",
                         cmd.eventId(), cmd.type());
                 yield EventOutcome.PROCESSED;

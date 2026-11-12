@@ -90,5 +90,8 @@ public class Equipment {
     @Column(name = "current_waiver_version", nullable = false)
     private int currentWaiverVersion = 1;
 
+    @Column(name = "stripe_product_id", length = 255)
+    private String stripeProductId;
+
 }
 

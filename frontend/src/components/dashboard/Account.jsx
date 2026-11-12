@@ -9,7 +9,7 @@ import {
 } from "../../hooks/useDashboard";
 
 export default function Account() {
-  const { authFetch } = useAuth();
+  const { authFetch, setToken } = useAuth();
   const { user, reservations, loading, error } = useDashboard();
 
   const [plan, setPlan] = useState(null);
@@ -18,6 +18,8 @@ export default function Account() {
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   // Populate form once user loads
   useEffect(() => {
@@ -38,6 +40,19 @@ export default function Account() {
       .catch(() => {});
     return () => { cancelled = true; };
   }, [authFetch]);
+
+  async function handleDeleteAccount() {
+    try {
+      const res = await authFetch(`/api/v1/users/${user.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Could not delete account");
+      }
+      setToken(null);
+    } catch (err) {
+      setDeleteError(err.message || "Something went wrong.");
+    }
+  }
 
   async function handleUpdate(e) {
     e.preventDefault();
@@ -130,6 +145,23 @@ export default function Account() {
               {saveLoading ? "Saving…" : "Update Information"}
             </button>
           </form>
+        </div>
+
+        <div className="AccountD3">
+          <p>Delete Account</p>
+          <p>Permanently delete your account and remove all access.</p>
+          {!confirmDelete ? (
+            <button type="button" onClick={() => setConfirmDelete(true)}>
+              Delete Account
+            </button>
+          ) : (
+            <div>
+              <p>Are you sure? This cannot be undone.</p>
+              {deleteError && <p style={{ color: "red" }}>{deleteError}</p>}
+              <button type="button" onClick={handleDeleteAccount}>Yes, delete my account</button>
+              <button type="button" onClick={() => setConfirmDelete(false)}>Cancel</button>
+            </div>
+          )}
         </div>
       </div>
     </div>

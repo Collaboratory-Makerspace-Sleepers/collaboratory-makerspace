@@ -4,13 +4,17 @@ import com.makerspace.backend.controller.dto.CursorResponse;
 import com.makerspace.backend.controller.dto.StripeEventCommand;
 import com.makerspace.backend.controller.dto.SweepRequest;
 import com.makerspace.backend.model.EventOutcome;
+import com.makerspace.backend.model.SubscriptionAuditMismatch;
 import com.makerspace.backend.repository.StripeEventLogRepository;
+import com.makerspace.backend.repository.SubscriptionAuditMismatchRepository;
 import com.makerspace.backend.services.MembershipService;
 import com.makerspace.backend.services.StripeEventService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 import java.time.ZonedDateTime;
 
@@ -30,6 +34,7 @@ public class InternalBillingController {
     @Autowired private StripeEventService stripeEventService;
     @Autowired private MembershipService membershipService;
     @Autowired private StripeEventLogRepository eventLogRepository;
+    @Autowired private SubscriptionAuditMismatchRepository auditMismatchRepository;
 
     /**
      * Ingest a Stripe event forwarded by the Lambda consumer.
@@ -65,5 +70,16 @@ public class InternalBillingController {
     @GetMapping("/cursor")
     public CursorResponse cursor() {
         return new CursorResponse(eventLogRepository.findMaxReceivedAt().orElse(null));
+    }
+
+    @GetMapping("/audit/mismatches")
+    public List<SubscriptionAuditMismatch> getMismatches() {
+        return auditMismatchRepository.findByResolvedFalseOrderByAuditRunAtDesc();
+    }
+
+    @PostMapping("/audit/mismatches/{id}/resolve")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resolveMismatch(@PathVariable Long id) {
+        auditMismatchRepository.resolve(id, ZonedDateTime.now());
     }
 }

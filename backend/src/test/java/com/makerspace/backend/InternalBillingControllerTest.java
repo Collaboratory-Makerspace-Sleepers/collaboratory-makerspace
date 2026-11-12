@@ -7,6 +7,7 @@ import com.makerspace.backend.controller.InternalBillingController;
 import com.makerspace.backend.controller.dto.StripeEventCommand;
 import com.makerspace.backend.model.EventOutcome;
 import com.makerspace.backend.repository.StripeEventLogRepository;
+import com.makerspace.backend.repository.SubscriptionAuditMismatchRepository;
 import com.makerspace.backend.security.OAuth2FailureHandler;
 import com.makerspace.backend.security.OAuth2SuccessHandler;
 import com.makerspace.backend.services.JwtService;
@@ -55,6 +56,7 @@ class InternalBillingControllerTest {
     @MockBean StripeEventService stripeEventService;
     @MockBean MembershipService membershipService;
     @MockBean StripeEventLogRepository eventLogRepository;
+    @MockBean SubscriptionAuditMismatchRepository auditMismatchRepository;
     @MockBean JwtService jwtService;
     @MockBean UserStateService userStateService;
     @MockBean UserPermissionService userPermissionService;

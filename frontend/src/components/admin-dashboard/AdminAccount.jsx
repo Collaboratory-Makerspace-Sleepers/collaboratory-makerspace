@@ -54,7 +54,6 @@ function Field({ id, label, type = "text", value, onChange, placeholder, autoCom
 
 export default function AdminAccount({
   initialAvatar = DEFAULT_AVATAR,
-  onUpdatePassword = (passwords) => console.log("Update password", passwords),
   onDeleteAccount = () => console.log("Delete account"),
 }) {
   const { user, authFetch } = useAuth();
@@ -74,9 +73,6 @@ export default function AdminAccount({
       });
     }
   }, [user]);
-  const [passwords, setPasswords] = useState({ current: "", next: "", confirm: "" });
-  const [passwordError, setPasswordError] = useState("");
- 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
     e.target.value = ""; // allow picking the same file again
@@ -98,9 +94,6 @@ export default function AdminAccount({
   const handleProfileChange = (key) => (e) =>
     setProfile((prev) => ({ ...prev, [key]: e.target.value }));
  
-  const handlePasswordChange = (key) => (e) =>
-    setPasswords((prev) => ({ ...prev, [key]: e.target.value }));
- 
   const submitProfile = async (e) => {
     e.preventDefault();
     setProfileStatus({ type: "", message: "" });
@@ -117,21 +110,6 @@ export default function AdminAccount({
     } catch (err) {
       setProfileStatus({ type: "error", message: err.message || "Something went wrong." });
     }
-  };
- 
-  const submitPassword = (e) => {
-    e.preventDefault();
-    if (!passwords.current || !passwords.next) {
-      setPasswordError("Enter your current and new password.");
-      return;
-    }
-    if (passwords.next !== passwords.confirm) {
-      setPasswordError("New passwords don't match.");
-      return;
-    }
-    setPasswordError("");
-    onUpdatePassword({ current: passwords.current, next: passwords.next });
-    setPasswords({ current: "", next: "", confirm: "" });
   };
  
   const handleDelete = () => {
@@ -229,48 +207,6 @@ export default function AdminAccount({
           </button>
         </form>
  
-        <form className="card" onSubmit={submitPassword}>
-          <h2 className="card__title">Account Security</h2>
-          <p className="card__subtitle">Account Password and security measures</p>
- 
-          <Field
-            id="currentPassword"
-            label="Current Password"
-            type="password"
-            value={passwords.current}
-            onChange={handlePasswordChange("current")}
-            placeholder="••••••••"
-            autoComplete="current-password"
-          />
-          <Field
-            id="newPassword"
-            label="New Password"
-            type="password"
-            value={passwords.next}
-            onChange={handlePasswordChange("next")}
-            placeholder="••••••••"
-            autoComplete="new-password"
-          />
-          <Field
-            id="confirmPassword"
-            label="Confirm New Password"
-            type="password"
-            value={passwords.confirm}
-            onChange={handlePasswordChange("confirm")}
-            placeholder="••••••••"
-            autoComplete="new-password"
-          />
- 
-          {passwordError && (
-            <p className="card__error" role="alert">
-              {passwordError}
-            </p>
-          )}
- 
-          <button type="submit" className="btn btn--outline btn--block">
-            Update Password
-          </button>
-        </form>
       </div>
  
       {/* Support */}

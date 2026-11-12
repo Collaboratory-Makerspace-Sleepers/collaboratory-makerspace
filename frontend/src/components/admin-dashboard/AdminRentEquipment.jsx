@@ -10,6 +10,9 @@ const EMPTY = {
   imageUrl: "",
   trainingRequired: false,
   requiresWaiver: true,
+  hourlyRateCents: 0,
+  memberRateCents: 0,
+  trainingFeeCents: 0,
 };
 
 export default function AdminRentEquipment() {
@@ -101,6 +104,23 @@ export default function AdminRentEquipment() {
               Image URL (optional)
               <input value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} />
             </label>
+            <label className="nu-field">
+              Hourly rate — non-member (cents)
+              <input type="number" min="0" value={form.hourlyRateCents}
+                onChange={(e) => setForm({ ...form, hourlyRateCents: Number(e.target.value) })} />
+            </label>
+            <label className="nu-field">
+              Hourly rate — member (cents)
+              <input type="number" min="0" value={form.memberRateCents}
+                onChange={(e) => setForm({ ...form, memberRateCents: Number(e.target.value) })} />
+            </label>
+            {form.trainingRequired && (
+              <label className="nu-field">
+                Training fee (cents)
+                <input type="number" min="0" value={form.trainingFeeCents}
+                  onChange={(e) => setForm({ ...form, trainingFeeCents: Number(e.target.value) })} />
+              </label>
+            )}
             <label className="nu-check">
               <input type="checkbox" checked={form.requiresWaiver} onChange={(e) => setForm({ ...form, requiresWaiver: e.target.checked })} />
               Requires a signed waiver

@@ -44,5 +44,7 @@ public interface MembershipRepository extends JpaRepository<Membership, Long> {
     Optional<Membership> findLiveByUserIdForUpdate(@Param("userId") Long userId,
                                                    @Param("statuses") Collection<MembershipStatus> statuses);
 
+    List<Membership> findByStatusIn(List<MembershipStatus> statuses);
+
     List<Membership> findByStatusAndGracePeriodEndsAtLessThanEqual(MembershipStatus status, ZonedDateTime asOf);
 }

@@ -342,6 +342,23 @@ export default function AllEquipment({ refreshKey = 0 }) {
                   </select>
                 </dd>
               </div>
+              <div>
+                <dt>Hourly rate — non-member (cents)</dt>
+                <dd><input type="number" min="0" value={editing.hourlyRateCents ?? 0}
+                  onChange={(e) => setEditing((p) => ({ ...p, hourlyRateCents: Number(e.target.value) }))} /></dd>
+              </div>
+              <div>
+                <dt>Hourly rate — member (cents)</dt>
+                <dd><input type="number" min="0" value={editing.memberRateCents ?? 0}
+                  onChange={(e) => setEditing((p) => ({ ...p, memberRateCents: Number(e.target.value) }))} /></dd>
+              </div>
+              {editing.requiresTraining && (
+                <div>
+                  <dt>Training fee (cents)</dt>
+                  <dd><input type="number" min="0" value={editing.trainingFeeCents ?? 0}
+                    onChange={(e) => setEditing((p) => ({ ...p, trainingFeeCents: Number(e.target.value) }))} /></dd>
+                </div>
+              )}
             </dl>
             {saveError && <p className="ra-error" role="alert">{saveError}</p>}
             <button type="submit">Save</button>

@@ -27,6 +27,8 @@ def read_uid(connection):
     data, sw1, sw2 = connection.transmit(GET_UID)
     if (sw1, sw2) != (0x90, 0x00):
         raise RuntimeError(f"Reader returned status {sw1:02X}{sw2:02X}")
+    if not data:
+        raise RuntimeError("Reader returned an empty card UID")
     return "".join(f"{b:02X}" for b in data)
 
 
@@ -42,11 +44,22 @@ def send_scan(uid):
     )
     try:
         with urllib.request.urlopen(request, timeout=5) as response:
-            return json.load(response)
+            result = json.load(response)
+        if (not isinstance(result, dict)
+                or type(result.get("approved")) is not bool
+                or not isinstance(result.get("message"), str)
+                or not result["message"].strip()):
+            return {"approved": False, "message": "Invalid backend response; ask staff for manual check-in"}
+        return result
     except urllib.error.HTTPError as error:
+        error.close()
         return {"approved": False, "message": f"Backend error {error.code}"}
     except urllib.error.URLError as error:
         return {"approved": False, "message": f"Cannot reach backend: {error.reason}"}
+    except (TimeoutError, ConnectionError) as error:
+        return {"approved": False, "message": f"Backend connection failed: {error}"}
+    except ValueError:
+        return {"approved": False, "message": "Invalid backend JSON; ask staff for manual check-in"}
 
 
 def main():

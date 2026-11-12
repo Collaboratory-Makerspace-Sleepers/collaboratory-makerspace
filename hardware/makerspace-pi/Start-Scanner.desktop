@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Start Scanner Setup
+Comment=Install requirements, check the reader and open scanner setup
+Exec=/usr/bin/python3 -c "import os,sys;from urllib.parse import urlparse,unquote;p=sys.argv[1];p=unquote(urlparse(p).path) if p.startswith('file:') else p;os.execv('/bin/bash',['bash',os.path.join(os.path.dirname(p),'Start-Scanner.sh')])" %k
+Icon=dialog-password
+Terminal=true
+Categories=Utility;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../context/AuthContext";
 import CardScansLive from "./CardScansLive";
 import CardManager from "./CardManager";
@@ -16,31 +16,57 @@ function CheckInLog() {
   const [filter, setFilter] = useState("all");
   const [page, setPage] = useState(0);
 
-  useEffect(() => {
-    fetchCheckIns();
-  }, [filter, page]);
-
-  const fetchCheckIns = async () => {
-    setLoading(true);
+  const fetchCheckIns = useCallback(async (showLoading = true, signal) => {
+    if (showLoading) setLoading(true);
     try {
       const endpoint = filter === "waivers" 
         ? `/api/v1/hardware/checkins/pending-waivers?page=${page}&size=20`
         : `/api/v1/hardware/checkins/recent?page=${page}&size=20`;
 
-      const response = await authFetch(endpoint);
+      const response = await authFetch(endpoint, { signal, cache: "no-store" });
 
       if (!response.ok) throw new Error(`Failed to fetch check-ins (HTTP ${response.status})`);
-      setError(null);
       
       const data = await response.json();
-      setCheckIns(data.content || []);
+      if (!Array.isArray(data.content)) throw new Error("Invalid check-in response.");
+      if (!signal?.aborted) {
+        setError(null);
+        setCheckIns(data.content);
+      }
     } catch (err) {
-      setError(err.message);
-      console.error("Error fetching check-ins:", err);
+      if (!signal?.aborted) {
+        setError(err.message);
+        console.error("Error fetching check-ins:", err);
+      }
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
-  };
+  }, [authFetch, filter, page]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let inFlight = false;
+    async function load(showLoading = false) {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        await fetchCheckIns(showLoading, controller.signal);
+      } finally {
+        inFlight = false;
+      }
+    }
+    const onVisible = () => {
+      if (!document.hidden) load();
+    };
+    load(true);
+    const timer = setInterval(onVisible, 5000);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      controller.abort();
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [fetchCheckIns]);
 
   const approveWaiver = async (checkInId) => {
     try {

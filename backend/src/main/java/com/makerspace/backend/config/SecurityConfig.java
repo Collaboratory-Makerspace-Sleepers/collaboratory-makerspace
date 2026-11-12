@@ -183,17 +183,15 @@ public class SecurityConfig {
 
     // -------------------------------------------------------------------------
     // Order 8 — Hardware devices (NFC readers, door controllers)
-    // DeviceKeyFilter resolves X-Device-Key → SCOPE_HARDWARE authority.
-    // No JWT is present for hardware requests, so JwtAuthFilter must not run
-    // before DeviceKeyFilter; we add DeviceKeyFilter first.
+    // Only device-ingress endpoints use the shared device key.
     // -------------------------------------------------------------------------
     @Bean @Order(8)
-    public SecurityFilterChain hardwareChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain hardwareDeviceChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(deviceKeyFilter, UsernamePasswordAuthenticationFilter.class)
-                .securityMatcher("/api/v1/hardware/**")
+                .securityMatcher("/api/v1/hardware/card-scan", "/api/v1/hardware/checkin")
                 .anonymous(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .anyRequest().hasAuthority("SCOPE_HARDWARE")
@@ -204,11 +202,25 @@ public class SecurityConfig {
     }
 
     // -------------------------------------------------------------------------
-    // Order 9 — Class Sessions
+    // Order 9 — Signed-in hardware dashboard and waiver endpoints
+    // Fine-grained admin access is enforced by controller @PreAuthorize rules.
+    // -------------------------------------------------------------------------
+    @Bean @Order(9)
+    public SecurityFilterChain hardwareUserChain(HttpSecurity http) throws Exception {
+        applyShared(http)
+                .securityMatcher("/api/v1/hardware/**")
+                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+                .exceptionHandling(e -> e.authenticationEntryPoint(
+                        (req, res, ex) -> res.sendError(HttpServletResponse.SC_UNAUTHORIZED)));
+        return http.build();
+    }
+
+    // -------------------------------------------------------------------------
+    // Order 10 — Class Sessions
     // Public GET for browsing; write endpoints require authentication.
     // Fine-grained access (@PreAuthorize) is enforced on the controller.
     // -------------------------------------------------------------------------
-    @Bean @Order(9)
+    @Bean @Order(10)
     public SecurityFilterChain classSessionChain(HttpSecurity http) throws Exception {
         applyShared(http)
                 .securityMatcher("/api/v1/class-sessions/**")
@@ -220,7 +232,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    @Bean @Order(10)
+    @Bean @Order(11)
     public SecurityFilterChain devWebhookChain(HttpSecurity http) throws Exception {
         applyShared(http)
                 .securityMatcher("/api/dev/**")

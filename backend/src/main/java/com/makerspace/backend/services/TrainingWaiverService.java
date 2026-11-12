@@ -48,13 +48,25 @@ public class TrainingWaiverService {
                     "End time must be after start time");
         }
 
+        String normalizedSignerName = signerName.trim();
+        TrainingWaiverSignature existing = signatureRepository
+                .findFirstByUserIdAndEquipmentIdAndStartTimeAndEndTimeAndReservationIdIsNullOrderByIdDesc(
+                        userId, equipmentId, startTime, endTime)
+                .orElse(null);
+        if (existing != null
+                && existing.getWaiverVersion() == waiverVersion
+                && existing.getSignerName().equals(normalizedSignerName)
+                && existing.isValidForBookingAt(LocalDateTime.now())) {
+            return existing;
+        }
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         TrainingWaiverSignature signature = new TrainingWaiverSignature();
         signature.setUser(user);
         signature.setEquipment(equipment);
-        signature.setSignerName(signerName.trim());
+        signature.setSignerName(normalizedSignerName);
         signature.setSignedAt(LocalDateTime.now());
         signature.setWaiverVersion(waiverVersion);
         signature.setStartTime(startTime);

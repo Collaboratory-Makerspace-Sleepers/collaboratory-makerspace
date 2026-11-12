@@ -16,6 +16,12 @@ import java.util.Optional;
 @Repository
 public interface HardwareCheckInRepository extends JpaRepository<HardwareCheckIn, Long> {
 
+    @Query("SELECT h FROM HardwareCheckIn h ORDER BY COALESCE(h.updatedAt, h.checkinTime) DESC")
+    Page<HardwareCheckIn> findRecentActivity(Pageable pageable);
+
+    long countByStatus(HardwareCheckIn.CheckInStatus status);
+    long countByStatusIn(Collection<HardwareCheckIn.CheckInStatus> statuses);
+
     Page<HardwareCheckIn> findByUserIdOrderByCheckinTimeDesc(Long userId, Pageable pageable);
 
     Page<HardwareCheckIn> findByEquipmentIdOrderByCheckinTimeDesc(Long equipmentId, Pageable pageable);
@@ -27,7 +33,7 @@ public interface HardwareCheckInRepository extends JpaRepository<HardwareCheckIn
     Page<HardwareCheckIn> findByCheckinTimeBetweenOrderByCheckinTimeDesc(
             Instant startTime, Instant endTime, Pageable pageable);
 
-    @Query("SELECT h FROM HardwareCheckIn h WHERE h.status = 'NEEDS_WAIVER' OR (h.waiverSigned = true AND h.waiverApprovedByAdmin = false)")
+    @Query("SELECT h FROM HardwareCheckIn h WHERE h.status IN ('NEEDS_WAIVER', 'WAIVER_SIGNED')")
     Page<HardwareCheckIn> findPendingWaivers(Pageable pageable);
 
     Optional<HardwareCheckIn> findByDeviceIdAndUserIdOrderByCheckinTimeDesc(String deviceId, Long userId);

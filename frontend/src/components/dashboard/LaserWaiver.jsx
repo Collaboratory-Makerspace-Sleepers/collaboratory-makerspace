@@ -19,6 +19,14 @@ export default function LaserWaiver() {
   const [signError, setSignError] = useState("");
   const equipmentId = state?.equipmentId;
   const slotStart = state?.startTime;
+  const waiverSignatureStorageKey = equipmentId && slotStart
+    ? `waiver-signature:${equipmentId}:${slotStart}`
+    : null;
+  const [waiverSignatureId, setWaiverSignatureId] = useState(() => {
+    if (!waiverSignatureStorageKey) return null;
+    const storedId = Number(sessionStorage.getItem(waiverSignatureStorageKey));
+    return Number.isSafeInteger(storedId) && storedId > 0 ? storedId : null;
+  });
   const status = request?.status;
   const awaitingStaff = status === "WAIVER_SIGNED" || status === "NEEDS_WAIVER";
 
@@ -66,6 +74,26 @@ export default function LaserWaiver() {
     // Open synchronously so the browser doesn't block the popup.
     window.open(RABBITSIGN_URL, "_blank", "noopener,noreferrer");
     try {
+      const signatureResponse = await authFetch(`/api/v1/training-waivers/${state.equipmentId}/sign`, {
+        method: "POST",
+        body: JSON.stringify({
+          signerName: "RabbitSign",
+          startTime: state.startTime,
+          endTime: state.endTime,
+          waiverVersion: state.currentWaiverVersion || 1,
+        }),
+      });
+      if (!signatureResponse.ok) {
+        const data = await signatureResponse.json().catch(() => ({}));
+        throw new Error(data.message || "Could not save your waiver signature.");
+      }
+      const { waiverSignatureId: signedWaiverId } = await signatureResponse.json();
+      if (!Number.isSafeInteger(signedWaiverId) || signedWaiverId <= 0) {
+        throw new Error("The server did not return a valid waiver signature.");
+      }
+      sessionStorage.setItem(waiverSignatureStorageKey, String(signedWaiverId));
+      setWaiverSignatureId(signedWaiverId);
+
       const res = await authFetch("/api/v1/hardware/waiver-requests", {
         method: "POST",
         body: JSON.stringify({
@@ -80,22 +108,52 @@ export default function LaserWaiver() {
         return;
       }
       setRequest(await res.json());
-      // Keep the existing training-waiver record so checkout still sees the signature.
-      await authFetch(`/api/v1/training-waivers/${state.equipmentId}/sign`, {
-        method: "POST",
-        body: JSON.stringify({ signerName: "RabbitSign" }),
-      }).catch(() => {});
-    } catch {
-      setSignError("Could not reach the server. Please try again.");
+    } catch (error) {
+      setSignError(error.message || "Could not save or submit the waiver. Please try again.");
     } finally {
       setSubmitting(false);
     }
   }
 
-  function handleContinueToCheckout() {
+  async function handleContinueToCheckout() {
     if (!approved) return;
+    let signatureId = waiverSignatureId;
+    {
+      setSignError("");
+      try {
+        const response = await authFetch(`/api/v1/training-waivers/${state.equipmentId}/sign`, {
+          method: "POST",
+          body: JSON.stringify({
+            signerName: request?.signedName || "RabbitSign",
+            startTime: state.startTime,
+            endTime: state.endTime,
+            waiverVersion: state.currentWaiverVersion || 1,
+          }),
+        });
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.message || "Could not save your waiver signature.");
+        }
+        const data = await response.json();
+        signatureId = data.waiverSignatureId;
+        if (!Number.isSafeInteger(signatureId) || signatureId <= 0) {
+          throw new Error("The server did not return a valid waiver signature.");
+        }
+        sessionStorage.setItem(waiverSignatureStorageKey, String(signatureId));
+        setWaiverSignatureId(signatureId);
+      } catch (error) {
+        setSignError(error.message || "Could not save your waiver signature.");
+        return;
+      }
+    }
     navigate(`/dashboard/rentequipment/${state.equipmentId}/checkout`, {
-      state: { ...state, waiverSigned: true, waiverSignature: signature },
+      state: {
+        ...state,
+        waiverSigned: true,
+        waiverSignature: signature,
+        waiverSignatureId: signatureId,
+        waiverSignatureStorageKey,
+      },
     });
   }
 

@@ -13,6 +13,12 @@ import java.time.ZonedDateTime;
 @Table(name = "training_waiver_signatures")
 public class TrainingWaiverSignature {
 
+    public static final int BOOKING_VALIDITY_MINUTES = 30;
+
+    public boolean isValidForBookingAt(LocalDateTime now) {
+        return signedAt != null && !now.isAfter(signedAt.plusMinutes(BOOKING_VALIDITY_MINUTES));
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

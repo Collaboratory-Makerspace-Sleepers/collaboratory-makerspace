@@ -9,9 +9,9 @@ const EMPTY = {
   category: "",
   imageUrl: "",
   trainingRequired: false,
+  trainingVideoUrl: "",
   requiresWaiver: true,
-  hourlyRateCents: 0,
-  memberRateCents: 0,
+  hourlyRateDollars: "",
   trainingFeeCents: 0,
 };
 
@@ -34,17 +34,22 @@ export default function AdminRentEquipment() {
     setBusy(true);
     setMessage("");
     try {
+      const rateCents = Math.round(parseFloat(form.hourlyRateDollars || "0") * 100);
+      const payload = {
+        ...form,
+        name: form.name.trim(),
+        category: form.category.trim() || null,
+        imageUrl: form.imageUrl.trim() || null,
+        description: form.description.trim() || null,
+        status: "AVAILABLE",
+        hourlyRateCents: rateCents,
+        memberRateCents: rateCents,
+      };
+      delete payload.hourlyRateDollars;
       const response = await authFetch("/api/v1/equipment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          name: form.name.trim(),
-          category: form.category.trim() || null,
-          imageUrl: form.imageUrl.trim() || null,
-          description: form.description.trim() || null,
-          status: "AVAILABLE",
-        }),
+        body: JSON.stringify(payload),
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
@@ -105,14 +110,18 @@ export default function AdminRentEquipment() {
               <input value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} />
             </label>
             <label className="nu-field">
-              Hourly rate — non-member (cents)
-              <input type="number" min="0" value={form.hourlyRateCents}
-                onChange={(e) => setForm({ ...form, hourlyRateCents: Number(e.target.value) })} />
-            </label>
-            <label className="nu-field">
-              Hourly rate — member (cents)
-              <input type="number" min="0" value={form.memberRateCents}
-                onChange={(e) => setForm({ ...form, memberRateCents: Number(e.target.value) })} />
+              Hourly rate ($/hr)
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder="0.00"
+                value={form.hourlyRateDollars}
+                onChange={(e) => setForm({ ...form, hourlyRateDollars: e.target.value })}
+                onBlur={() => {
+                  const cents = Math.round(parseFloat(form.hourlyRateDollars || "0") * 100);
+                  setForm({ ...form, hourlyRateDollars: (cents / 100).toFixed(2) });
+                }}
+              />
             </label>
             {form.trainingRequired && (
               <label className="nu-field">
@@ -129,6 +138,18 @@ export default function AdminRentEquipment() {
               <input type="checkbox" checked={form.trainingRequired} onChange={(e) => setForm({ ...form, trainingRequired: e.target.checked })} />
               Requires training
             </label>
+            {form.trainingRequired && (
+              <label className="nu-field">
+                Training video URL
+                <input
+                  required
+                  type="url"
+                  placeholder="https://youtube.com/..."
+                  value={form.trainingVideoUrl}
+                  onChange={(e) => setForm({ ...form, trainingVideoUrl: e.target.value })}
+                />
+              </label>
+            )}
             {message && <p className="nu-message">{message}</p>}
             <div className="nu-actions">
               <button type="button" className="nu-cancel" onClick={close}>Cancel</button>

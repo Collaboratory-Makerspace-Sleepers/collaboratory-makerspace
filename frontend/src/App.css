@@ -744,6 +744,18 @@ p {
   color: #444444;
 }
 
+.auth-info {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #1a56a0;
+  background: #e8f0fe;
+  border: 1px solid #b6d0f7;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin: 0;
+  width: 100%;
+}
+
 .auth-error {
   font-size: 12px;
   line-height: 1.5;

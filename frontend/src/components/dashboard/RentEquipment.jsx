@@ -44,7 +44,11 @@ export default function RentEquipment() {
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (cancelled) return;
-        setItems(data.filter((e) => e.category !== "CLASS"));
+        setItems(
+          data
+            .filter((e) => e.category !== "CLASS")
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        );
       })
       .catch(() => {
         if (cancelled) return;
@@ -115,11 +119,12 @@ export default function RentEquipment() {
                 <div className="Rent3">
                   <BookingBadge reservations={reservations} equipmentId={item.id} fallback="Available" />
                   <p>{item.name}</p>
+                  <p className="Rent-category">{CATEGORY_LABELS[item.category] ?? item.category}</p>
                   <BookingDetail reservations={reservations} equipmentId={item.id} />
                 </div>
 
                 <div className="Rent5">
-                  <p>$7/hr</p>
+                  <p>{item.hourlyRateCents > 0 ? `$${(item.hourlyRateCents / 100).toFixed(0)}/hr` : "Free"}</p>
                   <button onClick={() => navigate(`/dashboard/rentequipment/${item.id}`)}>
                     Reserve
                   </button>

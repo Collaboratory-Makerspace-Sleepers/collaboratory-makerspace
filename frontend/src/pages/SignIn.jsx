@@ -22,6 +22,7 @@ export default function SignIn() {
   const [params] = useSearchParams();
   const { authError } = useAuth();
   const errorCode = params.get("error");
+  const isExpired = params.get("reason") === "expired";
   const errorMessage = errorCode ? OAUTH_ERRORS[errorCode] ?? OAUTH_ERRORS.failed : null;
 
   return (
@@ -32,6 +33,12 @@ export default function SignIn() {
           <p className="signin-title">Sign In</p>
           <p className="signin-subtitle">Welcome back to the collaboratory!</p>
         </div>
+
+        {isExpired && (
+          <p className="auth-info" role="status">
+            Your session has expired. Please sign in to continue.
+          </p>
+        )}
 
         {(errorMessage || authError) && (
           <p className="auth-error" role="alert">

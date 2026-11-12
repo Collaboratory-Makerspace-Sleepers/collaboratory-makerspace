@@ -56,7 +56,7 @@ export default function DashboardHome() {
             <div className="Dash4" key={reservation.id}>
               <p>{reservation.equipmentName}</p>
               <p className="Dash5-sub">{formatTime(reservation.startTime)}</p>
-              <div className="Dash5">
+              <div className="Dash5 checkout-actions">
                 <Link to={`/dashboard/rentequipment/${reservation.equipmentId}`}>
                   <button>View</button>
                 </Link>

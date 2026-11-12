@@ -74,8 +74,6 @@ export default function RentEquipment() {
         </p>
       </div>
 
-      <WaiverStatusPanel />
-
       <div className="Dash3">
         <p>Upcoming Reservations</p>
         {loading && <p>Loading…</p>}
@@ -91,6 +89,8 @@ export default function RentEquipment() {
             </div>
           ))}
       </div>
+
+      <WaiverStatusPanel />
 
       <div className="RentEquipmentSection">
         {/* Search field */}

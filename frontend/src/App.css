@@ -1117,6 +1117,29 @@ p {
   gap: 16px;
 }
 
+.catalog-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+  color: #333333;
+}
+
+.catalog-filters label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.catalog-filters select {
+  background: #ffffff;
+  color: #222222;
+  border: 1px solid #b7b7b7;
+  border-radius: 4px;
+  padding: 8px;
+}
+
 .Rent1 {
   background-color: #ffffff;
   border: 1px solid #e5e5e5;
@@ -2509,6 +2532,89 @@ p {
 }
 
 /* grids */
+.admin-classes-page > .AdAct {
+  padding: clamp(12px, 2vw, 24px);
+}
+
+.admin-classes-page .ra-wrapper {
+  padding: 0;
+  min-width: 0;
+}
+
+.admin-classes-page .ra-card {
+  border: 1px solid #e5e5e5;
+}
+
+.admin-classes-page .ra-header {
+  flex-wrap: wrap;
+  padding: 24px;
+  gap: 16px;
+}
+
+.admin-classes-page .ra-title h2 {
+  font-weight: 600;
+}
+
+.admin-classes-page .au-search {
+  width: calc(100% - 48px);
+  margin: 0 24px 16px;
+  padding: 12px 14px;
+}
+
+.admin-classes-page .catalog-filters {
+  margin: 0;
+  padding: 0 24px 24px;
+  gap: 16px;
+}
+
+.admin-classes-page .catalog-filters label {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.admin-classes-page .catalog-filters select {
+  min-width: 180px;
+  min-height: 42px;
+  padding: 10px 12px;
+}
+
+.admin-classes-page .ra-table {
+  table-layout: auto;
+}
+
+.admin-classes-page .ra-table th,
+.admin-classes-page .ra-table td {
+  padding: 16px 20px;
+  line-height: 1.5;
+}
+
+.admin-classes-page .ra-table th {
+  font-weight: 600;
+}
+
+.admin-classes-page .ae-actions {
+  min-height: 0;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-classes-page .ae-actions > .ra-link {
+  padding: 8px 12px;
+  border: 1px solid #dedede;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.admin-classes-page .ra-state {
+  margin: 0;
+  padding: 24px;
+  border-top: 1px solid #ececec;
+  color: #555555;
+}
+
 .ra-wrapper {
   --ra-bg: #fcd8b6;
   --ra-card: #ffffff;
@@ -2731,6 +2837,14 @@ p {
   margin-bottom: 18px;
 }
 
+.class-session-dialog {
+  box-sizing: border-box;
+  min-height: 0;
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .ra-profile-header h3 {
   margin: 0;
   color: #222222;
@@ -2806,7 +2920,8 @@ p {
   align-items: center;
 }
 
-.AdUser2 button {
+.AdUser2 button,
+.admin-actions-row > button {
   background: #e75710;
   color: #fff;
   border: none;
@@ -2818,6 +2933,14 @@ p {
 
 .AdUser2 button:hover {
   background: #e75710;
+}
+
+.admin-actions-row > button {
+  background: #a51200;
+}
+
+.admin-actions-row > button:hover {
+  background: #450b00;
 }
 
 .AdUser3{

@@ -116,6 +116,87 @@ are vaulted by Stripe and set as the default after confirmation. The dashboard
 shows only brand, last four digits, and expiry. Previously unsaved cards can be
 added through Payment Methods without buying another pass.
 
+### Equipment and class catalogs
+
+Admin equipment creation and editing use one hourly dollar amount, formatted as
+`$7.25` on leaving the field (no increment/decrement controls). Money remains
+integer cents in the database. All paying users use that rate; studio machine
+waivers and equipment explicitly included with membership remain free. Equipment
+API responses include the authenticated viewer's `resolvedHourlyRateCents`, also
+used by reservation pricing. The legacy member-rate column is synchronized on
+equipment create/update but no longer determines a separate paying-user rate.
+
+Enabling **Requires training** requires an HTTP(S) training-video URL in both the
+admin form and API. Equipment can be saved without a video when training is off.
+Machine-type filters come from saved equipment categories, and displayed hourly
+prices come from the API rather than placeholder rates.
+
+Admin equipment, classes, and reservation tables default to newest-created first,
+with oldest-first and status filters available. Member equipment/class catalogs,
+category pages, and dashboard recommendations refresh every five seconds while
+visible and on tab focus. Saved available equipment and upcoming scheduled class
+sessions therefore appear without signing out or manually reloading. Maintenance,
+retired equipment and past/cancelled classes are not offered for new bookings.
+Class-session prices retain their separate full/member pricing.
+The create/edit class dialog scrolls within the viewport. Successful class saves
+also notify open catalog tabs to refresh immediately (using BroadcastChannel
+where supported); five-second polling remains the fallback.
+
+Catalog utility tests: `node --test frontend/src/utils/catalog.test.js`.
+
+### Paired Raspberry Pi readers
+
+The backend implements `makerspace-device-v1` for the scanner in
+`hardware/makerspace-pi`. Migration V26 adds registered Pis, expiring next-tap
+assignments and durable device events without changing existing booking tables.
+Open **Admin → Hardware Access → Pis & areas** to add a named Pi and area, bind
+optional equipment, and generate an eight-digit pairing code. Codes expire after
+ten minutes and can be consumed once. Regenerating a code immediately revokes the
+old credentials. Each Pi receives its own UUID and random key; only key hashes
+are saved. Pairing attempts are limited to ten per minute per connection IP.
+
+The public protocol check is `GET /api/v1/hardware/device/protocol`. Pairing uses
+`POST /device/pair`; authenticated Pi traffic sends `X-Device-Id` and
+`X-Device-Key` to `/device/heartbeat`, `/device/events`, and `/card-scan`, all
+under `/api/v1/hardware`. Equipment/area binding comes from the registration,
+not a scan-supplied equipment ID. Admin management requires `MANAGE_EQUIPMENT`.
+Existing shared-key readers retain their existing ingress; deployments can turn
+that compatibility off with `app.hardware.legacy-device-key-enabled=false`.
+Missing or invalid credentials never allow an anonymous scan.
+
+**Assign next card** waits for a tap on the selected Pi for two minutes. Card
+assignment does not grant access or send a door command; remove the card and tap
+again for a normal membership/training/waiver check. Cards belonging to a different
+member are rejected. Cancelling, disabling, re-pairing or deleting a Pi clears
+pending assignment. Disabling a paired Pi denies scans but still permits
+heartbeats and telemetry so it can receive its disabled state; deleting it
+revokes credentials while retaining device history.
+
+Pi event uploads accept up to twenty events and return acknowledged IDs. Repeated
+IDs from the same Pi are stored once. Events identify **DEVICE** reports versus
+**SERVER** decisions; reported telemetry never performs access checks or door
+commands. Receipt time is separate from the Pi-reported occurrence time.
+After 45–55 seconds without contact, the backend logs connection loss once;
+the next authenticated contact logs reconnection. This does not identify the
+physical cause or measure door position.
+
+Door output defaults off. Enabling it in admin is only a software configuration:
+the Pi must separately enable its locally configured GPIO and receive a fresh
+approved scan before it can request a bounded 1–30 second pulse. Physical
+reader/relay/lock and independent-exit operation still need on-site verification.
+Use hosted HTTPS or the scanner's existing loopback tunnel/pinned gateway;
+this integration does not supply the separate Windows discovery/gateway launcher.
+
+Targeted backend checks:
+`./mvnw test -Dtest=HardwareDeviceServiceTest,HardwareDevicePersistenceTest,HardwareSecurityConfigTest`.
+With Java 25, append `-Dnet.bytebuddy.experimental=true` for the existing Mockito
+version. These tests use an isolated in-memory database, not the shared database.
+Coverage includes one-time/expired pairing, revoked and disabled credentials,
+admin permissions, pairing rate limits, authenticated heartbeat/event payloads,
+event retry deduplication, assignment cancellation/conflicts/expiry, real saved
+card ownership on the selected Pi, and preserved history after device deletion.
+They do not verify physical reader, GPIO, lock, network discovery or relay behavior.
+
 ### Documentation
 
 - [`STATE.md`](backend/STATE.md) — detailed architecture reference: package structure, auth flow, access control matrix, caching, known issues

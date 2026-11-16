@@ -1,5 +1,26 @@
 # Tests and remaining checks — easy setup and deletion fix — November 10, 2026
 
+## Backend integration verification — November 15, 2026
+
+The current frontendAdmin backend now implements the paired-Pi protocol. Flyway
+V26 applied successfully to local PostgreSQL with schema validation enabled.
+The actual Pi `api.py` HTTP client was tested against the running Java backend:
+public protocol discovery, one-time pairing, authenticated heartbeat, unknown-card
+denial, event-upload retry acknowledgement, next-tap assignment without access or
+door approval, disabled-device denial, and key revocation all passed. Temporary
+test registration, assigned card, scans and events were removed afterward.
+
+Twenty-nine targeted Java tests passed, including registered-device persistence,
+single-use/expired pairing, authentication boundaries, event deduplication,
+connection monitoring, selected-Pi assignment and booking regressions. The admin
+frontend production build passed. Admin now includes Pis & areas and hardware
+events alongside the existing card/waiver screens.
+
+This supersedes the earlier missing-backend protocol result below, not the physical
+hardware limitations. No physical Pi/reader/relay was connected or paired here.
+The separate Windows discovery/pinned-gateway launcher is not supplied by this
+integration; use hosted HTTPS or an existing supported loopback connection.
+
 ## Local hardware-only verification — November 12, 2026
 
 Status: the backend is not yet paired with the physical Raspberry Pi / card reader.

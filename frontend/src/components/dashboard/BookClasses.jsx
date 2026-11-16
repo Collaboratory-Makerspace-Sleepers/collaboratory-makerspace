@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useCatalog } from "../../hooks/useCatalog";
+import { sortNewest } from "../../utils/catalog";
 import { todaySentence } from "../../hooks/useDashboard";
 import WaiverStatusPanel from "./WaiverStatusPanel";
 
@@ -21,36 +22,10 @@ function formatPrice(cents) {
 
 export default function BookClasses() {
   const navigate = useNavigate();
-  const { authFetch } = useAuth();
-
-  const [sessions, setSessions] = useState([]);
-  const [myEnrollments, setMyEnrollments] = useState([]);
+  const { items: sessions, loading, error: dataError } = useCatalog("/api/v1/class-sessions");
+  const { items: myEnrollments, loading: myLoading, error: enrollmentError } = useCatalog("/api/v1/class-sessions/me");
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [myLoading, setMyLoading] = useState(true);
-  const [dataError, setDataError] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    authFetch("/api/v1/class-sessions")
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => { if (!cancelled) setSessions(data); })
-      .catch(() => { if (!cancelled) setDataError("Unable to load classes."); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [authFetch]);
-
-  useEffect(() => {
-    let cancelled = false;
-    authFetch("/api/v1/class-sessions/me")
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => { if (!cancelled) setMyEnrollments(data); })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setMyLoading(false); });
-    return () => { cancelled = true; };
-  }, [authFetch]);
-
-  const visible = sessions.filter((s) =>
+  const visible = sortNewest(sessions).filter((s) =>
     s.title.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -67,7 +42,8 @@ export default function BookClasses() {
       <div className="Dash3">
         <p>Your Upcoming Classes</p>
         {myLoading && <p>Loading…</p>}
-        {!myLoading && upcomingSessions.length === 0 && (
+        {enrollmentError && <p role="alert">{enrollmentError}</p>}
+        {!myLoading && !enrollmentError && upcomingSessions.length === 0 && (
           <p>You don&apos;t have any upcoming classes booked.</p>
         )}
         {!myLoading &&
@@ -94,7 +70,7 @@ export default function BookClasses() {
         onChange={(e) => setSearch(e.target.value)}
       />
 
-      {dataError && <p>{dataError}</p>}
+      {dataError && <p role="alert">{dataError} Displayed classes may be outdated.</p>}
 
       <div className="RentGrid">
         {loading && <p>Loading classes…</p>}

@@ -18,4 +18,6 @@ public interface ClassSessionRepository extends JpaRepository<ClassSession, Long
 
     @Query("SELECT cs FROM ClassSession cs ORDER BY cs.startTime DESC")
     List<ClassSession> findAllOrderByStartTimeDesc();
+
+    List<ClassSession> findAllByOrderByCreatedAtDescIdDesc();
 }

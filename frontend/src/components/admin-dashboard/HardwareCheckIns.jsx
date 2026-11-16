@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../context/AuthContext";
 import CardScansLive from "./CardScansLive";
 import CardManager from "./CardManager";
+import HardwareDevices from "./HardwareDevices";
 import "./HardwareCheckIns.css";
 
 function CheckInLog() {
@@ -374,15 +375,17 @@ function CheckInLog() {
 const TABS = [
   { id: "taps", label: "Card taps" },
   { id: "cards", label: "Cards" },
+  { id: "devices", label: "Pi devices", permission: "MANAGE_EQUIPMENT" },
   { id: "log", label: "Waivers & check-ins" },
 ];
 
 export default function HardwareCheckIns() {
+  const { hasPermission } = useAuth();
   const [tab, setTab] = useState("taps");
   return (
     <div className="HardwareTabs">
       <div className="HWTabBar" role="tablist">
-        {TABS.map((t) => (
+        {TABS.filter((t) => !t.permission || hasPermission(t.permission)).map((t) => (
           <button
             key={t.id}
             role="tab"
@@ -396,6 +399,7 @@ export default function HardwareCheckIns() {
       </div>
       {tab === "taps" && <CardScansLive onAssigned={() => setTab("cards")} />}
       {tab === "cards" && <CardManager />}
+      {tab === "devices" && <HardwareDevices />}
       {tab === "log" && <CheckInLog />}
     </div>
   );

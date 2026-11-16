@@ -29,6 +29,9 @@ public interface ReservationRepository extends JpaRepository<EquipmentReservatio
     Page<EquipmentReservation> findAllByOrderByStartTimeDesc(Pageable pageable);
 
     @EntityGraph(attributePaths = {"equipment"})
+    Page<EquipmentReservation> findAllByOrderByCreatedAtDescIdDesc(Pageable pageable);
+
+    @EntityGraph(attributePaths = {"equipment"})
     List<EquipmentReservation> findByEquipmentIdOrderByStartTimeDesc(Long equipmentId);
 
     /**

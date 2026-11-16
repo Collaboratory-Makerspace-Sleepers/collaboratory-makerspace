@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import DollarInput from "../DollarInput";
+import { dollarsToCents, formatDollars, sortNewest } from "../../utils/catalog";
 
 const STATUSES = ["AVAILABLE", "IN_USE", "MAINTENANCE", "RETIRED"];
 const PAGE_SIZE = 10;
@@ -12,7 +14,7 @@ const dateTimeFmt = (value) =>
 
 function describeAvailability(equipment, reservations, now) {
   const upcoming = reservations
-    .filter((r) => (r.status === "ACTIVE" || r.status === "PENDING") && new Date(r.endTime) > now)
+    .filter((r) => (r.status === "ACTIVE" || r.status === "TRAINING_PENDING") && new Date(r.endTime) > now)
     .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
   const current = upcoming.find((r) => new Date(r.startTime) <= now);
   const next = upcoming.find((r) => new Date(r.startTime) > now);
@@ -45,6 +47,9 @@ export default function AllEquipment({ refreshKey = 0 }) {
   const [reservations, setReservations] = useState([]);
   const [usersById, setUsersById] = useState({});
   const [query, setQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState("newest");
+  const [category, setCategory] = useState("");
+  const [status, setStatus] = useState("");
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -89,8 +94,9 @@ export default function AllEquipment({ refreshKey = 0 }) {
   const rows = useMemo(() => {
     const now = new Date();
     const term = query.trim().toLowerCase();
-    return equipment
-      .filter((e) => !term || (e.name || "").toLowerCase().includes(term))
+    return sortNewest(equipment, sortOrder)
+      .filter((e) => (!term || `${e.name} ${e.category || ""}`.toLowerCase().includes(term))
+        && (!category || e.category === category) && (!status || e.status === status))
       .map((e) => ({
         equipment: e,
         ...describeAvailability(
@@ -99,7 +105,7 @@ export default function AllEquipment({ refreshKey = 0 }) {
           now
         ),
       }));
-  }, [equipment, reservations, query]);
+  }, [equipment, reservations, query, sortOrder, category, status]);
 
   const visible = rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const totalPages = Math.ceil(rows.length / PAGE_SIZE);
@@ -112,17 +118,21 @@ export default function AllEquipment({ refreshKey = 0 }) {
   async function saveEquipment(event) {
     event.preventDefault();
     setSaveError("");
-    const response = await authFetch(`/api/v1/equipment/${editing.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(editing),
-    });
-    if (!response.ok) {
-      setSaveError("Could not save equipment.");
-      return;
+    try {
+      const response = await authFetch(`/api/v1/equipment/${editing.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...editing, hourlyRateCents: dollarsToCents(editing.hourlyRateDollars) }),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message || "Could not save equipment.");
+      }
+      setEditing(null);
+      load();
+    } catch (error) {
+      setSaveError(error.message);
     }
-    setEditing(null);
-    load();
   }
 
   const setField = (field) => (event) =>
@@ -133,7 +143,7 @@ export default function AllEquipment({ refreshKey = 0 }) {
         .filter(
           (r) =>
             r.equipmentId === availabilityFor.id &&
-            (r.status === "ACTIVE" || r.status === "PENDING") &&
+            (r.status === "ACTIVE" || r.status === "TRAINING_PENDING") &&
             new Date(r.endTime) > new Date()
         )
         .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
@@ -182,6 +192,28 @@ export default function AllEquipment({ refreshKey = 0 }) {
           }}
         />
 
+        <div className="catalog-filters">
+          <label>Machine type
+            <select value={category} onChange={(e) => { setCategory(e.target.value); setPage(0); }}>
+              <option value="">All types</option>
+              {[...new Set(equipment.map((item) => item.category).filter(Boolean))].sort().map((type) =>
+                <option key={type} value={type}>{type}</option>)}
+            </select>
+          </label>
+          <label>Status
+            <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(0); }}>
+              <option value="">All statuses</option>
+              {STATUSES.map((value) => <option key={value}>{value}</option>)}
+            </select>
+          </label>
+          <label>Sort
+            <select value={sortOrder} onChange={(e) => { setSortOrder(e.target.value); setPage(0); }}>
+              <option value="newest">Newest to oldest</option>
+              <option value="oldest">Oldest to newest</option>
+            </select>
+          </label>
+        </div>
+
         {loading ? (
           <p className="ra-state" role="status">Loading equipment…</p>
         ) : error ? (
@@ -223,7 +255,10 @@ export default function AllEquipment({ refreshKey = 0 }) {
                     </td>
                     <td className="ae-cell">
                       <div className="ae-actions">
-                        <button className="ra-link" onClick={() => setEditing({ ...e })}>
+                        <button className="ra-link" onClick={() => {
+                          setSaveError("");
+                          setEditing({ ...e, hourlyRateDollars: formatDollars(e.hourlyRateCents) });
+                        }}>
                           Edit equipment
                         </button>
                         <button className="ra-link" onClick={() => setAvailabilityFor(e)}>
@@ -281,7 +316,7 @@ export default function AllEquipment({ refreshKey = 0 }) {
                 {availabilityList.map((r) => (
                   <div key={r.id}>
                     <dt>{userName(r.userId)}</dt>
-                    <dd>{dateTimeFmt(r.startTime)} – {dateTimeFmt(r.endTime)}{r.status === "PENDING" ? " (Pending training)" : ""}</dd>
+                    <dd>{dateTimeFmt(r.startTime)} – {dateTimeFmt(r.endTime)}{r.status === "TRAINING_PENDING" ? " (Pending training)" : ""}</dd>
                   </div>
                 ))}
               </dl>
@@ -308,7 +343,7 @@ export default function AllEquipment({ refreshKey = 0 }) {
               </div>
               <div>
                 <dt>Category</dt>
-                <dd><input value={editing.category || ""} onChange={setField("category")} /></dd>
+                <dd><input required value={editing.category || ""} onChange={setField("category")} /></dd>
               </div>
               <div>
                 <dt>Description</dt>
@@ -328,9 +363,19 @@ export default function AllEquipment({ refreshKey = 0 }) {
               <div>
                 <dt>Requires training</dt>
                 <dd>
-                  <input type="checkbox" checked={!!editing.trainingRequired}
-                    onChange={(e) => setEditing((p) => ({ ...p, trainingRequired: e.target.checked }))} />
+                  <input type="checkbox" checked={!!editing.requiresTraining}
+                    onChange={(e) => setEditing((p) => ({ ...p, requiresTraining: e.target.checked }))} />
                 </dd>
+              </div>
+              <div>
+                <dt>Training video URL {editing.requiresTraining ? "(required)" : "(optional)"}</dt>
+                <dd><input type="url" required={editing.requiresTraining}
+                  value={editing.trainingVideoUrl || ""} onChange={setField("trainingVideoUrl")} /></dd>
+              </div>
+              <div>
+                <dt>Hourly rate ($)</dt>
+                <dd><DollarInput value={editing.hourlyRateDollars}
+                  onChange={(value) => setEditing((prev) => ({ ...prev, hourlyRateDollars: value }))} /></dd>
               </div>
               <div>
                 <dt>Status</dt>

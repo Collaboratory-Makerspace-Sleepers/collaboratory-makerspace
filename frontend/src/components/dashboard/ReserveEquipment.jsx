@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { CATEGORY_LABELS } from "./RentEquipment";
+import { equipmentRate, hourlyPrice } from "../../utils/catalog";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
@@ -186,7 +187,7 @@ export default function ReserveEquipment() {
           requiresTraining: item.requiresTraining,
           trainingVideoUrl: item.trainingVideoUrl || null,
           currentWaiverVersion: item.currentWaiverVersion ?? 1,
-          hourlyRateCents: item.hourlyRateCents,
+          hourlyRateCents: equipmentRate(item),
           durationHours,
           waiverRequired: true,
           startTime: start.toISOString(),
@@ -213,12 +214,10 @@ export default function ReserveEquipment() {
     return <div className="DashHome1"><p>Loading…</p></div>;
   }
 
-  const rateLabel = item.hourlyRateCents > 0
-    ? `$${(item.hourlyRateCents / 100).toFixed(0)}/hr`
-    : "Free";
+  const rateLabel = hourlyPrice(item);
 
   const estimatedTotal = selectedSlot
-    ? ((item.hourlyRateCents / 100) * durationHours).toFixed(2)
+    ? ((equipmentRate(item) / 100) * durationHours).toFixed(2)
     : null;
 
   return (
@@ -333,7 +332,7 @@ export default function ReserveEquipment() {
         <div className="ReserveSummaryBottom">
           <div>
             <p>{item.name}</p>
-            {estimatedTotal && item.hourlyRateCents > 0 && (
+            {estimatedTotal && equipmentRate(item) > 0 && (
               <p className="Dash5-sub">
                 Est. total: ${estimatedTotal} ({durationHours} hr{durationHours > 1 ? "s" : ""})
               </p>

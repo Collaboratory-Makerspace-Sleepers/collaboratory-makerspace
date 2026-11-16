@@ -4,10 +4,11 @@ import com.makerspace.backend.model.CardScan;
 import com.makerspace.backend.model.MemberCard;
 import com.makerspace.backend.model.User;
 import com.makerspace.backend.config.security.UserPrincipal;
+import com.makerspace.backend.config.security.DevicePrincipal;
 import com.makerspace.backend.services.CardService;
+import com.makerspace.backend.services.HardwareDeviceService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,10 +26,7 @@ import java.util.Map;
 public class CardController {
 
     @Autowired private CardService cardService;
-
-    /** When set, the Pi must send it as X-Device-Key. Unset keeps local development open. */
-    @Value("${app.hardware.device-key:}")
-    private String deviceKey;
+    @Autowired private HardwareDeviceService hardwareDeviceService;
 
     /**
      * POST /api/v1/hardware/card-scan - called by the Raspberry Pi with the card UID.
@@ -37,13 +35,13 @@ public class CardController {
     @PostMapping("/card-scan")
     public ResponseEntity<Map<String, Object>> scan(
             @RequestBody Map<String, Object> body,
-            @RequestHeader(value = "X-Device-Key", required = false) String key) {
-        if (!deviceKey.isBlank() && !deviceKey.equals(key)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid device key");
-        }
+            Authentication authentication) {
         Object uid = body.get("cardUid");
         if (!(uid instanceof String cardUid)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "cardUid is required");
+        }
+        if (authentication != null && authentication.getPrincipal() instanceof DevicePrincipal principal) {
+            return ResponseEntity.ok(hardwareDeviceService.scan(principal, cardUid));
         }
         String deviceId = body.get("deviceId") instanceof String d ? d : null;
         Long equipmentId = body.get("equipmentId") instanceof Number n ? n.longValue() : null;
@@ -54,7 +52,16 @@ public class CardController {
         out.put("status", r.approved() ? "APPROVED" : "DENIED");
         out.put("message", r.message());
         out.put("memberName", r.approved() ? r.memberName() : null);
+        out.put("scanId", r.scanId());
+        out.put("door", Map.of("enabled", false));
         return ResponseEntity.ok(out);
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, String>> handleCardError(ResponseStatusException error) {
+        log.warn("Card request rejected: status={} reason={}", error.getStatusCode(), error.getReason());
+        return ResponseEntity.status(error.getStatusCode()).body(Map.of("message",
+                error.getReason() == null ? "Card request failed" : error.getReason()));
     }
 
     @GetMapping("/cards")

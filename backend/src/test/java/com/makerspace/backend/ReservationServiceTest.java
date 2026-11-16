@@ -146,6 +146,8 @@ class ReservationServiceTest {
     @ValueSource(booleans = {true, false})
     void create_succeeds_withActiveMembershipOrPaidDayPass(boolean activeMembership) {
         Equipment equipment = activeEquipment();
+        equipment.setHourlyRateCents(725);
+        equipment.setMemberRateCents(100);
         when(membershipService.hasActiveMembership(1L)).thenReturn(activeMembership);
         if (!activeMembership) {
             PaymentRecord pass = new PaymentRecord();
@@ -167,6 +169,7 @@ class ReservationServiceTest {
 
         assertThat(result).isNotNull();
         assertThat(result.getStatus()).isEqualTo(ReservationStatus.ACTIVE);
+        assertThat(result.getQuotedRateCents()).isEqualTo(725);
     }
 
     @Test

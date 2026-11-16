@@ -50,7 +50,7 @@ public class ClassSessionService {
 
     @Transactional(readOnly = true)
     public List<ClassSessionDTO> listAll(Long viewerUserId) {
-        List<ClassSession> sessions = classSessionRepository.findAllOrderByStartTimeDesc();
+        List<ClassSession> sessions = classSessionRepository.findAllByOrderByCreatedAtDescIdDesc();
         return sessions.stream()
                 .map(s -> toDTO(s, viewerUserId))
                 .toList();

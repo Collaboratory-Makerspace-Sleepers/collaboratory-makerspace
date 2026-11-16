@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import WaiverStatusPanel from "./WaiverStatusPanel";
 import { BookingBadge, BookingDetail } from "./BookingStatus";
 import useInUseNow from "../../hooks/useInUseNow";
-import { useAuth } from "../../context/AuthContext";
+import { useCatalog } from "../../hooks/useCatalog";
+import { hourlyPrice, sortNewest } from "../../utils/catalog";
 import {
   useDashboard,
   todaySentence,
@@ -30,38 +31,22 @@ export const CATEGORY_LABELS = {
 
 export default function RentEquipment() {
   const navigate = useNavigate();
-  const { authFetch } = useAuth();
   const { reservations, loading, error } = useDashboard();
   const inUseNow = useInUseNow();
 
-  const [items, setItems] = useState([]);
+  const { items, loading: catalogLoading, error: dataError } = useCatalog("/api/v1/equipment");
   const [search, setSearch] = useState("");
-  const [dataError, setDataError] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    authFetch("/api/v1/equipment")
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
-        if (cancelled) return;
-        setItems(data.filter((e) => e.category !== "CLASS"));
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setDataError("Unable to load equipment.");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [authFetch]);
+  const [category, setCategory] = useState("");
 
   const upcoming = upcomingReservations(reservations);
   // Only list what can be booked: not in maintenance/retired and not in use right now.
   const bookable = items.filter(
-    (item) => (!item.status || item.status === "AVAILABLE") && !inUseNow.includes(item.id)
+    (item) => item.category !== "CLASS" && (!item.status || item.status === "AVAILABLE") && !inUseNow.includes(item.id)
   );
-  const visible = bookable.filter((item) =>
-    item.name.toLowerCase().includes(search.toLowerCase())
+  const visible = sortNewest(bookable).filter((item) =>
+    `${item.name} ${item.category || ""} ${CATEGORY_LABELS[item.category] || ""}`
+      .toLowerCase().includes(search.trim().toLowerCase())
+      && (!category || item.category === category)
   );
 
   return (
@@ -95,14 +80,23 @@ export default function RentEquipment() {
       <div className="RentEquipmentSection">
         {/* Search field */}
         <input
-          type="text"
-          placeholder="Search"
+          type="search"
+          placeholder="Search equipment or machine type"
+          aria-label="Search equipment or machine type"
           className="SearchInput"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        {dataError && <p>{dataError}</p>}
+        <label className="catalog-filters">Machine type
+          <select value={category} onChange={(e) => setCategory(e.target.value)}>
+            <option value="">All machine types</option>
+            {[...new Set(items.filter((item) => item.category !== "CLASS").map((item) => item.category).filter(Boolean))]
+              .sort().map((type) => <option key={type} value={type}>{CATEGORY_LABELS[type] || type}</option>)}
+          </select>
+        </label>
+        {dataError && <p role="alert">{dataError} Displayed equipment may be outdated.</p>}
+        {catalogLoading && <p role="status">Loading equipment...</p>}
 
         <div className="RentGrid">
           {visible.map((item) => (
@@ -115,11 +109,12 @@ export default function RentEquipment() {
                 <div className="Rent3">
                   <BookingBadge reservations={reservations} equipmentId={item.id} fallback="Available" />
                   <p>{item.name}</p>
+                  {item.category && <p>{CATEGORY_LABELS[item.category] || item.category}</p>}
                   <BookingDetail reservations={reservations} equipmentId={item.id} />
                 </div>
 
                 <div className="Rent5">
-                  <p>$7/hr</p>
+                  <p>{hourlyPrice(item)}</p>
                   <button onClick={() => navigate(`/dashboard/rentequipment/${item.id}`)}>
                     Reserve
                   </button>
@@ -127,7 +122,7 @@ export default function RentEquipment() {
               </div>
             </div>
           ))}
-          {visible.length === 0 && <p>No equipment matches your search.</p>}
+          {!catalogLoading && !dataError && visible.length === 0 && <p>No equipment matches your search.</p>}
         </div>
       </div>
     </div>

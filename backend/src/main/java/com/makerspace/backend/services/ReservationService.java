@@ -314,7 +314,7 @@ public class ReservationService {
 
     @Transactional(readOnly = true)
     public Page<EquipmentReservation> findAll(Pageable pageable) {
-        return reservationRepository.findAllByOrderByStartTimeDesc(pageable);
+        return reservationRepository.findAllByOrderByCreatedAtDescIdDesc(pageable);
     }
 
     @Transactional(readOnly = true)
@@ -330,13 +330,12 @@ public class ReservationService {
      *
      * Priority:
      *  1. Studio members (active studio_assignment) → 0 (all machines free)
-     *  2. Active members booking CLASS equipment → 50% off
-     *  3. Everyone else → hourly_rate_cents
+     *  2. Equipment included with an active membership → 0
+     *  3. Active members booking legacy CLASS equipment → 50% off
+     *  4. Everyone else → the single hourly_rate_cents
      */
     private int resolveRate(Equipment equipment, boolean isMember, boolean isStudioMember) {
-        if (isStudioMember) return 0;
-        if (isMember && "CLASS".equals(equipment.getCategory())) return equipment.getHourlyRateCents() / 2;
-        return equipment.getHourlyRateCents();
+        return EquipmentService.resolveRate(equipment, isMember, isStudioMember);
     }
 
     /** Equipment that someone has booked for the current moment. */

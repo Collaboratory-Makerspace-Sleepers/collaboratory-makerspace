@@ -3,6 +3,9 @@ package com.makerspace.backend.controller;
 import com.makerspace.backend.model.Equipment;
 import com.makerspace.backend.model.EquipmentStatus;
 import com.makerspace.backend.services.EquipmentService;
+import com.makerspace.backend.config.security.UserPrincipal;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,28 +25,29 @@ public class EquipmentController {
      * Anyone authenticated can view the equipment.
      */
     @GetMapping
-    public List<Equipment> getAll() {
-        return equipmentService.findAll();
+    public List<Equipment> getAll(@AuthenticationPrincipal UserPrincipal principal) {
+        return equipmentService.forViewer(equipmentService.findAll(), principal == null ? null : principal.userId());
     }
 
     @GetMapping("/{id}")
-    public Equipment getById(@PathVariable Long id) {
-        return equipmentService.findById(id);
+    public Equipment getById(@PathVariable Long id, @AuthenticationPrincipal UserPrincipal principal) {
+        return equipmentService.forViewer(List.of(equipmentService.findById(id)),
+                principal == null ? null : principal.userId()).get(0);
     }
 
     @GetMapping("/status/{status}")
-    public List<Equipment> getByStatus(@PathVariable EquipmentStatus status) {
-        return equipmentService.findByStatus(status);
+    public List<Equipment> getByStatus(@PathVariable EquipmentStatus status, @AuthenticationPrincipal UserPrincipal principal) {
+        return equipmentService.forViewer(equipmentService.findByStatus(status), principal == null ? null : principal.userId());
     }
 
     @GetMapping("/category/{category}")
-    public List<Equipment> getByCategory(@PathVariable String category) {
-        return equipmentService.findByCategory(category);
+    public List<Equipment> getByCategory(@PathVariable String category, @AuthenticationPrincipal UserPrincipal principal) {
+        return equipmentService.forViewer(equipmentService.findByCategory(category), principal == null ? null : principal.userId());
     }
 
     @GetMapping("/search")
-    public List<Equipment> search(@RequestParam String q) {
-        return equipmentService.search(q);
+    public List<Equipment> search(@RequestParam String q, @AuthenticationPrincipal UserPrincipal principal) {
+        return equipmentService.forViewer(equipmentService.search(q), principal == null ? null : principal.userId());
     }
 
     /*
@@ -77,5 +81,11 @@ public class EquipmentController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         equipmentService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, String>> handleEquipmentError(ResponseStatusException error) {
+        return ResponseEntity.status(error.getStatusCode()).body(Map.of("message",
+                error.getReason() == null ? "Equipment request failed" : error.getReason()));
     }
 }

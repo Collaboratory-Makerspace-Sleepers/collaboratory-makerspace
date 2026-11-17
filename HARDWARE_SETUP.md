@@ -1,15 +1,18 @@
-# Pi scanner integration — frontendAdmin
+# Pi scanner integration — frontendAdmin and main
 
-Based on frontendAdmin commit `afe0e5d34137eb08910af353404e13ffe99b9aa7` (November 15, 2026, Eastern time). This is a complete source folder, with the team's existing application retained. Nothing has been pushed to GitHub.
+Prepared from frontendAdmin `d7c871eb0be3c75bc6c94f6dbdc2fd43036aaa30` and main `aecd8b44dafbf72c383add90c890c5ba3ffe88a4`, checked November 17, 2026. This source contains the locally reviewed merge plus the Windows service filename repair. Nothing was pushed to GitHub.
 
 ## Put this into the repository
 
-1. In GitHub Desktop, select the repository and **frontendAdmin**. Fetch/pull first.
-2. Extract this ZIP. Copy the **contents** of `collaboratory-makerspace` into your repository folder, replacing matching source files. Do not put a second repository folder inside the first.
-3. Keep your local `.env`, database configuration, credentials and `.git` folder. None are supplied in this ZIP.
-4. Review the changed files in GitHub Desktop, commit and push to **frontendAdmin**. If the branch has newer changes than the base commit above, merge those changes rather than overwriting them with this older snapshot.
+Use the upload instructions supplied beside the source folder. Importing the supplied Git bundle preserves both branch histories and removes obsolete files automatically. A simple copy-over does not remove old migrations or the conflicting service filename.
 
-If using GitHub's upload page, upload the extracted source files and folders, **not the ZIP itself**. GitHub Desktop is easier for a complete repository.
+The two services are now HardwareCheckInService.java and LegacyNfcCheckInService.java. Do not restore HardwareCheckinService.java (lowercase i).
+
+Keep local credentials and configuration. Do not upload launcher scripts, backup folders, build output, or Terraform state files. Recheck the merge if either branch advances beyond the commits above.
+
+## Deployment status
+
+The workflow now downloads the same S3 object it uploads, and downloads it successfully before stopping the existing backend. Its trigger remains pipeline-test; the team must choose when to switch to main. AWS deployment, IAM access, real billing/email, and door hardware still require live verification. A successful local build is not a production sign-off.
 
 ## What changed
 
@@ -30,8 +33,8 @@ The current branch's existing access rules remain authoritative. In particular, 
 Use the team's existing backend/frontend startup or deployment process from README.md. No personal-computer launcher is required on AWS.
 
 1. Back up the database. Deploy the backend and frontend from this same source version.
-2. Keep Flyway enabled and Hibernate schema mode `validate`. This branch adds **V27__hardware_card_lifecycle_and_overrides.sql**, after the branch's existing V26 paired-device migration. Do not edit previously applied migrations, reset the database or use Flyway repair to bypass a conflict.
-3. Before merging into **main**, the backend team must reconcile migration versions: main may already have its own V26/V27. Keep both sets of changes and assign unapplied migrations a non-conflicting order. This ZIP targets frontendAdmin's migration history, not an arbitrary main database.
+2. Keep Flyway enabled and Hibernate schema mode `validate`. The merged branch adds V28__paired_hardware_devices.sql and V29__hardware_card_lifecycle_and_overrides.sql after main’s unchanged V26/V27. Never edit applied migrations or use Flyway repair to bypass a conflict.
+3. Earlier frontendAdmin local databases used V26/V27 for hardware. Do not use those databases with this merged version. Use the separate merge-test launcher database; old local data stays intact. Hardware migrations have not run on AWS/shared databases.
 4. Supply a stable `APP_JWT_SECRET`, database and other existing service secrets through the deployment's secret configuration. Deploy a public HTTPS backend origin with a trusted certificate, such as `https://api.your-domain.example`.
 5. Route `/api/v1/hardware/*` to Spring Boot, not the frontend HTML fallback. The proxy must forward `X-Device-Id` and `X-Device-Key`. The Pi has no browser login/cookies. Its ingress is authenticated by its device key.
 6. Verify `GET /api/v1/hardware/device/protocol` returns `{"protocol":"makerspace-device-v1","version":1}`. Do not put a website-login redirect in front of Pi routes. Leave the application's per-route authentication in place.

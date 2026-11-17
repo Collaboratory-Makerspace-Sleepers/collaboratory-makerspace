@@ -9,6 +9,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [permissions, setPermissions] = useState([])
   const [authError, setAuthError] = useState("")
+  const [sessionExpired, setSessionExpired] = useState(false)
   // Tracks which token the profile below belongs to, so "still loading" is
   // derived rather than flipped inside the effect (a synchronous setState in an
   // effect body triggers a cascading re-render).
@@ -18,6 +19,7 @@ export function AuthProvider({ children }) {
 
   function setToken(value) {
     setAuthError("")
+    setSessionExpired(false)
     if (value) {
       localStorage.setItem(STORAGE_KEY, value)
     } else {
@@ -70,7 +72,7 @@ export function AuthProvider({ children }) {
           setTokenState(null)
           setUser(null)
           setPermissions([])
-          setAuthError(`The server rejected this sign-in (HTTP ${profile.status}). Please sign in again.`)
+          setSessionExpired(true)
           return
         }
 
@@ -107,6 +109,7 @@ export function AuthProvider({ children }) {
       authFetch,
       isAuthenticated: !!token,
       authError,
+      sessionExpired,
       user,
       roles: user?.roles ?? [],
       permissions,
@@ -114,7 +117,7 @@ export function AuthProvider({ children }) {
       hasPermission,
       hasAnyPermission,
     }),
-    [token, authFetch, user, permissions, loadingProfile, authError, hasPermission, hasAnyPermission],
+    [token, authFetch, user, permissions, loadingProfile, authError, sessionExpired, hasPermission, hasAnyPermission],
   )
 
   return (

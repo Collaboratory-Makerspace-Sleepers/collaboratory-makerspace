@@ -56,6 +56,7 @@ export default function AllEquipment({ refreshKey = 0 }) {
   const [viewUser, setViewUser] = useState(null);
   const [availabilityFor, setAvailabilityFor] = useState(null);
   const [editing, setEditing] = useState(null);
+  const [rateInput, setRateInput] = useState("");
   const [saveError, setSaveError] = useState("");
 
   const load = useCallback(async () => {
@@ -66,7 +67,8 @@ export default function AllEquipment({ refreshKey = 0 }) {
         authFetch("/api/v1/users/activity?page=0&size=500"),
       ]);
       if (!eqRes.ok) throw new Error("Could not load equipment.");
-      setEquipment(await eqRes.json());
+      const eqData = await eqRes.json();
+      setEquipment(eqData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
       if (resRes.ok) {
         const body = await resRes.json();
         setReservations(Array.isArray(body.content) ? body.content : []);
@@ -134,6 +136,10 @@ export default function AllEquipment({ refreshKey = 0 }) {
       setSaveError(error.message);
     }
   }
+
+  useEffect(() => {
+    if (editing) setRateInput(((editing.hourlyRateCents ?? 0) / 100).toFixed(2));
+  }, [editing?.id]);
 
   const setField = (field) => (event) =>
     setEditing((prev) => ({ ...prev, [field]: event.target.value }));
@@ -387,6 +393,42 @@ export default function AllEquipment({ refreshKey = 0 }) {
                   </select>
                 </dd>
               </div>
+              <div>
+                <dt>Hourly rate ($/hr)</dt>
+                <dd>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={rateInput}
+                    onChange={(e) => setRateInput(e.target.value)}
+                    onBlur={() => {
+                      const cents = Math.round(parseFloat(rateInput || "0") * 100);
+                      setRateInput((cents / 100).toFixed(2));
+                      setEditing((p) => ({ ...p, hourlyRateCents: cents, memberRateCents: cents }));
+                    }}
+                  />
+                </dd>
+              </div>
+              {editing.trainingRequired && (
+                <div>
+                  <dt>Training fee (cents)</dt>
+                  <dd><input type="number" min="0" value={editing.trainingFeeCents ?? 0}
+                    onChange={(e) => setEditing((p) => ({ ...p, trainingFeeCents: Number(e.target.value) }))} /></dd>
+                </div>
+              )}
+              {editing.trainingRequired && (
+                <div>
+                  <dt>Training video URL</dt>
+                  <dd>
+                    <input
+                      type="url"
+                      placeholder="https://..."
+                      value={editing.trainingVideoUrl || ""}
+                      onChange={(e) => setEditing((p) => ({ ...p, trainingVideoUrl: e.target.value }))}
+                    />
+                  </dd>
+                </div>
+              )}
             </dl>
             {saveError && <p className="ra-error" role="alert">{saveError}</p>}
             <button type="submit">Save</button>

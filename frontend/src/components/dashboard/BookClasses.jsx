@@ -34,6 +34,7 @@ export default function BookClasses() {
 
   return (
     <div className="DashHome1">
+      <WaiverStatusPanel />
       <div className="Dash2">
         <p>Book Classes</p>
         <p>Welcome back. {todaySentence()}</p>

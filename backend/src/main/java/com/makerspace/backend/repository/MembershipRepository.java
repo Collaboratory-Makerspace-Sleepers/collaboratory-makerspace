@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -44,5 +45,22 @@ public interface MembershipRepository extends JpaRepository<Membership, Long> {
     Optional<Membership> findLiveByUserIdForUpdate(@Param("userId") Long userId,
                                                    @Param("statuses") Collection<MembershipStatus> statuses);
 
+    List<Membership> findByStatusIn(List<MembershipStatus> statuses);
+
     List<Membership> findByStatusAndGracePeriodEndsAtLessThanEqual(MembershipStatus status, ZonedDateTime asOf);
+
+    @Query(nativeQuery = true, value = """
+            SELECT p.code, p.display_name, COUNT(m.id)
+            FROM membership m JOIN membership_plan p ON m.plan_id=p.id
+            WHERE m.status IN ('ACTIVE','TRIALING','PAST_DUE','GRACE')
+            GROUP BY p.code, p.display_name
+            """)
+    List<Object[]> activeMembersByPlan();
+
+    @Query(nativeQuery = true, value = """
+            SELECT DATE_TRUNC('month', created_at) AS month, COUNT(*)
+            FROM membership WHERE created_at >= :since
+            GROUP BY month ORDER BY month
+            """)
+    List<Object[]> newMembershipsByMonth(@Param("since") Instant since);
 }

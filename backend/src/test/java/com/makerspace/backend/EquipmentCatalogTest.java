@@ -1,6 +1,10 @@
 package com.makerspace.backend;
 
 import com.makerspace.backend.model.Equipment;
+import com.stripe.StripeClient;
+import com.stripe.model.Product;
+import com.stripe.param.ProductCreateParams;
+import com.stripe.param.ProductUpdateParams;
 import com.makerspace.backend.repository.EquipmentRepository;
 import com.makerspace.backend.services.EquipmentService;
 import com.makerspace.backend.services.MembershipService;
@@ -24,8 +28,14 @@ class EquipmentCatalogTest {
     private final EquipmentRepository repository = mock(EquipmentRepository.class);
     private final MembershipService membership = mock(MembershipService.class);
 
+    private final StripeClient stripe = mock(StripeClient.class, RETURNS_DEEP_STUBS);
+
     @BeforeEach
-    void setup() {
+    void setup() throws Exception {
+        ReflectionTestUtils.setField(service, "stripeClient", stripe);
+        Product product = new Product();
+        product.setId("prod_equipment_test");
+        when(stripe.v1().products().create(any(ProductCreateParams.class))).thenReturn(product);
         ReflectionTestUtils.setField(service, "equipmentRepository", repository);
         ReflectionTestUtils.setField(service, "membershipService", membership);
         when(repository.save(any())).thenAnswer(call -> call.getArgument(0));
@@ -55,7 +65,7 @@ class EquipmentCatalogTest {
     }
 
     @Test
-    void createsAndUpdatesOnePriceAndPersistsTrainingVideo() {
+    void createsAndUpdatesOnePriceAndPersistsTrainingVideo() throws Exception {
         Equipment item = equipment();
         item.setRequiresTraining(true);
         item.setTrainingVideoUrl("https://example.test/laser-training.mp4");
@@ -67,11 +77,16 @@ class EquipmentCatalogTest {
         update.setFreeWithMembership(true);
         update.setRequiresTraining(true);
         update.setTrainingVideoUrl("https://example.test/new-training.mp4");
+        update.setName("Updated laser");
+        update.setTrainingFeeCents(1500);
         Equipment saved = service.update(1L, update);
         assertThat(saved.getHourlyRateCents()).isEqualTo(1225);
         assertThat(saved.getMemberRateCents()).isEqualTo(1225);
         assertThat(saved.getTrainingVideoUrl()).isEqualTo(update.getTrainingVideoUrl());
         assertThat(saved.isFreeWithMembership()).isTrue();
+        assertThat(saved.getTrainingFeeCents()).isEqualTo(1500);
+        assertThat(saved.getStripeProductId()).isEqualTo("prod_equipment_test");
+        verify(stripe.v1().products()).update(eq("prod_equipment_test"), any(ProductUpdateParams.class));
     }
 
     @Test

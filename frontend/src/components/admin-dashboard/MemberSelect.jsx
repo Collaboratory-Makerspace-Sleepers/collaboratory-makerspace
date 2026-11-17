@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 
 /** Search-as-you-type member picker backed by /hardware/cards/members. */
-export default function MemberSelect({ value, onChange }) {
+export default function MemberSelect({ value, onChange, initialQuery = "" }) {
   const { authFetch } = useAuth();
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [members, setMembers] = useState([]);
 
   useEffect(() => {

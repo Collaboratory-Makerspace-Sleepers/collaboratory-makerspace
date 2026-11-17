@@ -13,6 +13,9 @@ import AdminRentEquipment from "./components/admin-dashboard/AdminRentEquipment"
 import AdminBookClasses from "./components/admin-dashboard/AdminBookClasses";
 import AdminAccount from "./components/admin-dashboard/AdminAccount";
 import HardwareCheckIns from "./components/admin-dashboard/HardwareCheckIns";
+import AdminRoles from "./components/admin-dashboard/AdminRoles";
+import AdminCancellations from "./components/admin-dashboard/AdminCancellations";
+import AdminAnalytics from "./components/admin-dashboard/AdminAnalytics";
 import DashboardHome from "./components/dashboard/DashboardHome";
 import RentEquipment from "./components/dashboard/RentEquipment";
 import EquipmentCategoryPage from "./components/dashboard/EquipmentCategoryPage";
@@ -59,18 +62,19 @@ function App() {
         <Route path="membership" element={<Membership />} />
         <Route path="membership/checkout" element={<MembershipCheckout />} />
         <Route path="reservations" element={<MyReservations />} />
-        <Route
-          path="hardware-approvals"
-          element={<RequirePermission anyOf={["MANAGE_EQUIPMENT"]}><HardwareCheckIns /></RequirePermission>}
-        />
         <Route path="payment-methods" element={<PaymentMethods />} />
         <Route path="billing-history" element={<BillingHistory />} />
+        <Route path="hardware-approvals" element={
+          <RequirePermission anyOf={["MANAGE_EQUIPMENT"]}>
+            <HardwareCheckIns />
+          </RequirePermission>
+        } />
       </Route>
       <Route
         path="/admin-dashboard"
         element={
           <RequireAuth>
-            <RequirePermission anyOf={["MANAGE_ROLES"]}>
+            <RequirePermission anyOf={["MANAGE_ROLES", "MANAGE_CLASSES"]}>
               <AdminDashboard />
             </RequirePermission>
           </RequireAuth>
@@ -83,6 +87,9 @@ function App() {
         <Route path="bookclasses" element={<AdminBookClasses />} />
         <Route path="account" element={<AdminAccount />} />
         <Route path="hardware" element={<HardwareCheckIns />} />
+        <Route path="roles" element={<AdminRoles />} />
+        <Route path="cancellations" element={<AdminCancellations />} />
+        <Route path="analytics" element={<AdminAnalytics />} />
       </Route>
     </Routes>
   );

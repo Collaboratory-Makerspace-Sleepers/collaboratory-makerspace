@@ -49,7 +49,7 @@ class HardwareCardLifecycleTest {
   assertThatThrownBy(()->cardService.assign("00112233",u.getId(),null,u.getId())).hasMessageContaining("disabled");
   em.flush();em.clear();assertThat(cards.findByCardUid("00112233").orElseThrow().isActive()).isFalse();
  }
- @Test void overrideIsScopedExpiringRevocableAndNeverBypassesDisabledAccountOrCard(){
+ @Test void overrideIsScopedExpiringRevocableAndNeverBypassesDisabledCard(){
   User u=member("override@example.test");MemberCard c=cardService.assign("A1B2",u.getId(),null,u.getId());
   Pairing first=pi("First",null),second=pi("Second",null);var one=pair(first);var two=pair(second);
   var grant=overrides.grant(u.getId(),first.device().id(),"Pending waiver",60,u.getId());
@@ -58,7 +58,14 @@ class HardwareCardLifecycleTest {
   assertThat(service.scan(two,"A1B2")).containsEntry("approved",false);
   assertThat(cardService.scan("A1B2",first.device().id().toString(),null).approved()).isFalse();
   c.setActive(false);assertThat(service.scan(one,"A1B2")).containsEntry("approved",false);c.setActive(true);
-  u.setAccountStatus(AccountStatus.PRE_REGISTERED);assertThat(service.scan(one,"A1B2")).containsEntry("approved",false);u.setAccountStatus(AccountStatus.ACTIVE);
+  u.setAccountStatus(AccountStatus.PRE_REGISTERED);
+  assertThat(service.scan(one,"A1B2")).containsEntry("approved",true).containsEntry("message","Access granted by admin door override");
+  assertThat(u.getAccountStatus()).isEqualTo(AccountStatus.PRE_REGISTERED);
+  assertThat(service.scan(two,"A1B2")).containsEntry("approved",false);
+  assertThat(cardService.scan("A1B2",first.device().id().toString(),null).approved()).isFalse();
+  u.setAccountStatus(AccountStatus.DELETED);
+  assertThat(service.scan(one,"A1B2")).containsEntry("approved",false);
+  u.setAccountStatus(AccountStatus.PRE_REGISTERED);
   grant.setExpiresAt(Instant.now().minusSeconds(1));assertThat(service.scan(one,"A1B2")).containsEntry("approved",false);
   grant.setExpiresAt(Instant.now().plusSeconds(100));overrides.revoke(u.getId(),grant.getId(),u.getId());
   assertThat(service.scan(one,"A1B2")).containsEntry("approved",false);assertThat(grants.findById(grant.getId())).isPresent();

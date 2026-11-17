@@ -1,3 +1,4 @@
+import MemberSelect from "./MemberSelect";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import DollarInput from "../DollarInput";
@@ -135,11 +136,18 @@ export function ClassSessionForm({ initial, onSave, onClose }) {
           </label>
           <label>
             Date *
-            <input required type="date" value={form.date} onChange={change("date")} className="au-search" />
+            <input required type="date" value={form.date} onChange={change("date")} className="au-search" min={new Date().toISOString().slice(0, 10)} />
           </label>
           <label>
             Start Time *
-            <select required value={form.startTime} onChange={change("startTime")} className="au-search">
+            <select required value={form.startTime} onChange={(e) => {
+              const newStart = e.target.value;
+              setForm((f) => ({
+                ...f,
+                startTime: newStart,
+                endTime: f.endTime <= newStart ? "" : f.endTime,
+              }));
+            }} className="au-search">
               <option value="">-- select --</option>
               {START_TIME_OPTIONS.map((t) => (
                 <option key={t.value} value={t.value}>{t.label}</option>
@@ -148,12 +156,17 @@ export function ClassSessionForm({ initial, onSave, onClose }) {
           </label>
           <label>
             End Time *
-            <select required value={form.endTime} onChange={change("endTime")} className="au-search">
-              <option value="">-- select --</option>
-              {END_TIME_OPTIONS.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
+            {(() => {
+              const validEndOptions = END_TIME_OPTIONS.filter(({ value }) => !form.startTime || value > form.startTime);
+              return (
+                <select required value={form.endTime} onChange={change("endTime")} className="au-search">
+                  <option value="">-- select --</option>
+                  {validEndOptions.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              );
+            })()}
           </label>
           <label>
             Location
@@ -172,8 +185,12 @@ export function ClassSessionForm({ initial, onSave, onClose }) {
             <DollarInput value={form.memberPriceDollars} onChange={(value) => setForm((prev) => ({ ...prev, memberPriceDollars: value }))} className="au-search" />
           </label>
           <label>
-            Instructor User ID
-            <input type="number" min="1" value={form.instructorId} onChange={change("instructorId")} className="au-search" placeholder="optional" />
+            Instructor
+            <MemberSelect
+              value={form.instructorId}
+              onChange={(id) => setForm((f) => ({ ...f, instructorId: id }))}
+              initialQuery={initial?.instructorName ?? ""}
+            />
           </label>
           <label>
             Image URL

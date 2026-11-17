@@ -155,6 +155,8 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
             <table className="ra-table au-table">
               <thead>
                 <tr>
+                  <th>ID</th>
+                  <th>Email</th>
                   <th>Name</th>
                   <th>Time</th>
                   <th>Membership</th>
@@ -166,6 +168,8 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
               <tbody>
                 {visible.map((user) => (
                   <tr key={user.id} className={user.id === selectedId ? "au-selected" : undefined}>
+                    <td>{user.id}</td>
+                    <td>{user.email || "—"}</td>
                     <td>{fullName(user) || user.email || "Unknown user"}</td>
                     <td>{formatDate(user.createdAt)}</td>
                     <td>{user.membership || "None"}</td>

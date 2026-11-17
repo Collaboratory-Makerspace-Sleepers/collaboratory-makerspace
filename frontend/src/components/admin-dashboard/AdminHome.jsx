@@ -1,91 +1,119 @@
-import AdminCalendar from "./AdminCalendar";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import RecentActivity from "./RecentActivity";
 import { firstName, useDashboard } from "../../hooks/useDashboard";
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 export default function AdminHome() {
   const { user, loading } = useDashboard();
   const { authFetch } = useAuth();
-  const [summary, setSummary] = useState(null);
-  const [error, setError] = useState("");
-  const [refreshKey, setRefreshKey] = useState(0);
+  const navigate = useNavigate();
+
+  const [inUseIds, setInUseIds] = useState([]);
+  const [visitsToday, setVisitsToday] = useState(null);
+  const [pendingCancellations, setPendingCancellations] = useState(null);
+  const [activeMembers, setActiveMembers] = useState(null);
+  const [revenueThisMonth, setRevenueThisMonth] = useState(null);
 
   useEffect(() => {
-    const controller = new AbortController();
-    let inFlight = false;
-    async function load() {
-      if (inFlight) return;
-      inFlight = true;
-      try {
-        const response = await authFetch("/api/v1/users/activity/summary", {
-          signal: controller.signal,
-          cache: "no-store",
-        });
-        if (!response.ok) throw new Error("Could not refresh dashboard totals.");
-        const result = await response.json();
-        if (!controller.signal.aborted) {
-          setSummary(result);
-          setError("");
-        }
-      } catch (err) {
-        if (!controller.signal.aborted) setError(err.message);
-      } finally {
-        inFlight = false;
-      }
-    }
-    function onVisible() {
-      if (!document.hidden) load();
-    }
-    load();
-    const timer = setInterval(onVisible, 5000);
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      controller.abort();
-      clearInterval(timer);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, [authFetch, refreshKey]);
+    let cancelled = false;
 
-  const totals = [
-    { label: "Upcoming equipment bookings", value: summary?.upcomingReservations, path: "/admin-dashboard/rentequipment" },
-    { label: "Waivers awaiting staff approval", value: summary?.pendingWaivers, path: "/admin-dashboard/hardware" },
-    { label: "Upcoming class enrollments", value: summary?.classEnrollments, path: "/admin-dashboard/bookclasses" },
-    { label: "Successful payments", value: summary?.successfulPayments },
-  ];
+    const load = async () => {
+      try {
+        const [inUseRes, feedRes, cancelRes, membershipsRes, revenueRes] = await Promise.all([
+          authFetch("/api/v1/reservations/in-use-now"),
+          authFetch("/api/v1/users/activity/feed?limit=200"),
+          authFetch("/api/v1/admin/cancellation-requests/count?status=PENDING"),
+          authFetch("/api/v1/admin/analytics/memberships"),
+          authFetch("/api/v1/admin/analytics/revenue"),
+        ]);
+
+        if (!cancelled && inUseRes.ok) {
+          const ids = await inUseRes.json();
+          setInUseIds(Array.isArray(ids) ? ids : []);
+        }
+
+        if (!cancelled && feedRes.ok) {
+          const feed = await feedRes.json();
+          const today = new Date().toDateString();
+          const count = (Array.isArray(feed) ? feed : []).filter(
+            (item) => item.type === "CARD_TAP" && new Date(item.time).toDateString() === today
+          ).length;
+          setVisitsToday(count);
+        }
+
+        if (!cancelled && cancelRes.ok) {
+          const d = await cancelRes.json();
+          setPendingCancellations(d.count ?? 0);
+        }
+
+        if (!cancelled && membershipsRes.ok) {
+          const d = await membershipsRes.json();
+          setActiveMembers(d.totalActive ?? 0);
+        }
+
+        if (!cancelled && revenueRes.ok) {
+          const d = await revenueRes.json();
+          setRevenueThisMonth(d.thisMonthCents ?? 0);
+        }
+      } catch {
+        // leave defaults
+      }
+    };
+
+    load();
+    const timer = setInterval(() => { if (!document.hidden) load(); }, 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [authFetch]);
 
   return (
     <div className="DashHome1">
       <div className="AdHome">
-        <p>Welcome back {loading ? "..." : firstName(user) || "User"}</p>
-        <p>Makerspace Admin</p>
-        <button type="button" onClick={() => setRefreshKey((key) => key + 1)}>Refresh dashboard</button>
-        <p>Database activity refreshes every 5 seconds.</p>
-        {error && <p role="alert">{error} Displayed totals may be outdated.</p>}
+        <div className="admin-welcome">
+          <p className="admin-welcome-name">Welcome back, {loading ? "..." : firstName(user) || "Admin"}</p>
+          <p className="admin-welcome-role">Makerspace Admin</p>
+        </div>
       </div>
 
-      <div className="AdRow">
-        <div className="AdCon">
-          <AdminCalendar />
+      <div className="admin-stat-row">
+        <div className="admin-stat-card">
+          <p className="admin-stat-card__label">Machines In Use</p>
+          <p className="admin-stat-card__value">{inUseIds.length}</p>
+          <button onClick={() => navigate("/admin-dashboard/rentequipment")}>View</button>
         </div>
-        <div className="AdCon">
-          <div className="AdR">
-            {totals.map((total) => (
-              <div className="AdCol" key={total.label}>
-                <div>
-                  <p>{total.label}</p>
-                  <p>{total.value ?? (error ? "Unavailable" : "...")}</p>
-                </div>
-                {total.path && <Link to={total.path}>View</Link>}
-              </div>
-            ))}
-          </div>
+
+        <div className="admin-stat-card">
+          <p className="admin-stat-card__label">Visits Today</p>
+          <p className="admin-stat-card__value">{visitsToday === null ? "—" : visitsToday}</p>
+          <button onClick={() => navigate("/admin-dashboard/home")}>View</button>
+        </div>
+
+        <div className="admin-stat-card">
+          <p className="admin-stat-card__label">Cancellation Requests</p>
+          <p className="admin-stat-card__value">{pendingCancellations ?? "—"}</p>
+          <button onClick={() => navigate("/admin-dashboard/cancellations")}>View</button>
+        </div>
+
+        <div className="admin-stat-card">
+          <p className="admin-stat-card__label">Active Members</p>
+          <p className="admin-stat-card__value">{activeMembers === null ? "—" : activeMembers}</p>
+          <button onClick={() => navigate("/admin-dashboard/analytics")}>View</button>
+        </div>
+
+        <div className="admin-stat-card">
+          <p className="admin-stat-card__label">Revenue This Month</p>
+          <p className="admin-stat-card__value">
+            {revenueThisMonth === null ? "—" : "$" + (revenueThisMonth / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+          </p>
+          <button onClick={() => navigate("/admin-dashboard/analytics")}>View</button>
         </div>
       </div>
 
       <div className="AdAct">
-        <RecentActivity refreshKey={refreshKey} />
+        <RecentActivity />
       </div>
     </div>
   );

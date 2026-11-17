@@ -29,6 +29,16 @@ export const CATEGORY_LABELS = {
   STUDIO_LARGE:  "Large Studios",
 };
 
+export const CATEGORY_IMAGES = {
+  LASER:        "/laser engraver.webp",
+  "3D_PRINTER": "/3D printer - Prusa.png",
+  CNC:          "/large cnc.webp",
+  CNC_LARGE:    "/large cnc.webp",
+  CNC_SMALL:    "/small cnc.webp",
+  WOOD_LATHE:   "/wood lathe.jpg",
+  METAL_LATHE:  "/methal lathe.webp",
+};
+
 export default function RentEquipment() {
   const navigate = useNavigate();
   const { reservations, loading, error } = useDashboard();
@@ -59,6 +69,8 @@ export default function RentEquipment() {
         </p>
       </div>
 
+      <WaiverStatusPanel />
+
       <div className="Dash3">
         <p>Upcoming Reservations</p>
         {loading && <p>Loading…</p>}
@@ -75,7 +87,7 @@ export default function RentEquipment() {
           ))}
       </div>
 
-      <WaiverStatusPanel />
+
 
       <div className="RentEquipmentSection">
         {/* Search field */}
@@ -102,7 +114,7 @@ export default function RentEquipment() {
           {visible.map((item) => (
             <div className="Rent1" key={item.id}>
               <div>
-                <img src={item.imageUrl || "https://picsum.photos/seed/machine/480/360"} alt={item.name} />
+                <img src={item.imageUrl || CATEGORY_IMAGES[item.category] || "https://picsum.photos/seed/machine/480/360"} alt={item.name} />
               </div>
 
               <div className="Rent2">

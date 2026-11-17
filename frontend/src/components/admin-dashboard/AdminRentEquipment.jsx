@@ -14,6 +14,7 @@ const EMPTY = {
   requiresTraining: false,
   trainingVideoUrl: "",
   hourlyRateDollars: "0.00",
+  trainingFeeCents: 0,
   requiresWaiver: true,
 };
 
@@ -66,16 +67,9 @@ export default function AdminRentEquipment() {
 
   return (
     <div className="AdUser">
-      <p>Equipment</p>
-
-      <div className="AdUser1">
-        <div className="AdUser2">
-          <div className="AdUser3">
-            <p>Create a new equipment</p>
-            <p>Add a machine or tool members can reserve</p>
-          </div>
-          <button onClick={() => setOpen(true)}>Create New Equipment</button>
-        </div>
+      <h1 className="admin-page-title">Equipment</h1>
+      <div className="admin-actions-row">
+        <button onClick={() => setOpen(true)}>Create New Equipment</button>
       </div>
 
       <div className="AdAct">
@@ -134,6 +128,11 @@ export default function AdminRentEquipment() {
               <input type="url" required={form.requiresTraining} value={form.trainingVideoUrl}
                 onChange={(e) => setForm({ ...form, trainingVideoUrl: e.target.value })} placeholder="https://..." />
             </label>
+            {form.requiresTraining && <label className="nu-field">
+              Training fee (cents)
+              <input type="number" min="0" value={form.trainingFeeCents}
+                onChange={(e) => setForm({ ...form, trainingFeeCents: Number(e.target.value) })} />
+            </label>}
             <label className="nu-field">
               Hourly rate ($)
               <DollarInput value={form.hourlyRateDollars}

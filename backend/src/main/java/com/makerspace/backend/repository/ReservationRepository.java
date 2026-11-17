@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -125,4 +126,19 @@ public interface ReservationRepository extends JpaRepository<EquipmentReservatio
     List<Long> findEquipmentIdsInUseAt(
             @Param("statuses") Collection<ReservationStatus> statuses,
             @Param("now") ZonedDateTime now);
+    @Query(nativeQuery = true, value = """
+            SELECT e.name, COUNT(r.id),
+              COALESCE(SUM(EXTRACT(EPOCH FROM (r.end_time - r.start_time))/3600),0)
+            FROM reservations r JOIN equipment e ON r.equipment_id=e.id
+            WHERE r.status='COMPLETED'
+            GROUP BY e.id, e.name ORDER BY COUNT(r.id) DESC LIMIT 10
+            """)
+    List<Object[]> topEquipmentByUsage();
+
+    @Query(nativeQuery = true, value = """
+            SELECT EXTRACT(HOUR FROM start_time)::int, COUNT(*)
+            FROM reservations WHERE status IN ('ACTIVE','COMPLETED') AND start_time >= :since
+            GROUP BY 1 ORDER BY 1
+            """)
+    List<Object[]> reservationsByHourOfDay(@Param("since") Instant since);
 }

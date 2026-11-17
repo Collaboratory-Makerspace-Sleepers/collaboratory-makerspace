@@ -114,7 +114,7 @@ function MemberHardwareControls({ userId, authFetch, canOverride }) {
     {canOverride && <>
       <button type="button" disabled={busy} onClick={() => setShowOverride(!showOverride)}>Temporary door-access override</button>
       {showOverride && <div className="MemberHardwareOverride">
-        <p>Allows this member through the selected general-entry Pi while membership or waivers are pending. The account and card must remain enabled. Equipment permissions are never bypassed.</p>
+        <p>Allows this member through the selected general-entry Pi even while account activation, membership or waivers are pending. The card and Pi must remain enabled. Deleted accounts and equipment restrictions are never bypassed.</p>
         <label>Reason<input maxLength={200} value={reason} onChange={e => setReason(e.target.value)} /></label>
         <label>Duration in minutes (1–10080)<input type="number" min="1" max="10080" step="1" value={minutes} onChange={e => setMinutes(e.target.value)} /></label>
         <button type="button" disabled={busy || !ready || !selected?.enabled || selected?.equipmentId != null || !reason.trim() || !Number.isInteger(Number(minutes)) || Number(minutes) < 1 || Number(minutes) > 10080}

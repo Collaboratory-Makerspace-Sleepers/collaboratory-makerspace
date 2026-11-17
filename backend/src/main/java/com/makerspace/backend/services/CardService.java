@@ -84,8 +84,9 @@ public class CardService {
         if (!card.isActive()) {
             return record(uid, user, null, deviceId, false, "Card is deactivated");
         }
-        if (user.getAccountStatus() != com.makerspace.backend.model.AccountStatus.ACTIVE) {
-            return record(uid, user, null, deviceId, false, "Account is not active");
+        if (user == null || user.getDeletedAt() != null
+                || user.getAccountStatus() == com.makerspace.backend.model.AccountStatus.DELETED) {
+            return record(uid, null, null, deviceId, false, "Account was deleted");
         }
 
         Equipment equipment = null;
@@ -105,6 +106,9 @@ public class CardService {
                 scanRepository.findById(result.scanId()).ifPresent(s -> s.setDoorOverrideId(override.get().getId()));
                 return result;
             }
+        }
+        if (user.getAccountStatus() != com.makerspace.backend.model.AccountStatus.ACTIVE) {
+            return record(uid, user, null, deviceId, false, "Account is not active");
         }
         if (!checkInService.hasFacilityAccess(user)) {
             return record(uid, user, equipment, deviceId, false, "No active membership or day pass");

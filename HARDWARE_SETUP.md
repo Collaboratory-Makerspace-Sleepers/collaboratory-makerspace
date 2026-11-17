@@ -21,7 +21,7 @@ If using GitHub's upload page, upload the extracted source files and folders, **
 - Staff with both `MANAGE_USERS` and `MANAGE_EQUIPMENT` can grant a temporary general-entry override for a selected Pi, with a required reason and expiry (1 minute to 7 days). It can be revoked immediately.
 - Override use is recorded in the card-scan log and hardware event log. Grant/revoke records retain staff IDs, reason and timestamps in `hardware_door_overrides`.
 
-An override bypasses general-entry membership checks. It does not change payment, waiver or training records; it does not enable a disabled card or Pi, activate an account, or bypass equipment restrictions. Only an authenticated paired Pi can use it. A member must tap again after assignment; enrollment never opens a door.
+An override bypasses general-entry membership checks and the pending account-activation check. The account stays pending; access ends when the override expires or is revoked. Deleted accounts remain blocked. It does not change payment, waiver or training records; it does not enable a disabled card or Pi, activate an account, or bypass equipment restrictions. Only an authenticated paired Pi can use it. A member must tap again after assignment; enrollment never opens a door.
 
 The current branch's existing access rules remain authoritative. In particular, general entry uses facility membership/day-pass access; equipment scans also use the existing training/waiver checks. This update does not introduce a new facility-wide waiver rule or change billing expiration rules.
 

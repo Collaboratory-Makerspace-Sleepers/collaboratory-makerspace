@@ -12,6 +12,16 @@ import {
   formatTime,
 } from "../../hooks/useDashboard";
 
+export const CATEGORY_IMAGES = {
+  LASER:        "/laser engraver.webp",
+  "3D_PRINTER": "/3D printer - Prusa.png",
+  CNC:          "/large cnc.webp",
+  CNC_LARGE:    "/large cnc.webp",
+  CNC_SMALL:    "/small cnc.webp",
+  WOOD_LATHE:   "/wood lathe.jpg",
+  METAL_LATHE:  "/methal lathe.webp",
+};
+
 export const CATEGORY_LABELS = {
   LASER:         "Laser Cutters",
   "3D_PRINTER":  "3D Printers",
@@ -112,7 +122,7 @@ export default function RentEquipment() {
           {visible.map((item) => (
             <div className="Rent1" key={item.id}>
               <div>
-                <img src={item.imageUrl || "https://picsum.photos/seed/machine/480/360"} alt={item.name} />
+                <img src={item.imageUrl || CATEGORY_IMAGES[item.category] || "https://picsum.photos/seed/machine/480/360"} alt={item.name} />
               </div>
 
               <div className="Rent2">

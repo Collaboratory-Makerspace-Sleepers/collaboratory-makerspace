@@ -21,6 +21,7 @@ export default function AdminDashboard() {
           <p>Menu</p>
           <div className="DashNav1">
             {canManageRoles && <NavLink to="/admin-dashboard/home">Home</NavLink>}
+            {canManageRoles && <NavLink to="/admin-dashboard/analytics">Analytics</NavLink>}
             {canManageRoles && <NavLink to="/admin-dashboard/user">Users</NavLink>}
             {canManageRoles && <NavLink to="/admin-dashboard/rentequipment">Rent Equipment</NavLink>}
             {canManageClasses && <NavLink to="/admin-dashboard/bookclasses">Classes</NavLink>}

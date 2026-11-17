@@ -15,6 +15,7 @@ import AdminAccount from "./components/admin-dashboard/AdminAccount";
 import HardwareCheckIns from "./components/admin-dashboard/HardwareCheckIns";
 import AdminRoles from "./components/admin-dashboard/AdminRoles";
 import AdminCancellations from "./components/admin-dashboard/AdminCancellations";
+import AdminAnalytics from "./components/admin-dashboard/AdminAnalytics";
 import DashboardHome from "./components/dashboard/DashboardHome";
 import RentEquipment from "./components/dashboard/RentEquipment";
 import EquipmentCategoryPage from "./components/dashboard/EquipmentCategoryPage";
@@ -88,6 +89,7 @@ function App() {
         <Route path="hardware" element={<HardwareCheckIns />} />
         <Route path="roles" element={<AdminRoles />} />
         <Route path="cancellations" element={<AdminCancellations />} />
+        <Route path="analytics" element={<AdminAnalytics />} />
       </Route>
     </Routes>
   );

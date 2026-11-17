@@ -12,16 +12,20 @@ export default function AdminHome() {
   const [inUseIds, setInUseIds] = useState([]);
   const [visitsToday, setVisitsToday] = useState(null);
   const [pendingCancellations, setPendingCancellations] = useState(null);
+  const [activeMembers, setActiveMembers] = useState(null);
+  const [revenueThisMonth, setRevenueThisMonth] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
       try {
-        const [inUseRes, feedRes, cancelRes] = await Promise.all([
+        const [inUseRes, feedRes, cancelRes, membershipsRes, revenueRes] = await Promise.all([
           authFetch("/api/v1/reservations/in-use-now"),
           authFetch("/api/v1/users/activity/feed?limit=200"),
           authFetch("/api/v1/admin/cancellation-requests/count?status=PENDING"),
+          authFetch("/api/v1/admin/analytics/memberships"),
+          authFetch("/api/v1/admin/analytics/revenue"),
         ]);
 
         if (!cancelled && inUseRes.ok) {
@@ -41,6 +45,16 @@ export default function AdminHome() {
         if (!cancelled && cancelRes.ok) {
           const d = await cancelRes.json();
           setPendingCancellations(d.count ?? 0);
+        }
+
+        if (!cancelled && membershipsRes.ok) {
+          const d = await membershipsRes.json();
+          setActiveMembers(d.totalActive ?? 0);
+        }
+
+        if (!cancelled && revenueRes.ok) {
+          const d = await revenueRes.json();
+          setRevenueThisMonth(d.thisMonthCents ?? 0);
         }
       } catch {
         // leave defaults
@@ -81,6 +95,20 @@ export default function AdminHome() {
           <p className="admin-stat-card__label">Cancellation Requests</p>
           <p className="admin-stat-card__value">{pendingCancellations ?? "—"}</p>
           <button onClick={() => navigate("/admin-dashboard/cancellations")}>View</button>
+        </div>
+
+        <div className="admin-stat-card">
+          <p className="admin-stat-card__label">Active Members</p>
+          <p className="admin-stat-card__value">{activeMembers === null ? "—" : activeMembers}</p>
+          <button onClick={() => navigate("/admin-dashboard/analytics")}>View</button>
+        </div>
+
+        <div className="admin-stat-card">
+          <p className="admin-stat-card__label">Revenue This Month</p>
+          <p className="admin-stat-card__value">
+            {revenueThisMonth === null ? "—" : "$" + (revenueThisMonth / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+          </p>
+          <button onClick={() => navigate("/admin-dashboard/analytics")}>View</button>
         </div>
       </div>
 

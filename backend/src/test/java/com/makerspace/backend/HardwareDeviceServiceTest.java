@@ -106,8 +106,8 @@ class HardwareDeviceServiceTest {
         assertThat(result.get("door")).isEqualTo(Map.of("enabled", false));
         assertThat(device.getAssignmentUserId()).isNull();
         verify(cardService).assign("A1B2", 1L, "Member card", 2L);
-        verify(cardService, never()).scan(anyString(), anyString(), any());
-        when(cardService.scan("A1B2", device.getId().toString(), null)).thenReturn(new CardService.ScanResult(false, "No membership", null, 1L, 5L));
+        verify(cardService, never()).scanPaired(anyString(), anyString(), any());
+        when(cardService.scanPaired("A1B2", device.getId().toString(), null)).thenReturn(new CardService.ScanResult(false, "No membership", null, 1L, 5L));
         assertThat(service.scan(principal, "A1B2")).containsEntry("approved", false).containsEntry("scanId", 5L);
     }
 
@@ -148,7 +148,7 @@ class HardwareDeviceServiceTest {
     void doorCommandRequiresApprovedDecisionAndUsesConfiguredEquipmentOnly() {
         device.setEquipmentId(10L);
         device.setDoorEnabled(true);
-        when(cardService.scan("A1B2", device.getId().toString(), 10L))
+        when(cardService.scanPaired("A1B2", device.getId().toString(), 10L))
                 .thenReturn(new CardService.ScanResult(false, "Training missing", null, 1L, 1L))
                 .thenReturn(new CardService.ScanResult(true, "Access granted", "Member", 1L, 2L));
         assertThat(service.scan(principal, "A1B2").get("door")).isEqualTo(Map.of("enabled", false, "unlockSeconds", 5));
@@ -181,7 +181,7 @@ class HardwareDeviceServiceTest {
         assertThat(cancelled.assignmentExpiresAt()).isNull();
         assertThat(device.getAssignmentStaffId()).isNull();
         assertThat(device.getAssignmentLabel()).isNull();
-        when(cardService.scan("A1B2", device.getId().toString(), null))
+        when(cardService.scanPaired("A1B2", device.getId().toString(), null))
                 .thenReturn(new CardService.ScanResult(false, "Card not registered", null, null, 9L));
         assertThat(service.scan(principal, "A1B2")).containsEntry("status", "DENIED");
         verify(cardService, never()).assign(anyString(), anyLong(), anyString(), anyLong());

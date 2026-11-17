@@ -1,7 +1,7 @@
 # Start here — Raspberry Pi scanner
 
 Use this with a Raspberry Pi 4 and ACS ACR122U USB reader.
-Installer version: 2026.11.10.2 (corrected for Raspberry Pi OS Trixie).
+Package version: 2026.11.16.1 (Raspberry Pi OS Bookworm/Trixie).
 The Pi reads cards. The Makerspace backend stores members and decides access.
 
 ## 1. Set up a new Pi
@@ -43,19 +43,25 @@ start file later opens the installed app without reinstalling everything.
 
 ## 4. Connect once
 
-1. Start the Makerspace app on your computer with its Windows launcher.
-2. In the website, open **Admin → Hardware Access → Pis & areas → Add a Pi**.
-   Give it a name and area, such as Main entrance. Leave door output off.
-3. In the Pi window, choose **Connect → Find computer**. Select your computer and
-   compare its verification code with the admin page. Enter the **eight-digit Pi
-   pairing code** from that page. This is different from your website sign-in code.
+1. Ask your backend team for the deployed HTTPS backend address.
+2. In the website, open **Admin → Hardware Access → Pis & areas → Register Pi**.
+   Give it a name and area, such as Main entrance. Leave equipment unbound for
+   general entry and leave door output off.
+3. In the Pi window, choose **Connect → Hosted backend** and enter that address.
+   Enter the **eight-digit pairing code** from admin. This is not a sign-in code.
 4. Tap a card. An unassigned card should show **Denied**, not Manual check-in.
-5. To assign it: open/create a member in admin → **Assign card** → tap on that Pi.
-   Remove the card and tap again to check access.
+5. Open/create the member in admin → **Assign card** → select the Pi → tap.
+   Remove the card and tap again to check access. Pre-registered accounts can
+   receive cards, but must activate their account before entry is approved.
 
-Each Pi gets its own registration and area. Do not copy pairing credentials between
-Pis. For an AWS/hosted deployment, choose **Hosted backend** instead of Find computer
-and enter the HTTPS address supplied by your team.
+Each Pi needs its own registration. Existing credentials remain usable with the
+same paired-device backend/database. Pair again if you switch backends or move
+from the older scanner_devices implementation to this hardware_devices version.
+
+**Local testing:** if your team is running the backend locally, use an existing
+local TLS gateway and **Find computer**, or the SSH tunnel described in the app's
+HARDWARE_SETUP.md. A local gateway is not included in this folder and is not needed
+for AWS. Keep that development backend/gateway running during the test.
 
 ## 5. Daily use
 

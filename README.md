@@ -146,6 +146,8 @@ Catalog utility tests: `node --test frontend/src/utils/catalog.test.js`.
 
 ### Paired Raspberry Pi readers
 
+For this hardware update, deployment, member setup and local testing, see [HARDWARE_SETUP.md](HARDWARE_SETUP.md).
+
 The backend implements `makerspace-device-v1` for the scanner in
 `hardware/makerspace-pi`. Migration V26 adds registered Pis, expiring next-tap
 assignments and durable device events without changing existing booking tables.

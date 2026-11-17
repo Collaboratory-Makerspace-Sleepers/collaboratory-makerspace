@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import MemberHardware from "./MemberHardware";
 import AllUsers from "./AllUsers";
 import UserInformation from "./UserInformation";
 
@@ -16,6 +17,7 @@ export default function AdminUsers() {
   const [form, setForm] = useState({ fullName: "", email: "" });
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [createdMember, setCreatedMember] = useState(null);
   const [createdId, setCreatedId] = useState(null);
   const [usersVersion, setUsersVersion] = useState(0);
   const { authFetch, hasPermission } = useAuth();
@@ -23,6 +25,8 @@ export default function AdminUsers() {
   const roleOptions = canAssignElevated ? ROLE_OPTIONS : ROLE_OPTIONS.filter((o) => !o.elevated);
 
   const openInvite = (role) => {
+    setCreatedMember(null);
+    setCreatedId(null);
     setInvite({ role });
     setForm({ fullName: "", email: "" });
     setMessage("");
@@ -45,6 +49,7 @@ export default function AdminUsers() {
 
   const sendInvite = async (event) => {
     event.preventDefault();
+    if (createdMember || busy) return;
     setBusy(true);
     setMessage("");
     try {
@@ -60,6 +65,7 @@ export default function AdminUsers() {
           ? `Account created. A sign-in code was emailed to ${form.email}.`
           : `Account created for ${form.email}, but the email could not be delivered (the mail provider rejected it; with a Mailtrap demo account only the account owner's address works). They can still sign in by entering their email on the sign-in page and the code will be shown/sent the same way.`
       );
+      setCreatedMember({ id: data.id, name: form.fullName });
       setCreatedId(data.inviteSent ? null : { id: data.id, email: form.email });
       setForm({ fullName: "", email: "" });
       setUsersVersion((v) => v + 1);
@@ -114,6 +120,7 @@ export default function AdminUsers() {
               </div>
               <button type="button" className="nu-close" aria-label="Close" onClick={() => setInvite(null)}>×</button>
             </header>
+            {!createdMember && <fieldset disabled={busy} style={{ border: 0, padding: 0 }}>
             <label className="nu-field">
               Full name
               <input
@@ -139,12 +146,15 @@ export default function AdminUsers() {
                 ))}
               </select>
             </label>
+            </fieldset>}
+            {createdMember && <><h4>{createdMember.name}</h4><MemberHardware userId={createdMember.id} /></>}
             {message && <p className="nu-message" role="status">{message}</p>}
             <div className="nu-actions">
-              <button type="button" className="nu-cancel" onClick={() => setInvite(null)}>Cancel</button>
-              <button type="submit" disabled={busy}>
+              <button type="button" className="nu-cancel" onClick={() => setInvite(null)}>{createdMember ? "Done" : "Cancel"}</button>
+              {!createdMember && <button type="submit" disabled={busy}>
                 {busy ? "Creating…" : "Create & email code"}
-              </button>
+              </button>}
+              {createdId && <button type="button" disabled={busy} onClick={resend}>Resend invite</button>}
             </div>
           </form>
         </div>

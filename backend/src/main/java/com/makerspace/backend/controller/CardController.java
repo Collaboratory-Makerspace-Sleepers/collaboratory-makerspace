@@ -136,6 +136,7 @@ public class CardController {
         m.put("cardUid", s.getCardUid());
         m.put("approved", s.isApproved());
         m.put("reason", s.getReason());
+        m.put("doorOverrideId", s.getDoorOverrideId());
         m.put("memberName", s.getUser() == null ? null : CardService.displayName(s.getUser()));
         m.put("equipmentName", s.getEquipment() == null ? null : s.getEquipment().getName());
         m.put("deviceId", s.getDeviceId());

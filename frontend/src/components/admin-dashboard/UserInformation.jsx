@@ -1,4 +1,5 @@
 import { useState } from "react";
+import MemberHardware from "./MemberHardware";
 
 const DEFAULT_AVATAR =
   "data:image/svg+xml;utf8," +
@@ -130,6 +131,8 @@ export default function UserInformation({ user, onClose: onClosed }) {
               )}
             </InfoRow>
           </dl>
+
+          <MemberHardware userId={user.id} />
 
           <footer className="user-panel__actions">
             {isWriting && (

@@ -44,6 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({SecurityConfig.class, InternalAuthFilter.class})
 @TestPropertySource(properties = "app.internal.api.secret=test-secret")
 class InternalBillingControllerTest {
+    @MockBean private com.makerspace.backend.services.HardwareDeviceService hardwareDeviceService;
 
     @TestConfiguration
     @EnableMethodSecurity

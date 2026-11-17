@@ -5,6 +5,8 @@ import com.makerspace.backend.config.security.DeviceKeyFilter;
 import com.makerspace.backend.config.security.InternalAuthFilter;
 import com.makerspace.backend.config.security.UserPrincipal;
 import com.makerspace.backend.controller.CardController;
+import com.makerspace.backend.controller.HardwareDoorOverrideController;
+import com.makerspace.backend.services.HardwareDoorOverrideService;
 import com.makerspace.backend.controller.HardwareDeviceController;
 import com.makerspace.backend.config.security.DevicePrincipal;
 import com.makerspace.backend.security.OAuth2FailureHandler;
@@ -49,18 +51,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.mockito.ArgumentMatchers.*;
 
-@WebMvcTest({CardController.class, HardwareDeviceController.class})
+@WebMvcTest({CardController.class, HardwareDeviceController.class, HardwareDoorOverrideController.class})
 @ContextConfiguration(classes = HardwareSecurityConfigTest.Config.class)
 @TestPropertySource(properties = "app.hardware.device-key=test-device-key")
 class HardwareSecurityConfigTest {
     @Configuration(proxyBeanMethods = false)
     @Import({SecurityConfig.class, DeviceKeyFilter.class, InternalAuthFilter.class, JwtAuthFilter.class,
-            CardController.class, HardwareDeviceController.class})
+            CardController.class, HardwareDeviceController.class, HardwareDoorOverrideController.class})
     static class Config {}
 
     @Autowired MockMvc mockMvc;
 
     @MockBean CardService cardService;
+    @MockBean HardwareDoorOverrideService overrideService;
     @MockBean HardwareDeviceService hardwareDeviceService;
     @MockBean JwtService jwtService;
     @MockBean UserStateService userStateService;
@@ -218,5 +221,17 @@ class HardwareSecurityConfigTest {
                 .andExpect(status().isOk());
         verify(hardwareDeviceService).startAssignment(id, 3L, "Member card", 7L);
         verify(hardwareDeviceService, never()).startAssignment(any(), any(), any(), eq(999L));
+    }
+
+    @Test void overridesRequireBothUserAndEquipmentPermissions() throws Exception {
+        for (var permissions : List.of(List.of("MANAGE_EQUIPMENT"), List.of("MANAGE_USERS"), List.of("MANAGE_EQUIPMENT", "MANAGE_USERS"))) {
+            List<GrantedAuthority> authorities = permissions.stream().map(p -> (GrantedAuthority)new SimpleGrantedAuthority(p)).toList();
+            var principal = new UserPrincipal(1L, "subject", "admin@example.test", authorities);
+            var auth = new UsernamePasswordAuthenticationToken(principal, null, authorities);
+            mockMvc.perform(post("/api/v1/hardware/members/2/door-overrides").with(authentication(auth))
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"deviceId\":\"00000000-0000-0000-0000-000000000001\",\"reason\":\"Temporary\",\"minutes\":60}"))
+                    .andExpect(permissions.size() == 2 ? status().isOk() : status().isForbidden());
+        }
+        mockMvc.perform(get("/api/v1/hardware/members/2/door-overrides")).andExpect(status().isUnauthorized());
     }
 }

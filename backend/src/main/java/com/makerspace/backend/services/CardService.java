@@ -40,11 +40,12 @@ public class CardService {
     @Autowired private EquipmentRepository equipmentRepository;
     @Autowired private TrainingCompletionRepository trainingCompletionRepository;
     @Autowired private HardwareCheckInService checkInService;
+    @Autowired private com.makerspace.backend.repository.HardwareDoorOverrideRepository doorOverrides;
 
     public static String normalizeUid(String raw) {
         if (raw == null) return "";
-        String uid = raw.replaceAll("[^0-9A-Fa-f]", "").toUpperCase(Locale.ROOT);
-        return uid.length() >= 4 && uid.length() <= 32 ? uid : "";
+        String uid = raw.replaceAll("[\\s:-]", "").toUpperCase(Locale.ROOT);
+        return uid.matches("[0-9A-F]{4,32}") && uid.length() % 2 == 0 ? uid : "";
     }
 
     public static String displayName(User u) {
@@ -58,6 +59,16 @@ public class CardService {
 
     @Transactional
     public ScanResult scan(String rawUid, String deviceId, Long equipmentId) {
+        return scanInternal(rawUid, deviceId, equipmentId, false);
+    }
+
+    /** Only HardwareDeviceService calls this after verifying paired credentials. */
+    @Transactional
+    public ScanResult scanPaired(String rawUid, String deviceId, Long equipmentId) {
+        return scanInternal(rawUid, deviceId, equipmentId, true);
+    }
+
+    private ScanResult scanInternal(String rawUid, String deviceId, Long equipmentId, boolean paired) {
         String uid = normalizeUid(rawUid);
         if (uid.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "cardUid must be 4-32 hex characters");
@@ -86,6 +97,15 @@ public class CardService {
             }
         }
 
+        if (paired && equipmentId == null) {
+            var override = doorOverrides.findFirstByUserIdAndDeviceIdAndRevokedAtIsNullAndExpiresAtAfterOrderByCreatedAtDesc(
+                    user.getId(), java.util.UUID.fromString(deviceId), Instant.now());
+            if (override.isPresent()) {
+                ScanResult result = record(uid, user, null, deviceId, true, "Access granted by admin door override");
+                scanRepository.findById(result.scanId()).ifPresent(s -> s.setDoorOverrideId(override.get().getId()));
+                return result;
+            }
+        }
         if (!checkInService.hasFacilityAccess(user)) {
             return record(uid, user, equipment, deviceId, false, "No active membership or day pass");
         }
@@ -116,6 +136,7 @@ public class CardService {
         CardScan scan = new CardScan();
         scan.setCardUid(uid);
         scan.setUser(user);
+        scan.setOriginalUserId(user == null ? null : user.getId());
         scan.setEquipment(equipment);
         scan.setDeviceId(deviceId);
         scan.setApproved(approved);
@@ -148,6 +169,9 @@ public class CardService {
         if (card != null && card.isActive() && !card.getUser().getId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Card is already assigned to " + displayName(card.getUser()));
+        }
+        if (card != null && !card.isActive()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Card is disabled. Enable it explicitly in Cards before assigning it.");
         }
         if (card == null) card = new MemberCard();
         card.setCardUid(uid);

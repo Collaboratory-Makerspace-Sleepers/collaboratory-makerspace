@@ -35,6 +35,9 @@ public class UserService {
     UserRepository userRepository;
 
     @Autowired
+    CardAccountCleanup cardAccountCleanup;
+
+    @Autowired
     UserStateService userStateService;
 
     @Autowired
@@ -288,6 +291,7 @@ public class UserService {
     @CacheEvict(value = "userState", key = "#user.email")
     @Transactional
     public void softDelete(User user) {
+        cardAccountCleanup.release(user.getId());
         userRepository.delete(user);  // @SQLDelete turns this into UPDATE users SET deleted_at = ...
     }
 
@@ -308,6 +312,7 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot delete the last admin");
         }
         log.info("User {} (id={}) soft-deleted by actor id={}", user.getEmail(), id, actorId);
+        cardAccountCleanup.release(user.getId());
         userRepository.delete(user);
         userStateService.evict(user.getEmail());
     }

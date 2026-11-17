@@ -233,8 +233,8 @@ public class HardwareDeviceService {
     public DeviceView startAssignment(UUID id, Long userId, String label, Long staffId) {
         HardwareDevice d = locked(id);
         if (!d.isEnabled() || d.getKeyHash() == null) throw bad("Pair and enable this Pi before assigning a card");
-        if (userId == null || users.findById(userId).filter(u -> u.getAccountStatus() == AccountStatus.ACTIVE).isEmpty()) {
-            throw bad("Choose an active member");
+        if (userId == null || users.findById(userId).filter(u -> u.getAccountStatus() != AccountStatus.DELETED).isEmpty()) {
+            throw bad("Choose an existing member");
         }
         if (d.getAssignmentExpiresAt() != null && d.getAssignmentExpiresAt().isAfter(Instant.now())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "A card assignment is already waiting on this Pi");
@@ -277,21 +277,25 @@ public class HardwareDeviceService {
         }
         if (d.getAssignmentUserId() != null) {
             MemberCard existing = cards.findByCardUid(uid).orElse(null);
+            if (existing != null && !existing.isActive()) {
+                audit(d, "ASSIGNMENT_REJECTED", "Disabled card requires explicit admin enable", "ERROR", uid, null);
+                return assignmentResult("ASSIGNMENT_REJECTED", "Card is disabled. Ask staff to enable it in Cards first.");
+            }
             if (existing != null && !existing.getUser().getId().equals(d.getAssignmentUserId())) {
                 audit(d, "ASSIGNMENT_REJECTED", "Card belongs to a different member", "ERROR", uid, null);
                 return assignmentResult("ASSIGNMENT_REJECTED", "Card belongs to a different member. Use another card.");
             }
-            if (users.findById(d.getAssignmentUserId()).filter(u -> u.getAccountStatus() == AccountStatus.ACTIVE).isEmpty()) {
+            if (users.findById(d.getAssignmentUserId()).filter(u -> u.getAccountStatus() != AccountStatus.DELETED).isEmpty()) {
                 clearAssignment(d);
-                audit(d, "ASSIGNMENT_REJECTED", "Selected member is no longer active", "ERROR", uid, null);
-                return assignmentResult("ASSIGNMENT_REJECTED", "Member is no longer active. Ask staff to start again.");
+                audit(d, "ASSIGNMENT_REJECTED", "Selected member is no longer available", "ERROR", uid, null);
+                return assignmentResult("ASSIGNMENT_REJECTED", "Member is no longer available. Ask staff to start again.");
             }
             cardService.assign(uid, d.getAssignmentUserId(), d.getAssignmentLabel(), d.getAssignmentStaffId());
             clearAssignment(d);
             audit(d, "CARD_ASSIGNED", "Card assigned; remove and tap again to check access", "INFO", uid, null);
             return assignmentResult("CARD_ASSIGNED", "Card assigned. Remove and tap again to check access.");
         }
-        CardService.ScanResult result = cardService.scan(uid, d.getId().toString(), d.getEquipmentId());
+        CardService.ScanResult result = cardService.scanPaired(uid, d.getId().toString(), d.getEquipmentId());
         audit(d, result.approved() ? "ACCESS_APPROVED" : "ACCESS_DENIED", result.message(),
                 "INFO", uid, result.scanId());
         Map<String, Object> out = new LinkedHashMap<>();

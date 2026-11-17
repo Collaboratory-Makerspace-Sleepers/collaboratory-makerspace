@@ -76,12 +76,12 @@ def protocol(base,fingerprint=None):
     try:
         data=call(base,'/api/v1/hardware/device/protocol',None,fingerprint=fingerprint,method='GET')
     except ApiHttpError as exc:
-        if exc.status==404:raise ApiCompatibilityError('Pairing support is missing from the computer app. Start the matching hardware release; saved pairing is unchanged.') from None
+        if exc.status==404:raise ApiCompatibilityError('Pairing support is missing from the backend. Deploy the matching hardware release; saved pairing is unchanged.') from None
         raise
     except ApiAuthError:
-        raise ApiCompatibilityError('Computer app does not support this scanner connection. Start the matching hardware app and launcher; saved pairing is unchanged.') from None
+        raise ApiCompatibilityError('Backend does not support this scanner connection. Use the matching hardware release; saved pairing is unchanged.') from None
     if data.get('protocol')!='makerspace-device-v1' or data.get('version')!=1:
-        raise ApiCompatibilityError('Incompatible computer app. Use the matching hardware release; saved pairing is unchanged.')
+        raise ApiCompatibilityError('Incompatible backend. Use the matching hardware release; saved pairing is unchanged.')
     return data
 
 def pair(base,code,hostname,fingerprint=None):

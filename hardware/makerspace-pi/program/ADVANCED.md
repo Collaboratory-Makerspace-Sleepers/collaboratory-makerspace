@@ -46,10 +46,11 @@ with several online Pis select one. Enrollment stays red and never opens a door.
 Remove and re-tap for access. Approved feedback is green then red; denied feedback is
 amber then red. A held card is not continuously submitted.
 
-Administrators can choose Door access override on the user: selected doors or all
-doors, a reason, expiration or no expiration, and Revoke. It does not alter waiver,
-payment or training records. Disabled cards/Pis, deleted accounts and maintenance
-still block access. All-doors exceptions exclude equipment stations.
+Staff with user- and equipment-management permissions can choose Temporary
+door-access override on the member. Select one general-entry Pi, give a reason
+and expiry (1 minute to 7 days); use Revoke to cancel it. Overrides do not change
+waiver, payment or training records. Disabled cards/Pis and inactive/deleted
+accounts remain blocked. Equipment-bound Pis never use these exceptions.
 
 ## Service controls
 

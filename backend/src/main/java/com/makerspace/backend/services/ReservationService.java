@@ -46,9 +46,6 @@ public class ReservationService {
     @Autowired private PaymentRecordRepository paymentRecordRepository;
     @Autowired private EmailService emailService;
 
-    /** How long after signing a waiver it remains valid for use in a booking (minutes). */
-    private static final int WAIVER_VALIDITY_MINUTES = 30;
-
     private static final ZoneId NY = ZoneId.of("America/New_York");
     private static final DateTimeFormatter CONFLICT_FMT =
             DateTimeFormatter.ofPattern("M/d h:mm a z");
@@ -62,9 +59,10 @@ public class ReservationService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End time must be after start time");
         }
 
-        if (!membershipService.hasActiveMembership(userId)) {
+        if (!membershipService.hasActiveMembership(userId) && !hasRecentDayPass(userId)) {
             throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED,
-                    "An active membership is required to reserve equipment");
+                    "An active membership or a paid day pass from the last 24 hours is required. "
+                            + "If you just paid, refresh payment confirmation; do not pay again.");
         }
 
         Equipment equipment = equipmentRepository.findById(equipmentId)
@@ -78,9 +76,21 @@ public class ReservationService {
 
         // Validate waiver — required for all equipment, every booking.
         TrainingWaiverSignature waiver = waiverSignatureRepository
-                .findByIdAndUserIdAndEquipmentIdAndReservationIdIsNull(waiverSignatureId, userId, equipmentId)
+                .findForBooking(waiverSignatureId, userId, equipmentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "A valid signed waiver is required before booking"));
+
+        if (waiver.getReservation() != null) {
+            EquipmentReservation existing = waiver.getReservation();
+            if (existing.getStartTime().toInstant().equals(startTime.toInstant())
+                    && existing.getEndTime().toInstant().equals(endTime.toInstant())
+                    && (existing.getStatus() == ReservationStatus.ACTIVE
+                        || existing.getStatus() == ReservationStatus.TRAINING_PENDING)) {
+                return existing;
+            }
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "This waiver has already been used for another reservation");
+        }
 
         if (waiver.getWaiverVersion() != equipment.getCurrentWaiverVersion()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
@@ -88,8 +98,7 @@ public class ReservationService {
                             + equipment.getCurrentWaiverVersion() + ") and try again");
         }
 
-        LocalDateTime waiverExpiry = waiver.getSignedAt().plusMinutes(WAIVER_VALIDITY_MINUTES);
-        if (LocalDateTime.now().isAfter(waiverExpiry)) {
+        if (!waiver.isValidForBookingAt(LocalDateTime.now())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Waiver signature has expired — please sign again to proceed");
         }
@@ -118,8 +127,9 @@ public class ReservationService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
+        boolean isMember = membershipService.hasActiveMembership(userId);
         boolean isStudioMember = membershipService.hasMachineRateWaiver(userId);
-        int quotedRate = resolveRate(equipment, isStudioMember);
+        int quotedRate = resolveRate(equipment, isMember, isStudioMember);
         long durationMinutes = Duration.between(startTime, endTime).toMinutes();
         int estimatedCost = Math.round((float) quotedRate * durationMinutes / 60);
 
@@ -304,7 +314,7 @@ public class ReservationService {
 
     @Transactional(readOnly = true)
     public Page<EquipmentReservation> findAll(Pageable pageable) {
-        return reservationRepository.findAllByOrderByStartTimeDesc(pageable);
+        return reservationRepository.findAllByOrderByCreatedAtDescIdDesc(pageable);
     }
 
     @Transactional(readOnly = true)
@@ -320,11 +330,12 @@ public class ReservationService {
      *
      * Priority:
      *  1. Studio members (active studio_assignment) → 0 (all machines free)
-     *  2. Everyone else → hourly_rate_cents
+     *  2. Equipment included with an active membership → 0
+     *  3. Active members booking legacy CLASS equipment → 50% off
+     *  4. Everyone else → the single hourly_rate_cents
      */
-    private int resolveRate(Equipment equipment, boolean isStudioMember) {
-        if (isStudioMember) return 0;
-        return equipment.getHourlyRateCents();
+    private int resolveRate(Equipment equipment, boolean isMember, boolean isStudioMember) {
+        return EquipmentService.resolveRate(equipment, isMember, isStudioMember);
     }
 
     /** Equipment that someone has booked for the current moment. */

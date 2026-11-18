@@ -335,6 +335,8 @@ public class StripeEventService {
                 int amountTotal = session.path("amount_total").asInt(0);
                 String currency = session.path("currency").asText("usd");
                 String piId = session.path("payment_intent").asText(null);
+                boolean classPayment = "CLASS".equals(session.path("metadata").path("kind").asText())
+                        || session.path("success_url").asText("").contains("type=class");
 
                 if (piId != null && paymentRecordRepository.findByStripePaymentIntentId(piId).isEmpty()) {
                     PaymentRecord record = new PaymentRecord();
@@ -353,17 +355,18 @@ public class StripeEventService {
                         log.warn("Could not retrieve charge for PI {} receipt URL in event {}: {}",
                                 piId, cmd.eventId(), e.getMessage());
                     }
-                    record.setKind(PaymentKind.DAY_PASS);
+                    record.setKind(classPayment ? PaymentKind.CLASS : PaymentKind.DAY_PASS);
                     record.setAmountCents(amountTotal);
                     record.setCurrency(currency);
                     record.setStatus(PaymentStatus.SUCCEEDED);
-                    record.setDescription("Day pass");
+                    record.setDescription(classPayment ? "Class booking" : "Day pass");
                     record.setOccurredAt(ZonedDateTime.now());
                     paymentRecordRepository.save(record);
                 }
 
                 try {
-                    emailService.sendPaymentReceipt(user.getEmail(), fullName, "Day pass", amountTotal, currency);
+                    emailService.sendPaymentReceipt(user.getEmail(), fullName,
+                            classPayment ? "Class booking" : "Day pass", amountTotal, currency);
                 } catch (Exception e) {
                     log.warn("Failed to send payment receipt for checkout event {}: {}", cmd.eventId(), e.getMessage());
                 }

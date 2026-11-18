@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { sortNewest } from "../../utils/catalog";
 
 const PAGE_SIZE = 10;
 
@@ -18,6 +19,8 @@ export default function ReservationsTable({ isClass, title }) {
   const [users, setUsers] = useState({});
   const [page, setPage] = useState(0);
   const [error, setError] = useState("");
+  const [sortOrder, setSortOrder] = useState("newest");
+  const [status, setStatus] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -46,10 +49,10 @@ export default function ReservationsTable({ isClass, title }) {
   }, [load]);
 
   const filtered = useMemo(
-    () => rows
-      .filter((r) => (r.equipmentCategory === "CLASS") === isClass)
-      .sort((a, b) => new Date(b.startTime) - new Date(a.startTime)),
-    [rows, isClass]
+    () => sortNewest(rows, sortOrder)
+      .filter((r) => (r.equipmentCategory === "CLASS") === isClass
+        && (!status || r.status === status)),
+    [rows, isClass, sortOrder, status]
   );
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const visible = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
@@ -65,6 +68,20 @@ export default function ReservationsTable({ isClass, title }) {
             <span className="ra-page-info">{totalPages === 0 ? "0 of 0" : `${page + 1} of ${totalPages}`}</span>
             <button className="ra-page-btn" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)} aria-label="Next page">›</button>
           </div>
+        </div>
+        <div className="catalog-filters">
+          <label>Status
+            <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(0); }}>
+              <option value="">All statuses</option>
+              {[...new Set(rows.map((row) => row.status))].sort().map((value) => <option key={value}>{value}</option>)}
+            </select>
+          </label>
+          <label>Sort
+            <select value={sortOrder} onChange={(e) => { setSortOrder(e.target.value); setPage(0); }}>
+              <option value="newest">Newest to oldest</option>
+              <option value="oldest">Oldest to newest</option>
+            </select>
+          </label>
         </div>
         {error ? (
           <p className="ra-state ra-error" role="alert">{error}</p>

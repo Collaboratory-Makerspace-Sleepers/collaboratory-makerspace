@@ -6,7 +6,7 @@ export default function AdminBookClasses() {
   const [createOpen, setCreateOpen] = useState(false);
 
   return (
-    <div className="AdUser">
+    <div className="AdUser admin-classes-page">
       <h1 className="admin-page-title">Classes</h1>
       <div className="admin-actions-row">
         <button onClick={() => setCreateOpen(true)}>Create New Class</button>

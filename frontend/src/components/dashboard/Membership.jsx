@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useMembership } from "../../hooks/useMembership";
 
 // Feature bullets are UI copy — not data — so they stay hardcoded here.
 const PLAN_FEATURES = {
@@ -80,8 +81,7 @@ export default function Membership() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [membership, setMembership] = useState(undefined); // undefined = loading, null = none
-  const [membershipError, setMembershipError] = useState("");
+  const { membership, error: membershipError, refresh: loadMembership, active: hasActiveMembership } = useMembership();
   const [plans, setPlans] = useState([]);
   const [plansError, setPlansError] = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState(null);
@@ -89,38 +89,6 @@ export default function Membership() {
   const [cancelConfirm, setCancelConfirm] = useState(false);
 
   const banner = location.state?.banner;
-
-  function loadMembership() {
-    setMembership(undefined);
-    setMembershipError("");
-    authFetch("/api/v1/billing/me/subscription")
-      .then((res) => {
-        if (res.status === 404) return null;
-        if (!res.ok) throw new Error("Could not load membership");
-        return res.json();
-      })
-      .then((data) => setMembership(data))
-      .catch(() => setMembershipError("Could not load membership status."));
-  }
-
-  useEffect(() => {
-    let cancelled = false;
-    authFetch("/api/v1/billing/me/subscription")
-      .then((res) => {
-        if (res.status === 404) return null;
-        if (!res.ok) throw new Error("Could not load membership");
-        return res.json();
-      })
-      .then((data) => {
-        if (cancelled) return;
-        setMembership(data);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setMembershipError("Could not load membership status.");
-      });
-    return () => { cancelled = true; };
-  }, [authFetch]);
 
   useEffect(() => {
     let cancelled = false;
@@ -138,10 +106,6 @@ export default function Membership() {
     return () => { cancelled = true; };
   }, []);
 
-  const hasActiveMembership =
-    membership &&
-    ["ACTIVE", "TRIALING", "PAST_DUE"].includes(membership.status);
-
   function handleUpgrade(plan) {
     navigate("/dashboard/membership/checkout", { state: { plan, currentMembership: membership } });
   }
@@ -152,7 +116,7 @@ export default function Membership() {
     try {
       const res = await authFetch("/api/v1/billing/cancel", { method: "POST" });
       if (!res.ok) throw new Error("Could not cancel membership");
-      setMembership((m) => ({ ...m, cancelAtPeriodEnd: true }));
+      loadMembership();
       setCancelConfirm(false);
     } catch (err) {
       setCheckoutError(err.message || "Something went wrong.");
@@ -214,9 +178,6 @@ export default function Membership() {
           {membership === null && (
             <>
               <p>No active membership</p>
-              <button onClick={loadMembership} style={{ marginTop: "0.5rem", fontSize: "0.85rem" }}>
-                Check again
-              </button>
             </>
           )}
           {membership && (
@@ -245,7 +206,7 @@ export default function Membership() {
                     ? "Expired"
                     : membership.cancelAtPeriodEnd
                     ? "Cancels"
-                    : "Next billing"}{" "}
+                    : membership.planCode === "DAY_PASS" ? "Access expires" : "Next billing"}{" "}
                   {new Date(membership.currentPeriodEnd).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                 </p>
               )}
@@ -256,13 +217,16 @@ export default function Membership() {
               )}
             </>
           )}
-          {hasActiveMembership && !membership?.cancelAtPeriodEnd && (
+          {hasActiveMembership && membership?.stripeSubscriptionId && !membership?.cancelAtPeriodEnd && (
             <div className="Dash5">
               <button onClick={() => setCancelConfirm(true)} disabled={!!checkoutLoading}>
                 Cancel membership
               </button>
             </div>
           )}
+          <button onClick={loadMembership} style={{ marginTop: "0.5rem", fontSize: "0.85rem" }}>
+            Check again
+          </button>
         </div>
       </div>
 
@@ -312,7 +276,7 @@ export default function Membership() {
                 ))}
               </div>
               <button
-                disabled={isCurrent}
+                disabled={isCurrent || membership === undefined}
                 onClick={() => !isCurrent && handleUpgrade(plan)}
               >
                 {buttonLabel}

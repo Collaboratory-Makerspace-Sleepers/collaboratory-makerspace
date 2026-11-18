@@ -31,6 +31,12 @@ public class CardScan {
     @Column(name = "device_id", length = 100)
     private String deviceId;
 
+    @Column(name = "door_override_id")
+    private Long doorOverrideId;
+
+    @Column(name = "original_user_id")
+    private Long originalUserId;
+
     @Column(nullable = false)
     private boolean approved;
 

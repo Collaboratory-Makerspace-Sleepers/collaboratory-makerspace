@@ -191,9 +191,10 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(deviceKeyFilter, UsernamePasswordAuthenticationFilter.class)
-                .securityMatcher("/api/v1/hardware/card-scan", "/api/v1/hardware/checkin")
-                .anonymous(AbstractHttpConfigurer::disable)
+                .securityMatcher("/api/v1/hardware/card-scan", "/api/v1/hardware/checkin", "/api/v1/hardware/device/**")
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(GET, "/api/v1/hardware/device/protocol").permitAll()
+                        .requestMatchers(POST, "/api/v1/hardware/device/pair").permitAll()
                         .anyRequest().hasAuthority("SCOPE_HARDWARE")
                 )
                 .exceptionHandling(e -> e.authenticationEntryPoint(

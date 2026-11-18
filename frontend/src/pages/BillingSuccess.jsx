@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { confirmCheckout } from "../hooks/confirmCheckout";
 
 const PENDING_RESERVATION_KEY = "pendingReservationAfterPayment";
 const PENDING_RESERVATION_TTL_MS = 2 * 60 * 60 * 1000;
@@ -20,7 +21,7 @@ const CONTENT = {
   membership: {
     title: "Membership activated",
     subtitle:
-      "Your membership is being activated. It may take a moment to reflect — check your membership page in a few seconds.",
+      "Your membership and payment history have been synchronized.",
     link: "/dashboard/membership",
     label: "View membership",
   },
@@ -40,11 +41,10 @@ const CONTENT = {
 
 function ClassEnrollmentSuccess({ enrollmentId, stripeSessionId }) {
   const { authFetch } = useAuth();
-  const [status, setStatus] = useState("confirming");
-  const [className, setClassName] = useState(null);
+  const [status, setStatus] = useState(enrollmentId ? "confirming" : "error");
 
   useEffect(() => {
-    if (!enrollmentId) { setStatus("error"); return; }
+    if (!enrollmentId) return;
     authFetch(`/api/v1/class-sessions/enrollment/${enrollmentId}/confirm`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -97,9 +97,7 @@ function ClassEnrollmentSuccess({ enrollmentId, stripeSessionId }) {
         <div className="SignInText">
           <p className="signin-title">You&apos;re enrolled!</p>
           <p className="signin-subtitle">
-            {className
-              ? `You're confirmed for ${className}.`
-              : "Your enrollment is confirmed. See you in class!"}
+            Your enrollment is confirmed. See you in class!
           </p>
         </div>
         <div className="sign-in">
@@ -112,11 +110,97 @@ function ClassEnrollmentSuccess({ enrollmentId, stripeSessionId }) {
   );
 }
 
+function CompletePaidBooking({ reservation, type, stripeSessionId }) {
+  const { authFetch } = useAuth();
+  const navigate = useNavigate();
+  const operation = useRef(null);
+  const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
+  const [confirmed, setConfirmed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function complete() {
+      await confirmCheckout(authFetch, type, stripeSessionId);
+      if (!reservation) return;
+      const response = await authFetch("/api/v1/reservations", {
+        method: "POST",
+        signal: AbortSignal.timeout(30000),
+        body: JSON.stringify({
+          equipmentId: reservation.equipmentId,
+          startTime: reservation.startTime,
+          endTime: reservation.endTime,
+          waiverSignatureId: reservation.waiverSignatureId,
+        }),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message || body.detail || `Reservation could not be confirmed (HTTP ${response.status}). Your payment does not need to be repeated.`);
+      }
+      sessionStorage.removeItem(PENDING_RESERVATION_KEY);
+      if (reservation.waiverSignatureStorageKey) {
+        sessionStorage.removeItem(reservation.waiverSignatureStorageKey);
+      }
+    }
+    if (!operation.current) operation.current = complete();
+    operation.current.then(() => {
+      if (!cancelled) {
+        if (reservation) navigate("/dashboard/reservations", { replace: true });
+        else setConfirmed(true);
+      }
+    }).catch((err) => {
+      if (!cancelled) setError(err.name === "TimeoutError"
+        ? "Confirmation timed out. Retry confirmation without paying again."
+        : err.message);
+    });
+    return () => { cancelled = true; };
+  }, [authFetch, navigate, reservation, type, stripeSessionId, attempt]);
+
+  if (confirmed) {
+    const content = CONTENT[type];
+    return (
+      <div className="DashHome1">
+        <h1>{content.title}</h1>
+        <p>{content.subtitle}</p>
+        <Link to={content.link}>{content.label}</Link>
+        <p><Link to="/dashboard/billing-history">View payment and receipt</Link></p>
+        <p><Link to="/dashboard/payment-methods">View saved cards</Link></p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="DashHome1">
+      <h1>{error ? (reservation ? "Reservation needs attention" : "Payment confirmation needs attention")
+        : (reservation ? "Finalizing your reservation..." : "Confirming your checkout...")}</h1>
+      {error ? (
+        <>
+          <p role="alert">{error}</p>
+          <button onClick={() => {
+            operation.current = null;
+            setError("");
+            setAttempt((value) => value + 1);
+          }}>Retry confirmation</button>
+          <Link to="/dashboard/billing-history">View payment and receipt</Link>
+          {reservation && <Link to={`/dashboard/rentequipment/${reservation.equipmentId}/waiver`} state={reservation}>
+            Review waiver
+          </Link>}
+        </>
+      ) : <p role="status">{reservation
+        ? `Verifying payment and booking ${reservation.equipmentName}. Please wait.`
+        : "Verifying checkout and updating your account. Please wait."}</p>}
+    </div>
+  );
+}
+
 export default function BillingSuccess() {
   const [params] = useSearchParams();
   const type = params.get("type");
   const enrollmentId = params.get("enrollmentId");
   const stripeSessionId = params.get("session_id");
+  const [pendingReservation] = useState(() =>
+    ["membership", "daypass"].includes(type) ? readPendingReservation() : null
+  );
 
   if (type === "class") {
     return (
@@ -127,17 +211,11 @@ export default function BillingSuccess() {
     );
   }
 
-  const pendingReservation = ["membership", "daypass"].includes(type)
-    ? readPendingReservation()
-    : null;
-  const content = pendingReservation
-    ? {
-        title: "Payment received",
-        subtitle: "Continue to confirm your reservation. Required training will appear in your dashboard after booking.",
-        link: `/dashboard/rentequipment/${pendingReservation.equipmentId}/checkout`,
-        label: "Continue reservation",
-      }
-    : CONTENT[type] ?? {
+  if (["membership", "daypass", "setup"].includes(type)) {
+    return <CompletePaidBooking key={`${type}:${stripeSessionId ?? "legacy"}`}
+      reservation={pendingReservation} type={type} stripeSessionId={stripeSessionId} />;
+  }
+  const content = CONTENT[type] ?? {
         title: "Payment received",
         subtitle: "Your payment was successful.",
         link: "/dashboard/home",
@@ -154,9 +232,6 @@ export default function BillingSuccess() {
         <div className="sign-in">
           <Link
             to={content.link}
-            onClick={() => {
-              if (pendingReservation) sessionStorage.removeItem(PENDING_RESERVATION_KEY);
-            }}
           >
             <button className="signButton">{content.label}</button>
           </Link>

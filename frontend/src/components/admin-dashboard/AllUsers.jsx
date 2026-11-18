@@ -23,23 +23,37 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [actionNote, setActionNote] = useState("");
+  const [resendNote, setResendNote] = useState("");
 
   const deleteUser = async (user) => {
     const label = user.email || fullName(user);
     if (!window.confirm(`Delete ${label}? They will lose access to the makerspace.`)) return;
-    setActionNote("");
+    setResendNote("");
     try {
       const res = await authFetch(`/api/v1/users/${user.id}`, { method: "DELETE" });
       if (res.ok) {
         setUsers((prev) => prev.filter((u) => u.id !== user.id));
-        setActionNote(`Deleted ${label}.`);
+        setResendNote(`Deleted ${label}.`);
       } else {
         const data = await res.json().catch(() => ({}));
-        setActionNote(data.message || `Could not delete ${label}.`);
+        setResendNote(data.message || `Could not delete ${label}.`);
       }
     } catch {
-      setActionNote("Could not delete the user.");
+      setResendNote("Could not delete the user.");
+    }
+  };
+
+  const resendCode = async (user) => {
+    setResendNote("");
+    try {
+      const res = await authFetch(`/api/v1/admin/registrations/${user.id}/resend-invite`, { method: "POST" });
+      setResendNote(
+        res.ok
+          ? `Sign-in code emailed to ${user.email || fullName(user)}.`
+          : `Could not send the email to ${user.email || fullName(user)}. Check the mail settings and try again.`
+      );
+    } catch {
+      setResendNote("Could not send the email.");
     }
   };
 
@@ -137,7 +151,7 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
           <p className="ra-state">{query ? "No users match your search." : "No users yet."}</p>
         ) : (
           <div className="ra-table-scroll">
-            {actionNote && <p className="ra-state" role="status">{actionNote}</p>}
+            {resendNote && <p className="ra-state" role="status">{resendNote}</p>}
             <table className="ra-table au-table">
               <thead>
                 <tr>
@@ -164,6 +178,9 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
                     <td>
                       <button className="ra-link" onClick={() => onViewProfile(user)}>
                         View Profile
+                      </button>{" "}
+                      <button className="ra-link" onClick={() => resendCode(user)}>
+                        Resend code
                       </button>{" "}
                       <button className="ra-link" onClick={() => deleteUser(user)}>
                         Delete

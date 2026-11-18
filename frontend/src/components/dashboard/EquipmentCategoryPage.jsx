@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
 import { CATEGORY_LABELS } from "./RentEquipment";
+import { hourlyPrice, sortNewest } from "../../utils/catalog";
+import { useCatalog } from "../../hooks/useCatalog";
 
 const STATUS_BADGE = {
   AVAILABLE:   { label: "Available",   color: "green"  },
@@ -13,31 +13,8 @@ const STATUS_BADGE = {
 export default function EquipmentCategoryPage() {
   const { category } = useParams();
   const navigate = useNavigate();
-  const { authFetch } = useAuth();
-
-  const [units, setUnits] = useState([]);
-  const [pageLoading, setPageLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    authFetch(`/api/v1/equipment/category/${category}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("failed");
-        return res.json();
-      })
-      .then((data) => {
-        if (cancelled) return;
-        setUnits(data);
-        setPageLoading(false);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setError("Unable to load equipment.");
-        setPageLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, [authFetch, category]);
+  const { items: units, loading: pageLoading, error } = useCatalog(
+    `/api/v1/equipment/category/${encodeURIComponent(category)}`);
 
   const title = CATEGORY_LABELS[category] ?? category;
 
@@ -52,12 +29,10 @@ export default function EquipmentCategoryPage() {
       {error && <p>{error}</p>}
 
       <div className="RentGrid">
-        {units.map((item) => {
+        {sortNewest(units).map((item) => {
           const badge = STATUS_BADGE[item.status] ?? { label: item.status, color: "gray" };
           const available = item.status === "AVAILABLE";
-          const rateLabel = item.hourlyRateCents > 0
-            ? `$${(item.hourlyRateCents / 100).toFixed(0)}/hr`
-            : "Free";
+          const rateLabel = hourlyPrice(item);
 
           return (
             <div className="Rent1" key={item.id}>

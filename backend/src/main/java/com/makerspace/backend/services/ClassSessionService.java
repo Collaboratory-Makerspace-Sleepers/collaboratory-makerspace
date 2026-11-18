@@ -50,7 +50,7 @@ public class ClassSessionService {
 
     @Transactional(readOnly = true)
     public List<ClassSessionDTO> listAll(Long viewerUserId) {
-        List<ClassSession> sessions = classSessionRepository.findAllOrderByStartTimeDesc();
+        List<ClassSession> sessions = classSessionRepository.findAllByOrderByCreatedAtDescIdDesc();
         return sessions.stream()
                 .map(s -> toDTO(s, viewerUserId))
                 .toList();
@@ -232,6 +232,9 @@ public class ClassSessionService {
     int resolvePrice(ClassSession session, Long userId) {
         if (membershipService.hasMachineRateWaiver(userId)) {
             return session.getPriceCents() / 2;
+        }
+        if (membershipService.hasActiveMembership(userId)) {
+            return session.getMemberPriceCents();
         }
         return session.getPriceCents();
     }

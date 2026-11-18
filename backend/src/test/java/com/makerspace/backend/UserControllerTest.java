@@ -61,6 +61,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(UserController.class)
 @Import({SecurityConfig.class, UserSecurity.class})
 class UserControllerTest {
+    @MockBean private com.makerspace.backend.services.HardwareDeviceService hardwareDeviceService;
 
     @TestConfiguration
     @EnableMethodSecurity

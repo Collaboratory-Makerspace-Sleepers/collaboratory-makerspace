@@ -327,7 +327,7 @@ export default function MyReservations() {
   ); // includes COMPLETED, CANCELLED, etc.
 
   return (
-    <div className="DashHome1">
+    <div className="DashHome1 my-reservations">
       <div className="Dash2">
         <p>My Reservations</p>
         <p>View, reschedule, or cancel your upcoming bookings.</p>
@@ -341,6 +341,7 @@ export default function MyReservations() {
         <p>No upcoming reservations.</p>
       )}
 
+      <div className="reservation-grid">
       {trainingPending.map((r) => (
         <TrainingAttestCard
           key={r.id}
@@ -382,10 +383,12 @@ export default function MyReservations() {
           )}
         </div>
       ))}
+      </div>
 
       {past.length > 0 && (
         <>
           <div className="Dash2"><p>Past reservations</p></div>
+          <div className="reservation-grid">
           {past.map((r) => {
             const refundWindowEnd = new Date(new Date(r.endTime).getTime() + 48 * 60 * 60 * 1000);
             const canRequestRefund = r.status === "COMPLETED" && new Date() < refundWindowEnd;
@@ -408,6 +411,7 @@ export default function MyReservations() {
               </div>
             );
           })}
+          </div>
         </>
       )}
 

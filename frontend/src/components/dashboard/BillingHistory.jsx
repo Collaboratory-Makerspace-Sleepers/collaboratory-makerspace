@@ -38,6 +38,7 @@ export default function BillingHistory() {
   const [activeFilter, setActiveFilter] = useState("ALL");
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalError, setPortalError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   async function openInvoices() {
     setPortalError("");
@@ -55,15 +56,31 @@ export default function BillingHistory() {
 
   useEffect(() => {
     let cancelled = false;
-    authFetch("/api/v1/billing/me/payments")
-      .then((res) => {
-        if (!res.ok) throw new Error("Could not load payment history");
-        return res.json();
-      })
-      .then((data) => { if (!cancelled) setPayments(data); })
-      .catch(() => { if (!cancelled) setError("Could not load payment history."); });
+    async function load() {
+      try {
+        const cached = await authFetch("/api/v1/billing/me/payments");
+        if (!cached.ok) throw new Error("Could not load payment history.");
+        const saved = await cached.json();
+        if (!cancelled) setPayments(saved);
+        const synced = await authFetch("/api/v1/billing/me/payments/sync", {
+          method: "POST",
+          signal: AbortSignal.timeout(30000),
+        });
+        if (!synced.ok) {
+          const body = await synced.json().catch(() => ({}));
+          throw new Error(body.message || "Could not synchronize recent payments. Showing saved history; refresh to retry.");
+        }
+        const data = await synced.json();
+        if (!cancelled) { setPayments(data); setError(""); }
+      } catch (err) {
+        if (!cancelled) setError(err.name === "TimeoutError"
+          ? "Payment synchronization timed out. Showing saved history; refresh to retry."
+          : err.message);
+      }
+    }
+    load();
     return () => { cancelled = true; };
-  }, [authFetch]);
+  }, [authFetch, refreshKey]);
 
   const filtered = payments?.filter(
     (p) => activeFilter === "ALL" || p.kind === activeFilter
@@ -74,6 +91,9 @@ export default function BillingHistory() {
       <div className="Dash2" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <p>Billing History</p>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.25rem" }}>
+          <button onClick={() => { setError(""); setRefreshKey((value) => value + 1); }}>
+            Refresh payments
+          </button>
           <button
             onClick={openInvoices}
             disabled={portalLoading}

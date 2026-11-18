@@ -35,6 +35,7 @@ import static org.mockito.Mockito.*;
 class UserServiceTest {
 
     @Mock private UserRepository userRepository;
+    @Mock private com.makerspace.backend.services.CardAccountCleanup cardAccountCleanup;
     @Mock private UserStateService userStateService;
     @Mock private MembershipRepository membershipRepository;
     @Mock private TrainingWaiverSignatureRepository trainingWaiverSignatureRepository;

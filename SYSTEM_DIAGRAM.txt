@@ -1,0 +1,300 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║             CARD-BASED SIGN-IN SYSTEM - ARCHITECTURE & FLOW                   ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│                          SYSTEM ARCHITECTURE                                   │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+                        ┌─────────────────────┐
+                        │   Browser (User)    │
+                        │   Port: 5173        │
+                        │   React + Vite      │
+                        └──────────┬──────────┘
+                                   │
+                    ┌──────────────┼──────────────┐
+                    │                             │
+          ┌─────────▼─────────┐       ┌──────────▼───────────┐
+          │ CardSignInForm    │       │ Admin Dashboard      │
+          │ (User Interface)  │       │ (Admin Interface)    │
+          └──────────┬────────┘       └──────────┬───────────┘
+                     │                            │
+                     │        HTTP / API          │
+                     └────────┬──────────┬────────┘
+                              │          │
+                        ┌─────▼──────────▼─────┐
+                        │   Backend (Java)     │
+                        │   Port: 8080         │
+                        │   Spring Boot        │
+                        └──────────┬───────────┘
+                                   │
+                  ┌────────────────┼────────────────┐
+                  │                │                │
+        ┌─────────▼────────┐  ┌────▼─────────┐  ┌─▼────────────┐
+        │CardAuthController│  │CardService   │  │EmailService  │
+        │                  │  │              │  │              │
+        │ • check-by-uid   │  │• verifyOtp   │  │• sendOTP     │
+        │ • verify-otp     │  │• activateCard│  │• sendConfirm  │
+        │ • activate       │  │• assignRole  │  │              │
+        │                  │  │• deleteCard  │  │              │
+        └──────────────────┘  └──────┬───────┘  └──┬───────────┘
+                                     │             │
+                                     │    SQL      │
+                        ┌────────────▼─────────────▼──┐
+                        │   Database (PostgreSQL)     │
+                        │                             │
+                        │  unregistered_cards table   │
+                        │  - card_uid                 │
+                        │  - assigned_to_email        │
+                        │  - assigned_role            │
+                        │  - otp_code                 │
+                        │  - status                   │
+                        │  - timestamps               │
+                        │  - tap_count                │
+                        └─────────────────────────────┘
+
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│                     ADMIN WORKFLOW (Card Setup)                                │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+     NEW CARD TAPPED
+            │
+            ▼
+    ┌──────────────┐
+    │ Card Status: │
+    │   PENDING    │  ← Card appears in admin dashboard
+    └──────┬───────┘
+           │
+    Admin clicks "Assign Email"
+           │
+           ▼
+    ┌──────────────┐
+    │ Card Status: │
+    │   ASSIGNED   │  ← Email: testuser@makerspace.local
+    └──────┬───────┘
+           │
+    Admin clicks "Assign Role"
+           │
+           ▼
+    ┌──────────────┐
+    │ Card Status: │
+    │ROLE_ASSIGNED │  ← Role: MEMBER
+    └──────┬───────┘
+           │
+    Admin clicks "Send OTP"
+           │
+           ▼
+    ┌──────────────┐
+    │ Card Status: │
+    │  VERIFIED    │  ← OTP: 123456 (sent via email)
+    └──────┬───────┘
+           │
+     READY FOR USER LOGIN
+
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│                   USER WORKFLOW (Card Login)                                   │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+    USER TAPS CARD
+    (or enters UID manually)
+            │
+            ▼
+    ┌─────────────────────────────┐
+    │ Browser detects UID         │
+    │ Calls: check-by-uid?uid=... │
+    └──────────┬──────────────────┘
+               │
+               ▼
+    ┌─────────────────────────────┐
+    │ Backend checks card         │
+    │ Card found? VERIFIED?       │
+    └──────┬──────────────────────┘
+           │
+           ├─ NO FOUND → "Contact Admin"
+           │
+           ├─ YES, VERIFIED → "Email shown"
+           │
+           └─ YES, VERIFIED
+               │
+               ▼
+    ┌──────────────────────────────┐
+    │ Form shows:                  │
+    │ Email: testuser@...          │
+    │ OTP: [____________] (input)  │
+    └──────┬───────────────────────┘
+           │
+    User enters OTP from email
+           │
+           ▼
+    ┌──────────────────────────────┐
+    │ Browser calls: verify-otp    │
+    │ With: email + otp_code       │
+    └──────┬───────────────────────┘
+           │
+           ▼
+    ┌──────────────────────────────┐
+    │ Backend verifies:            │
+    │ • OTP is valid               │
+    │ • OTP not expired (<1 hour)  │
+    │ • OTP matches email          │
+    └──────┬───────────────────────┘
+           │
+           ├─ NO → "Invalid OTP"
+           │
+           └─ YES
+              │
+              ▼
+    ┌──────────────────────────────┐
+    │ Backend:                     │
+    │ • Create user (if new)       │
+    │ • Issue JWT token            │
+    │ • Mark OTP as verified       │
+    └──────┬───────────────────────┘
+           │
+           ▼
+    ┌──────────────────────────────┐
+    │ Browser gets JWT token       │
+    │ Calls: activate (with JWT)   │
+    └──────┬───────────────────────┘
+           │
+           ▼
+    ┌──────────────────────────────┐
+    │ Backend:                     │
+    │ • Verify JWT                 │
+    │ • Mark card ACTIVATED        │
+    │ • Get user role              │
+    └──────┬───────────────────────┘
+           │
+           ▼
+    ┌──────────────────────────────┐
+    │ Browser redirects to:        │
+    │ /dashboard?role=MEMBER       │
+    └──────┬───────────────────────┘
+           │
+           ▼
+    ┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅
+    ✅ USER LOGGED IN & REDIRECTED
+    ✅ SEES MEMBER DASHBOARD
+    ✅ CAN RENT EQUIPMENT
+    ✅ CAN BOOK CLASSES
+    ┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅
+
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│                     CARD STATUS PROGRESSION                                    │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+    PENDING
+      │ (admin assigns email)
+      ▼
+    ASSIGNED
+      │ (admin assigns role)
+      ▼
+    ROLE_ASSIGNED
+      │ (admin sends OTP)
+      ▼
+    VERIFIED
+      │ (user enters OTP)
+      ▼
+    ACTIVATED ✅ (user can log in anytime)
+
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│                        API CALL SEQUENCES                                      │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+ADMIN SETUP SEQUENCE:
+═════════════════════
+
+POST /api/v1/admin/hardware/unregistered-cards/{id}/assign-email
+  ├─ Input: { "email": "testuser@makerspace.local" }
+  └─ Status: PENDING → ASSIGNED
+
+POST /api/v1/admin/hardware/unregistered-cards/{id}/assign-role
+  ├─ Input: { "role": "MEMBER" }
+  └─ Status: ASSIGNED → ROLE_ASSIGNED
+
+POST /api/v1/admin/hardware/unregistered-cards/{id}/send-otp
+  ├─ Generates: 123456
+  ├─ Sends email to: testuser@makerspace.local
+  └─ Status: ROLE_ASSIGNED → VERIFIED
+
+
+USER LOGIN SEQUENCE:
+════════════════════
+
+GET /api/v1/auth/card/check-by-uid?uid=85F181D4
+  ├─ Response: { "found": true, "email": "testuser@makerspace.local", ... }
+  └─ Triggers OTP form display
+
+POST /api/v1/auth/card/verify-otp
+  ├─ Input: { "email": "testuser@makerspace.local", "otp": "123456" }
+  ├─ Response: { "token": "eyJhbGc..." }
+  └─ Stores JWT in browser
+
+POST /api/v1/auth/card/activate
+  ├─ Header: Authorization: Bearer eyJhbGc...
+  ├─ Response: { "success": true, "role": "MEMBER" }
+  └─ Redirects to /dashboard
+
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│                       ERROR SCENARIOS                                          │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+Card not found:
+  Status 404 → "Card not found - Contact admin for registration"
+
+Card found but not assigned:
+  Status 404 → "Card pending admin assignment"
+
+OTP not found:
+  Status 404 → "Invalid one-time code"
+
+OTP expired:
+  Status 400 → "Code expired - Request new code from admin"
+
+Wrong email for OTP:
+  Status 401 → "Code does not match registered email"
+
+JWT invalid/expired:
+  Status 401 → "Session expired - Sign in again"
+
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│                      SECURITY FEATURES                                         │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+OTP SECURITY:
+  • Random 6-digit codes (not sequential)
+  • 1-hour expiration
+  • Single-use only
+  • Email verification required
+  • Cannot be reused after verification
+
+JWT SECURITY:
+  • Issued after OTP verification only
+  • Required for card activation
+  • Standard JWT format
+  • Signed with secret key
+
+EMAIL SECURITY:
+  • Admin cannot bypass email verification
+  • OTP sent only to assigned email
+  • Email ownership proven via OTP entry
+  • Only registered email can activate card
+
+ROLE SECURITY:
+  • Dashboard content by role
+  • Admin endpoints protected
+  • User cannot change their role
+  • Role verified on every request
+
+
+════════════════════════════════════════════════════════════════════════════════
+                         System Architecture Diagram
+                    Ready for testing and deployment!
+════════════════════════════════════════════════════════════════════════════════

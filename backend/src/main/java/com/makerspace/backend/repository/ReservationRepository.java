@@ -18,11 +18,19 @@ import java.util.List;
 @Repository
 public interface ReservationRepository extends JpaRepository<EquipmentReservation, Long> {
 
+    @Query("SELECT r FROM EquipmentReservation r ORDER BY COALESCE(r.cancelledAt, r.createdAt) DESC")
+    Page<EquipmentReservation> findRecentActivity(Pageable pageable);
+
+    long countByStatusInAndEndTimeAfter(Collection<ReservationStatus> statuses, ZonedDateTime now);
+
     @EntityGraph(attributePaths = {"equipment"})
     List<EquipmentReservation> findByUserIdOrderByStartTimeDesc(Long userId);
 
     @EntityGraph(attributePaths = {"equipment"})
     Page<EquipmentReservation> findAllByOrderByStartTimeDesc(Pageable pageable);
+
+    @EntityGraph(attributePaths = {"equipment"})
+    Page<EquipmentReservation> findAllByOrderByCreatedAtDescIdDesc(Pageable pageable);
 
     @EntityGraph(attributePaths = {"equipment"})
     List<EquipmentReservation> findByEquipmentIdOrderByStartTimeDesc(Long equipmentId);
@@ -118,7 +126,6 @@ public interface ReservationRepository extends JpaRepository<EquipmentReservatio
     List<Long> findEquipmentIdsInUseAt(
             @Param("statuses") Collection<ReservationStatus> statuses,
             @Param("now") ZonedDateTime now);
-
     @Query(nativeQuery = true, value = """
             SELECT e.name, COUNT(r.id),
               COALESCE(SUM(EXTRACT(EPOCH FROM (r.end_time - r.start_time))/3600),0)

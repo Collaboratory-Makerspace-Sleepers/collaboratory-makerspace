@@ -5,6 +5,7 @@ import com.makerspace.backend.controller.dto.PaymentMethodDTO;
 import com.makerspace.backend.controller.dto.PaymentRecordDTO;
 import com.makerspace.backend.controller.dto.PlanChangePreviewDTO;
 import com.makerspace.backend.controller.dto.PlanDTO;
+import com.makerspace.backend.controller.dto.SubscriptionSnapshot;
 import com.makerspace.backend.model.*;
 import com.makerspace.backend.repository.MembershipPlanRepository;
 import com.makerspace.backend.repository.PaymentRecordRepository;
@@ -22,6 +23,7 @@ import com.stripe.param.CustomerCreateParams;
 import com.stripe.param.CustomerUpdateParams;
 import com.stripe.param.InvoiceCreatePreviewParams;
 import com.stripe.param.PaymentMethodListParams;
+import com.stripe.param.SubscriptionListParams;
 import com.stripe.param.SubscriptionUpdateParams;
 import com.stripe.param.checkout.SessionCreateParams;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +34,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -54,6 +59,9 @@ public class BillingService {
 
     @Autowired
     PaymentRecordRepository paymentRecordRepository;
+
+    @Autowired
+    PaymentHistoryService paymentHistoryService;
 
     @Value("${app.billing.success-url}")
     String successUrl;
@@ -115,13 +123,16 @@ public class BillingService {
                 : SessionCreateParams.Mode.SUBSCRIPTION;
 
         String typedSuccessUrl = successUrl + (mode == SessionCreateParams.Mode.SUBSCRIPTION
-                ? "?type=membership" : "?type=daypass");
+                ? "?type=membership&session_id={CHECKOUT_SESSION_ID}"
+                : "?type=daypass&session_id={CHECKOUT_SESSION_ID}");
 
         SessionCreateParams.Builder sessionBuilder = SessionCreateParams.builder()
                 .setCustomer(stripeCustomerId)
                 .setMode(mode)
                 .setSuccessUrl(typedSuccessUrl)
                 .setCancelUrl(cancelUrl)
+                .putMetadata("kind", mode == SessionCreateParams.Mode.SUBSCRIPTION ? "MEMBERSHIP" : "DAY_PASS")
+                .putMetadata("saveCard", Boolean.toString(saveCard))
                 .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
                 .addLineItem(lineItem);
 
@@ -138,6 +149,186 @@ public class BillingService {
         Session session = stripeClient.v1().checkout().sessions().create(sessionBuilder.build());
 
         return session.getUrl();
+    }
+
+    public void confirmCheckout(Long userId, String sessionId) throws StripeException {
+        if (sessionId == null || sessionId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Checkout session is required");
+        }
+        User user = userRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        Session session = stripeClient.v1().checkout().sessions().retrieve(sessionId);
+        if (user.getStripeCustomerId() == null
+                || !user.getStripeCustomerId().equals(session.getCustomer())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Checkout belongs to another account");
+        }
+        if (!"complete".equals(session.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED, "Checkout is not complete");
+        }
+        switch (session.getMode()) {
+            case "payment" -> paymentHistoryService.confirmCheckout(userId, sessionId);
+            case "subscription" -> {
+                confirmMembershipCheckout(userId, sessionId);
+                paymentHistoryService.synchronize(userId);
+            }
+            case "setup" -> {
+                if (session.getSetupIntent() == null) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Card setup is not available");
+                }
+                var setup = stripeClient.v1().setupIntents().retrieve(session.getSetupIntent());
+                if (!user.getStripeCustomerId().equals(setup.getCustomer())
+                        || !"succeeded".equals(setup.getStatus()) || setup.getPaymentMethod() == null) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Card setup could not be verified");
+                }
+                setDefaultPaymentMethod(userId, setup.getPaymentMethod());
+            }
+            default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported checkout mode");
+        }
+        if ("payment".equals(session.getMode()) && session.getMetadata() != null
+                && "true".equals(session.getMetadata().get("saveCard"))) {
+            var intent = stripeClient.v1().paymentIntents().retrieve(session.getPaymentIntent());
+            if (!user.getStripeCustomerId().equals(intent.getCustomer()) || intent.getPaymentMethod() == null) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Saved card could not be verified");
+            }
+            setDefaultPaymentMethod(userId, intent.getPaymentMethod());
+        }
+    }
+
+    public MembershipDTO confirmMembershipCheckout(Long userId, String stripeSessionId)
+            throws StripeException {
+        if (membershipService.hasActiveMembership(userId)) {
+            return getSubscription(userId);
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        if (user.getStripeCustomerId() == null) {
+            throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED,
+                    "An active membership or paid day pass is required");
+        }
+
+        String subscriptionId;
+        if (stripeSessionId == null || stripeSessionId.isBlank()) {
+            SubscriptionListParams params = SubscriptionListParams.builder()
+                    .setCustomer(user.getStripeCustomerId())
+                    .setStatus(SubscriptionListParams.Status.ACTIVE)
+                    .build();
+            Subscription subscription = stripeClient.v1().subscriptions().list(params).getData().stream()
+                    .max(java.util.Comparator.comparing(s -> Optional.ofNullable(s.getCreated()).orElse(0L)))
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED,
+                            "No active membership was found for this account"));
+            subscriptionId = subscription.getId();
+        } else {
+            Session session = stripeClient.v1().checkout().sessions().retrieve(stripeSessionId);
+            if (!"subscription".equals(session.getMode())
+                    || !"complete".equals(session.getStatus())
+                    || (!"paid".equals(session.getPaymentStatus())
+                        && !"no_payment_required".equals(session.getPaymentStatus()))) {
+                throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED,
+                        "Membership payment has not been completed");
+            }
+            if (!user.getStripeCustomerId().equals(session.getCustomer())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "Checkout session does not belong to this account");
+            }
+            subscriptionId = session.getSubscription();
+            if (subscriptionId == null || subscriptionId.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Checkout session has no subscription");
+            }
+        }
+
+        Subscription subscription = stripeClient.v1().subscriptions().retrieve(subscriptionId);
+        synchronizeSubscription(user, subscription);
+        if (!membershipService.hasActiveMembership(userId)) {
+            throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED,
+                    "Membership subscription is not active");
+        }
+        return getSubscription(userId);
+    }
+
+    public MembershipDTO synchronizeMembership(Long userId) throws StripeException {
+        User user = userRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        if (user.getStripeCustomerId() != null) {
+            var subscriptions = stripeClient.v1().subscriptions().list(SubscriptionListParams.builder()
+                    .setCustomer(user.getStripeCustomerId()).setStatus(SubscriptionListParams.Status.ALL)
+                    .setLimit(100L).build());
+            Subscription latest = null;
+            for (Subscription subscription : subscriptions.autoPagingIterable()) {
+                boolean eligible = List.of("active", "trialing", "past_due").contains(subscription.getStatus());
+                boolean previousEligible = latest != null
+                        && List.of("active", "trialing", "past_due").contains(latest.getStatus());
+                if (latest == null || (eligible && !previousEligible)
+                        || (eligible == previousEligible && subscription.getCreated() > latest.getCreated())) {
+                    latest = subscription;
+                }
+            }
+            if (latest != null) synchronizeSubscription(user, latest);
+            else if (membershipService.currentMembership(userId).isEmpty()) {
+                paymentHistoryService.synchronize(userId);
+            }
+        }
+        return getSubscription(userId);
+    }
+
+    private void synchronizeSubscription(User user, Subscription subscription) {
+        if (!user.getStripeCustomerId().equals(subscription.getCustomer())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Subscription does not belong to this account");
+        }
+
+        List<com.stripe.model.SubscriptionItem> items = subscription.getItems().getData();
+        if (items.isEmpty() || items.get(0).getPrice() == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Subscription does not contain a membership plan");
+        }
+
+        String stripeStatus = subscription.getStatus();
+        MembershipStatus status = switch (stripeStatus) {
+            case "active" -> MembershipStatus.ACTIVE;
+            case "trialing" -> MembershipStatus.TRIALING;
+            case "past_due" -> MembershipStatus.PAST_DUE;
+            case "canceled", "unpaid" -> MembershipStatus.GRACE;
+            case "incomplete" -> MembershipStatus.INCOMPLETE;
+            case "incomplete_expired" -> MembershipStatus.INCOMPLETE_EXPIRED;
+            case "paused" -> MembershipStatus.PAUSED;
+            default -> throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Unrecognized subscription status");
+        };
+        var item = items.get(0);
+        ZonedDateTime periodStart = item.getCurrentPeriodStart() == null ? null
+                : Instant.ofEpochSecond(item.getCurrentPeriodStart()).atZone(ZoneOffset.UTC);
+        ZonedDateTime periodEnd = item.getCurrentPeriodEnd() == null ? null
+                : Instant.ofEpochSecond(item.getCurrentPeriodEnd()).atZone(ZoneOffset.UTC);
+        if (periodEnd == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Subscription billing period is not available yet");
+        }
+
+        Long canceledAtEpoch = subscription.getCanceledAt();
+        ZonedDateTime canceledAt = canceledAtEpoch == null ? null
+                : Instant.ofEpochSecond(canceledAtEpoch).atZone(ZoneOffset.UTC);
+        Long createdEpoch = subscription.getCreated();
+        ZonedDateTime updatedAt = createdEpoch == null ? ZonedDateTime.now(ZoneOffset.UTC)
+                : Instant.ofEpochSecond(createdEpoch).atZone(ZoneOffset.UTC);
+        // A fresh Stripe read must not be rejected when the SDK omits the resource update timestamp.
+        ZonedDateTime savedTimestamp = membershipService.currentMembership(user.getId())
+                .map(Membership::getStripeUpdatedAt).orElse(null);
+        if (savedTimestamp != null && savedTimestamp.isAfter(updatedAt)) updatedAt = savedTimestamp;
+
+        membershipService.upsertFromSubscription(new SubscriptionSnapshot(
+                user,
+                subscription.getId(),
+                item.getPrice().getId(),
+                status,
+                periodStart,
+                periodEnd,
+                Boolean.TRUE.equals(subscription.getCancelAtPeriodEnd()),
+                canceledAt,
+                updatedAt
+        ));
+
     }
 
     public String createPortalSession(Long userId) throws StripeException {
@@ -179,7 +370,10 @@ public class BillingService {
         SubscriptionUpdateParams params = SubscriptionUpdateParams.builder()
                 .setCancelAtPeriodEnd(true)
                 .build();
-        stripeClient.v1().subscriptions().update(subscriptionId, params);
+        Subscription updated = stripeClient.v1().subscriptions().update(subscriptionId, params);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        synchronizeSubscription(user, updated);
     }
 
     public String createSetupSession(Long userId) throws StripeException {
@@ -206,7 +400,7 @@ public class BillingService {
                 .setMode(SessionCreateParams.Mode.SETUP)
                 .setCustomer(stripeCustomerId)
                 .setCurrency("usd")
-                .setSuccessUrl(successUrl + "?type=setup")
+                .setSuccessUrl(successUrl + "?type=setup&session_id={CHECKOUT_SESSION_ID}")
                 .setCancelUrl(cancelUrl)
                 .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
                 .build();
@@ -282,8 +476,22 @@ public class BillingService {
     }
 
     public MembershipDTO getSubscription(Long userId) {
-        Membership membership = membershipService.currentMembership(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No Membership found"));
+        Membership membership = membershipService.currentMembership(userId).orElse(null);
+        if (membership == null || !membershipService.hasActiveMembership(userId)) {
+            var dayPass = paymentRecordRepository.findByUserIdOrderByOccurredAtDesc(userId).stream()
+                    .filter(payment -> payment.getKind() == PaymentKind.DAY_PASS
+                            && payment.getStatus() == PaymentStatus.SUCCEEDED
+                            && payment.getOccurredAt().plusHours(24).isAfter(ZonedDateTime.now()))
+                    .findFirst();
+            if (dayPass.isPresent()) {
+                PaymentRecord payment = dayPass.get();
+                return new MembershipDTO(MembershipStatus.ACTIVE, "DAY_PASS", "Day Pass",
+                        payment.getAmountCents(), null, payment.getOccurredAt(),
+                        payment.getOccurredAt().plusHours(24), false, null,
+                        payment.getOccurredAt(), null);
+            }
+        }
+        if (membership == null) return null;
 
         MembershipPlan plan = membership.getPlan();
         return new MembershipDTO(
@@ -311,6 +519,7 @@ public class BillingService {
 
         MembershipPlan currentPlan = membership.getPlan();
         validatePlanChangeGuards(currentPlan, planCode, membership);
+        validateTargetPlan(userId, targetPlan, membership);
 
         boolean isUpgrade = targetPlan.getAmountCents() > currentPlan.getAmountCents();
         String subscriptionId = membership.getStripeSubscriptionId();
@@ -335,7 +544,7 @@ public class BillingService {
                     upcoming.getCurrency(), null);
         } else {
             return new PlanChangePreviewDTO("DOWNGRADE", 0,
-                    currentPlan.getCurrency(), membership.getCurrentPeriodEnd());
+                    currentPlan.getCurrency(), ZonedDateTime.now());
         }
     }
 
@@ -349,6 +558,7 @@ public class BillingService {
 
         MembershipPlan currentPlan = membership.getPlan();
         validatePlanChangeGuards(currentPlan, planCode, membership);
+        validateTargetPlan(userId, targetPlan, membership);
 
         boolean isUpgrade = targetPlan.getAmountCents() > currentPlan.getAmountCents();
         String subscriptionId = membership.getStripeSubscriptionId();
@@ -360,13 +570,35 @@ public class BillingService {
                 .setProrationBehavior(isUpgrade
                         ? SubscriptionUpdateParams.ProrationBehavior.ALWAYS_INVOICE
                         : SubscriptionUpdateParams.ProrationBehavior.NONE)
+                .setPaymentBehavior(SubscriptionUpdateParams.PaymentBehavior.ERROR_IF_INCOMPLETE)
                 .addItem(SubscriptionUpdateParams.Item.builder()
                         .setId(itemId)
                         .setPrice(targetPlan.getStripePriceId())
                         .build())
                 .build();
 
-        stripeClient.v1().subscriptions().update(subscriptionId, params);
+        Subscription updated = stripeClient.v1().subscriptions().update(subscriptionId, params);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        synchronizeSubscription(user, updated);
+    }
+
+    private void validateTargetPlan(Long userId, MembershipPlan target, Membership current) {
+        if (target.getBillingInterval() == null
+                || !target.getBillingInterval().equals(current.getPlan().getBillingInterval())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Choose a recurring plan with the same billing interval");
+        }
+        if (!membershipService.hasActiveMembership(userId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "No active subscription to change");
+        }
+        if ("STUDENT".equals(target.getCode())) {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+            if (!user.getEmail().toLowerCase(java.util.Locale.ROOT).endsWith(".edu")) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "The student plan requires a .edu email");
+            }
+        }
     }
 
     private void validatePlanChangeGuards(MembershipPlan currentPlan, String targetPlanCode,
@@ -467,6 +699,7 @@ public class BillingService {
                 .setCancelUrl(cancelUrl)
                 .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
                 .addLineItem(lineItem)
+                .putMetadata("kind", "CLASS")
                 .build();
 
         Session session = stripeClient.v1().checkout().sessions().create(params);
@@ -485,7 +718,8 @@ public class BillingService {
         return paymentRecordRepository.findByUserIdOrderByOccurredAtDesc(userId)
                 .stream()
                 .map(pr -> {
-                    String piId = pr.getStripePaymentIntentId();
+                    String piId = pr.getStripePaymentIntentId() != null
+                            ? pr.getStripePaymentIntentId() : pr.getStripeInvoiceId();
                     String referenceId = piId != null
                             ? piId.substring(Math.max(0, piId.length() - 8))
                             : null;
@@ -501,5 +735,9 @@ public class BillingService {
                     );
                 })
                 .toList();
+    }
+
+    public void synchronizePayments(Long userId) throws StripeException {
+        paymentHistoryService.synchronize(userId);
     }
 }

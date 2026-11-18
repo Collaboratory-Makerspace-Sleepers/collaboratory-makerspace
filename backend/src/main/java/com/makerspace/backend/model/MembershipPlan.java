@@ -34,6 +34,7 @@ public class MembershipPlan {
     @Column(name = "amount_cents", nullable = false)
     private int amountCents;
 
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.CHAR)
     @Column(name = "currency", nullable = false, length = 3)
     private String currency = "usd";
 

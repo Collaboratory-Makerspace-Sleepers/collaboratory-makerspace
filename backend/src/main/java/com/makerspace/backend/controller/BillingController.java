@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -41,6 +42,33 @@ public class BillingController {
         } catch (StripeException e) {
             log.error("Stripe error for user {}: {}", userId, e.getMessage());
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Payment provider error");
+        }
+    }
+
+    @PostMapping("/checkout-session/confirm-membership")
+    public MembershipDTO confirmMembershipCheckout(
+            @Valid @RequestBody CheckoutSessionConfirmationRequest req, Authentication auth) {
+        Long userId = userSecurity.getUserId(auth);
+        try {
+            return billingService.confirmMembershipCheckout(userId, req.sessionId());
+        } catch (StripeException e) {
+            log.error("Stripe error confirming membership checkout for user {}: {}", userId, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Payment provider error");
+        }
+
+    }
+
+    @PostMapping("/checkout-session/confirm")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void confirmCheckout(
+            @Valid @RequestBody CheckoutSessionConfirmationRequest req, Authentication auth) {
+        Long userId = userSecurity.getUserId(auth);
+        try {
+            billingService.confirmCheckout(userId, req.sessionId());
+        } catch (StripeException e) {
+            log.error("Stripe error confirming checkout for user {}: {}", userId, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Could not verify checkout. Do not pay again; retry confirmation.");
         }
     }
 
@@ -116,13 +144,39 @@ public class BillingController {
     }
 
     @GetMapping("/me/subscription")
-    public MembershipDTO viewMembership(Authentication auth) {
-        return billingService.getSubscription(userSecurity.getUserId(auth));
+    public ResponseEntity<MembershipDTO> viewMembership(Authentication auth) {
+        MembershipDTO membership = billingService.getSubscription(userSecurity.getUserId(auth));
+        return membership == null ? ResponseEntity.noContent().build() : ResponseEntity.ok(membership);
+    }
+
+    @PostMapping("/me/subscription/sync")
+    public ResponseEntity<MembershipDTO> synchronizeMembership(Authentication auth) {
+        Long userId = userSecurity.getUserId(auth);
+        try {
+            MembershipDTO membership = billingService.synchronizeMembership(userId);
+            return membership == null ? ResponseEntity.noContent().build() : ResponseEntity.ok(membership);
+        } catch (StripeException e) {
+            log.error("Subscription synchronization failed for user {}: {}", userId, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Could not synchronize membership");
+        }
     }
 
     @GetMapping("/me/payments")
     public List<PaymentRecordDTO> showPayments(Authentication auth) {
         return billingService.getPayments(userSecurity.getUserId(auth));
+    }
+
+    @PostMapping("/me/payments/sync")
+    public List<PaymentRecordDTO> synchronizePayments(Authentication auth) {
+        Long userId = userSecurity.getUserId(auth);
+        try {
+            billingService.synchronizePayments(userId);
+            return billingService.getPayments(userId);
+        } catch (StripeException e) {
+            log.error("Stripe payment history sync failed for user {}: {}", userId, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Could not synchronize Stripe payments. Please retry.");
+        }
     }
 
     @GetMapping("/me/subscription/plan-change-preview")

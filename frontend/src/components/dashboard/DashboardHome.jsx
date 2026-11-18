@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import Makerspacecarousel from "../Makerspacecarousel";
 import TrainingTasks from "./TrainingTasks";
 import WaiverStatusPanel from "./WaiverStatusPanel";
 import { BookingBadge, BookingDetail } from "./BookingStatus";
-import { useAuth } from "../../context/AuthContext";
+import { useCatalog } from "../../hooks/useCatalog";
+import { formatDollars, hourlyPrice, sortNewest } from "../../utils/catalog";
 import {
   useDashboard,
   firstName,
@@ -15,23 +14,13 @@ import {
 } from "../../hooks/useDashboard";
 
 export default function DashboardHome() {
-  const { authFetch } = useAuth();
   const { user, reservations, loading, error } = useDashboard();
   const navigate = useNavigate();
 
-  const [equipment, setEquipment] = useState([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    authFetch("/api/v1/equipment")
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
-        if (cancelled) return;
-        setEquipment(data.filter((e) => e.category !== "CLASS").slice(0, 3));
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [authFetch]);
+  const { items, error: equipmentError } = useCatalog("/api/v1/equipment");
+  const { items: classes, error: classError } = useCatalog("/api/v1/class-sessions");
+  const equipment = sortNewest(items.filter((item) => item.category !== "CLASS"
+    && item.status === "AVAILABLE")).slice(0, 3);
 
   const upcoming = upcomingReservations(reservations);
 
@@ -58,7 +47,7 @@ export default function DashboardHome() {
             <div className="Dash4" key={reservation.id}>
               <p>{reservation.equipmentName}</p>
               <p className="Dash5-sub">{formatTime(reservation.startTime)}</p>
-              <div className="Dash5">
+              <div className="Dash5 checkout-actions">
                 <Link to={`/dashboard/rentequipment/${reservation.equipmentId}`}>
                   <button>View</button>
                 </Link>
@@ -66,6 +55,8 @@ export default function DashboardHome() {
             </div>
           ))}
       </div>
+
+      <WaiverStatusPanel />
 
         <TrainingTasks />
 
@@ -94,7 +85,7 @@ export default function DashboardHome() {
                     <BookingDetail reservations={reservations} equipmentId={item.id} />
                   </div>
                   <div className="Rent5">
-                    <p>$7/hr</p>
+                    <p>{hourlyPrice(item)}</p>
                     <button onClick={() => navigate(`/dashboard/rentequipment/${item.id}`)}>
                       Reserve
                     </button>
@@ -104,6 +95,28 @@ export default function DashboardHome() {
             ))}
           </div>
         </div>
+      )}
+      {equipmentError && <p role="alert">{equipmentError}</p>}
+      {classError && <p role="alert">{classError}</p>}
+      {classes.length > 0 && (
+        <section className="Dash6">
+          <div className="Dash7"><p>Latest Classes</p></div>
+          <div className="RentGrid">
+            {sortNewest(classes).slice(0, 3).map((session) => (
+              <div className="Rent1" key={session.id}>
+                <div><img src={session.imageUrl || "https://picsum.photos/seed/class/480/360"} alt={session.title} /></div>
+                <div className="Rent2">
+                  <p>{session.title}</p>
+                  <p>{new Date(session.startTime).toLocaleString()}</p>
+                  <div className="Rent5">
+                    <p>{session.resolvedPriceCents === 0 ? "Free" : formatDollars(session.resolvedPriceCents)}</p>
+                    <button onClick={() => navigate(`/dashboard/bookclasses/session/${session.id}`)}>View class</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
     </div>
   );

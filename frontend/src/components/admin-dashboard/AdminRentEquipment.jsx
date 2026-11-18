@@ -2,21 +2,25 @@ import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import AllEquipment from "./AllEquipment";
 import ReservationsTable from "./ReservationsTable";
+import DollarInput from "../DollarInput";
+import { dollarsToCents } from "../../utils/catalog";
+import { useCatalog } from "../../hooks/useCatalog";
 
 const EMPTY = {
   name: "",
   description: "",
   category: "",
   imageUrl: "",
-  trainingRequired: false,
+  requiresTraining: false,
   trainingVideoUrl: "",
-  requiresWaiver: true,
-  hourlyRateDollars: "",
+  hourlyRateDollars: "0.00",
   trainingFeeCents: 0,
+  requiresWaiver: true,
 };
 
 export default function AdminRentEquipment() {
   const { authFetch } = useAuth();
+  const { items: equipment, error: catalogError } = useCatalog("/api/v1/equipment");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [message, setMessage] = useState("");
@@ -34,22 +38,19 @@ export default function AdminRentEquipment() {
     setBusy(true);
     setMessage("");
     try {
-      const rateCents = Math.round(parseFloat(form.hourlyRateDollars || "0") * 100);
-      const payload = {
-        ...form,
-        name: form.name.trim(),
-        category: form.category.trim() || null,
-        imageUrl: form.imageUrl.trim() || null,
-        description: form.description.trim() || null,
-        status: "AVAILABLE",
-        hourlyRateCents: rateCents,
-        memberRateCents: rateCents,
-      };
-      delete payload.hourlyRateDollars;
       const response = await authFetch("/api/v1/equipment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          ...form,
+          hourlyRateCents: dollarsToCents(form.hourlyRateDollars),
+          trainingVideoUrl: form.trainingVideoUrl.trim() || null,
+          name: form.name.trim(),
+          category: form.category.trim() || null,
+          imageUrl: form.imageUrl.trim() || null,
+          description: form.description.trim() || null,
+          status: "AVAILABLE",
+        }),
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
@@ -99,7 +100,12 @@ export default function AdminRentEquipment() {
             </label>
             <label className="nu-field">
               Category
-              <input placeholder="e.g. Laser, Woodworking" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+              <input required list="equipment-types" placeholder="Machine type" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+              <datalist id="equipment-types">
+                {[...new Set(equipment.map((item) => item.category).filter(Boolean))].sort().map((type) =>
+                  <option key={type} value={type} />)}
+              </datalist>
+              {catalogError && <span role="alert">{catalogError} You can still enter a machine type.</span>}
             </label>
             <label className="nu-field">
               Description
@@ -109,47 +115,30 @@ export default function AdminRentEquipment() {
               Image URL (optional)
               <input value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} />
             </label>
-            <label className="nu-field">
-              Hourly rate ($/hr)
-              <input
-                type="text"
-                inputMode="decimal"
-                placeholder="0.00"
-                value={form.hourlyRateDollars}
-                onChange={(e) => setForm({ ...form, hourlyRateDollars: e.target.value })}
-                onBlur={() => {
-                  const cents = Math.round(parseFloat(form.hourlyRateDollars || "0") * 100);
-                  setForm({ ...form, hourlyRateDollars: (cents / 100).toFixed(2) });
-                }}
-              />
-            </label>
-            {form.trainingRequired && (
-              <label className="nu-field">
-                Training fee (cents)
-                <input type="number" min="0" value={form.trainingFeeCents}
-                  onChange={(e) => setForm({ ...form, trainingFeeCents: Number(e.target.value) })} />
-              </label>
-            )}
             <label className="nu-check">
               <input type="checkbox" checked={form.requiresWaiver} onChange={(e) => setForm({ ...form, requiresWaiver: e.target.checked })} />
               Requires a signed waiver
             </label>
             <label className="nu-check">
-              <input type="checkbox" checked={form.trainingRequired} onChange={(e) => setForm({ ...form, trainingRequired: e.target.checked })} />
+              <input type="checkbox" checked={form.requiresTraining} onChange={(e) => setForm({ ...form, requiresTraining: e.target.checked })} />
               Requires training
             </label>
-            {form.trainingRequired && (
-              <label className="nu-field">
-                Training video URL
-                <input
-                  required
-                  type="url"
-                  placeholder="https://youtube.com/..."
-                  value={form.trainingVideoUrl}
-                  onChange={(e) => setForm({ ...form, trainingVideoUrl: e.target.value })}
-                />
-              </label>
-            )}
+            <label className="nu-field">
+              Training video URL {form.requiresTraining ? "(required)" : "(optional)"}
+              <input type="url" required={form.requiresTraining} value={form.trainingVideoUrl}
+                onChange={(e) => setForm({ ...form, trainingVideoUrl: e.target.value })} placeholder="https://..." />
+            </label>
+            {form.requiresTraining && <label className="nu-field">
+              Training fee (cents)
+              <input type="number" min="0" value={form.trainingFeeCents}
+                onChange={(e) => setForm({ ...form, trainingFeeCents: Number(e.target.value) })} />
+            </label>}
+            <label className="nu-field">
+              Hourly rate ($)
+              <DollarInput value={form.hourlyRateDollars}
+                onChange={(value) => setForm({ ...form, hourlyRateDollars: value })} />
+              <span>One rate for paying users. Existing free-access exemptions still apply.</span>
+            </label>
             {message && <p className="nu-message">{message}</p>}
             <div className="nu-actions">
               <button type="button" className="nu-cancel" onClick={close}>Cancel</button>

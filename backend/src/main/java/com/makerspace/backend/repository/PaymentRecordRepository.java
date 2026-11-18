@@ -1,6 +1,7 @@
 package com.makerspace.backend.repository;
 
 import com.makerspace.backend.model.PaymentRecord;
+import com.makerspace.backend.model.PaymentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,12 +13,12 @@ import java.util.Optional;
 
 @Repository
 public interface PaymentRecordRepository extends JpaRepository<PaymentRecord, Long> {
+    long countByStatus(PaymentStatus status);
     List<PaymentRecord> findByUserIdOrderByOccurredAtDesc(Long userId);
     Optional<PaymentRecord> findByStripePaymentIntentId(String stripePaymentIntentId);
     List<PaymentRecord> findByStripeInvoiceId(String stripeInvoiceId);
     Optional<PaymentRecord> findByReservationId(Long reservationId);
     Optional<PaymentRecord> findByStripeChargeId(String stripeChargeId);
-
     @Query(nativeQuery = true, value = """
             SELECT DATE_TRUNC('month', occurred_at) AS month, kind, SUM(amount_cents) AS total
             FROM payment_record WHERE status='SUCCEEDED' AND occurred_at >= :since

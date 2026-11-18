@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useMembership } from "../../hooks/useMembership";
 import {
   useDashboard,
   displayName,
@@ -12,7 +13,7 @@ export default function Account() {
   const { authFetch, setToken } = useAuth();
   const { user, reservations, loading, error } = useDashboard();
 
-  const [plan, setPlan] = useState(null);
+  const { membership: plan, error: planError, active: hasActiveMembership, refresh } = useMembership();
   const [firstNameVal, setFirstNameVal] = useState("");
   const [lastNameVal, setLastNameVal] = useState("");
   const [saveLoading, setSaveLoading] = useState(false);
@@ -29,17 +30,40 @@ export default function Account() {
     }
   }, [user]);
 
-  useEffect(() => {
-    let cancelled = false;
-    authFetch("/api/v1/billing/me/subscription")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (cancelled) return;
-        setPlan(data);
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [authFetch]);
+  async function handleUpdate(e) {
+    e.preventDefault();
+    setSaveError("");
+    setSaveSuccess(false);
+    setSaveLoading(true);
+    try {
+      const res = await authFetch("/api/v1/users/me", {
+        method: "PATCH",
+        body: JSON.stringify({ firstName: firstNameVal, lastName: lastNameVal }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Could not update profile");
+      }
+      setSaveSuccess(true);
+    } catch (err) {
+      setSaveError(err.message || "Something went wrong.");
+    } finally {
+      setSaveLoading(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    try {
+      const res = await authFetch(`/api/v1/users/${user.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Could not delete account");
+      }
+      setToken(null);
+    } catch (err) {
+      setDeleteError(err.message || "Something went wrong.");
+    }
+  }
 
   async function handleDeleteAccount() {
     try {
@@ -95,8 +119,11 @@ export default function Account() {
             <p>{loading ? "…" : displayName(user) || "Your name"}</p>
             <p>
               Makerspace Member ·{" "}
-              {plan ? `${plan.planCode} plan` : "No active membership"}
+              {planError ? "Membership unavailable"
+                : plan === undefined ? "Loading membership..."
+                : hasActiveMembership ? `${plan.planName || plan.planCode} plan` : "No active membership"}
             </p>
+            {planError && <><p role="alert">{planError}</p><button onClick={refresh}>Check again</button></>}
           </div>
 
           <div className="AccountD5">

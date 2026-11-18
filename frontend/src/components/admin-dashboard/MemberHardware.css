@@ -1,0 +1,12 @@
+.MemberHardware { padding: 1rem; border: 1px solid #ddd; border-radius: 12px; margin: 1rem 0; background: #fff; color: #29221c; }
+.MemberHardware h3 { margin: 0 0 .75rem; font-size: 1.1rem; }
+.MemberHardware label { display: grid; gap: .35rem; margin: .7rem 0; }
+.MemberHardware input, .MemberHardware select { width: 100%; box-sizing: border-box; border: 1px solid #aaa; border-radius: 6px; padding: .6rem; background: white; color: #29221c; }
+.MemberHardware button { margin: .3rem .4rem .3rem 0; padding: .6rem .8rem; border: 1px solid #aaa; border-radius: 6px; background: #f5f1ec; color: #29221c; cursor: pointer; }
+.MemberHardware button:disabled { opacity: .5; cursor: not-allowed; }
+.MemberHardware p { line-height: 1.45; font-size: .95rem; margin: .7rem 0; }
+.MemberHardware ul { padding-left: 1.2rem; overflow-wrap: anywhere; }
+.MemberHardwareOverride { background: #fff7ed; border-radius: 8px; padding: .8rem; margin-top: .8rem; }
+.MemberHardwareError { color: #a32020; }
+
+.nu-dialog:has(.MemberHardware) { max-height: 88vh; overflow-y: auto; }

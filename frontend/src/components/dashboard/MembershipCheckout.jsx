@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useMembership } from "../../hooks/useMembership";
 
 const PLAN_DETAILS = {
   MONTHLY:       { name: "Monthly Membership",  features: ["Equipment access at member rates","Access to common space","50% off classes","Access to events and discounts"] },
@@ -18,12 +19,6 @@ function formatPrice(amountCents, billingInterval) {
   return billingInterval ? `${amount}/${billingInterval.toLowerCase()}` : amount;
 }
 
-function formatDate(isoString) {
-  return new Date(isoString).toLocaleDateString("en-US", {
-    month: "long", day: "numeric", year: "numeric",
-  });
-}
-
 export default function MembershipCheckout() {
   const { state } = useLocation();
   const navigate = useNavigate();
@@ -36,8 +31,8 @@ export default function MembershipCheckout() {
   const [planLoading, setPlanLoading] = useState(!state?.plan && !!planCodeFromUrl);
   const [planError, setPlanError] = useState("");
 
-  const currentMembership = state?.currentMembership ?? null;
-  const isPlanChange = !!currentMembership?.stripeSubscriptionId
+  const { membership: currentMembership, error: membershipError, active, refresh } = useMembership();
+  const isPlanChange = active && !!currentMembership?.stripeSubscriptionId
     && plan?.billingInterval != null;
 
   const [changePreview, setChangePreview] = useState(null);
@@ -75,10 +70,18 @@ export default function MembershipCheckout() {
       .then((data) => setChangePreview(data))
       .catch((err) => setPreviewError(err.message || "Could not load plan change preview."))
       .finally(() => setPreviewLoading(false));
-  }, [isPlanChange, plan?.code]);
+  }, [authFetch, isPlanChange, plan?.code]);
 
   if (planLoading) {
     return <div className="DashHome1"><p>Loading…</p></div>;
+  }
+
+  if (membershipError) {
+    return <div className="DashHome1"><p role="alert">{membershipError}</p><button onClick={refresh}>Check again</button></div>;
+  }
+
+  if (currentMembership === undefined) {
+    return <div className="DashHome1"><p>Checking your current plan...</p></div>;
   }
 
   if (planError) {
@@ -115,7 +118,7 @@ export default function MembershipCheckout() {
         }
         const banner = changePreview?.direction === "UPGRADE"
           ? `Plan upgraded to ${plan.name ?? plan.displayName}. The charge will appear in your billing history shortly.`
-          : `Plan change scheduled. You'll switch to ${plan.name ?? plan.displayName} on ${formatDate(changePreview?.effectiveDate)}.`;
+          : `Plan changed to ${plan.name ?? plan.displayName}. No prorated refund; the cheaper price applies on your next renewal.`;
         navigate("/dashboard/membership", { state: { banner } });
       } else {
         const res = await authFetch("/api/v1/billing/checkout-session", {
@@ -172,8 +175,8 @@ export default function MembershipCheckout() {
             )}
             {changePreview && changePreview.direction === "DOWNGRADE" && (
               <p>
-                Your plan will change to <strong>{plan.name ?? plan.displayName}</strong> on{" "}
-                <strong>{formatDate(changePreview.effectiveDate)}</strong>. No charge today.
+                Your plan changes immediately to <strong>{plan.name ?? plan.displayName}</strong>.
+                No prorated refund. The cheaper price applies on your next renewal.
               </p>
             )}
           </div>
@@ -197,7 +200,7 @@ export default function MembershipCheckout() {
         <button
           className="checkout-primary-button"
           onClick={handleConfirm}
-          disabled={loading || (isPlanChange && previewLoading)}
+          disabled={loading || (isPlanChange && (previewLoading || !changePreview || !!previewError))}
         >
           {loading
             ? isPlanChange ? "Confirming…" : "Redirecting to payment…"

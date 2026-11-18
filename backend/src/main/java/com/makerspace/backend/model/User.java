@@ -35,6 +35,7 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.CHAR)
     @Column(name = "email_digest", length = 64)
     private String emailDigest;
 

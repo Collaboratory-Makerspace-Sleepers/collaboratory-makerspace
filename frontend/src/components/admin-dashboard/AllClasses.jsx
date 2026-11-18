@@ -1,6 +1,9 @@
+import MemberSelect from "./MemberSelect";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import MemberSelect from "./MemberSelect";
+import DollarInput from "../DollarInput";
+import { dollarsToCents, sortNewest } from "../../utils/catalog";
+import { notifyCatalogChanged } from "../../hooks/useCatalog";
 
 const dateTimeFmt = (value) =>
   new Date(value).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
@@ -60,15 +63,21 @@ export function ClassSessionForm({ initial, onSave, onClose }) {
   function change(field) {
     return (e) => {
       const value = e.target.value;
-      setForm((f) => {
-        const next = { ...f, [field]: value };
-        if (field === "priceDollars") {
-          const half = (parseFloat(value) / 2) || 0;
-          next.memberPriceDollars = half.toFixed(2);
-        }
-        return next;
-      });
+      setForm((f) => ({ ...f, [field]: value }));
     };
+  }
+
+  function changePrice(value) {
+    setForm((previous) => {
+      const price = Number(value.replace(/[$,]/g, ""));
+      const oldPrice = Number(previous.priceDollars.replace(/[$,]/g, ""));
+      return {
+        ...previous,
+        priceDollars: value,
+        memberPriceDollars: Number.isFinite(price) && price !== oldPrice
+          ? (price / 2).toFixed(2) : previous.memberPriceDollars,
+      };
+    });
   }
 
   async function submit(e) {
@@ -91,8 +100,8 @@ export function ClassSessionForm({ initial, onSave, onClose }) {
         startTime: startISO,
         endTime: endISO,
         maxCapacity: parseInt(form.maxCapacity, 10) || 0,
-        priceCents: Math.round(parseFloat(form.priceDollars) * 100) || 0,
-        memberPriceCents: Math.round(parseFloat(form.memberPriceDollars) * 100) || 0,
+        priceCents: dollarsToCents(form.priceDollars),
+        memberPriceCents: dollarsToCents(form.memberPriceDollars),
         location: form.location || null,
         imageUrl: form.imageUrl || null,
         instructorId: form.instructorId ? parseInt(form.instructorId, 10) : null,
@@ -107,7 +116,7 @@ export function ClassSessionForm({ initial, onSave, onClose }) {
   return (
     <div className="ra-profile-backdrop" onClick={onClose}>
       <section
-        className="ra-profile-dialog"
+        className="ra-profile-dialog class-session-dialog"
         onClick={(ev) => ev.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -169,11 +178,11 @@ export function ClassSessionForm({ initial, onSave, onClose }) {
           </label>
           <label>
             Full Price ($)
-            <input type="number" min="0" step="0.01" value={form.priceDollars} onChange={change("priceDollars")} className="au-search" />
+            <DollarInput value={form.priceDollars} onChange={changePrice} className="au-search" />
           </label>
           <label>
             Member Price ($)
-            <input type="number" min="0" step="0.01" value={form.memberPriceDollars} onChange={change("memberPriceDollars")} className="au-search" />
+            <DollarInput value={form.memberPriceDollars} onChange={(value) => setForm((prev) => ({ ...prev, memberPriceDollars: value }))} className="au-search" />
           </label>
           <label>
             Instructor
@@ -201,6 +210,8 @@ export default function AllClasses({ createOpen, onCreateClose }) {
   const { authFetch } = useAuth();
   const [sessions, setSessions] = useState([]);
   const [query, setQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState("newest");
+  const [status, setStatus] = useState("");
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -226,8 +237,9 @@ export default function AllClasses({ createOpen, onCreateClose }) {
 
   const rows = useMemo(() => {
     const term = query.trim().toLowerCase();
-    return sessions.filter((s) => !term || s.title.toLowerCase().includes(term));
-  }, [sessions, query]);
+    return sortNewest(sessions, sortOrder).filter((s) =>
+      (!term || s.title.toLowerCase().includes(term)) && (!status || s.status === status));
+  }, [sessions, query, sortOrder, status]);
 
   const totalPages = Math.ceil(rows.length / PAGE_SIZE);
   const visible = rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
@@ -242,6 +254,11 @@ export default function AllClasses({ createOpen, onCreateClose }) {
       const body = await res.json().catch(() => ({}));
       throw new Error(body.message || "Create failed.");
     }
+    notifyCatalogChanged();
+    setPage(0);
+    setQuery("");
+    setStatus("");
+    setSortOrder("newest");
     onCreateClose?.();
     await load();
   }
@@ -256,6 +273,7 @@ export default function AllClasses({ createOpen, onCreateClose }) {
       const body = await res.json().catch(() => ({}));
       throw new Error(body.message || "Save failed.");
     }
+    notifyCatalogChanged();
     setEditTarget(null);
     await load();
   }
@@ -309,6 +327,21 @@ export default function AllClasses({ createOpen, onCreateClose }) {
           value={query}
           onChange={(ev) => { setQuery(ev.target.value); setPage(0); }}
         />
+
+        <div className="catalog-filters">
+          <label>Status
+            <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(0); }}>
+              <option value="">All statuses</option>
+              {Object.entries(STATUS_LABELS).map(([value, item]) => <option key={value} value={value}>{item.label}</option>)}
+            </select>
+          </label>
+          <label>Sort
+            <select value={sortOrder} onChange={(e) => { setSortOrder(e.target.value); setPage(0); }}>
+              <option value="newest">Newest to oldest</option>
+              <option value="oldest">Oldest to newest</option>
+            </select>
+          </label>
+        </div>
 
         {loading ? (
           <p className="ra-state" role="status">Loading…</p>

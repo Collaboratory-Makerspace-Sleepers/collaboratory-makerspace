@@ -42,22 +42,20 @@ public class Equipment {
 
     // ── Pricing ──────────────────────────────────────────────────────────────────
 
-    /** Rate in cents per hour charged to non-members (day-pass holders). */
+    /** Single rate in cents per hour for paying users, before free-access exemptions. */
     @Column(name = "hourly_rate_cents", nullable = false)
     private int hourlyRateCents = 0;
 
-    /**
-     * Rate in cents per hour charged to active members.
-     * Seeded equal to hourlyRateCents until the client confirms the member discount.
-     * OPEN: awaiting client decision on member discount percentage.
-     */
+    @Transient
+    private Integer resolvedHourlyRateCents;
+
+    /** Legacy column kept in sync with the single hourly rate on create/update. */
     @Column(name = "member_rate_cents", nullable = false)
     private int memberRateCents = 0;
 
     /**
      * True for basic hand tools and workbench space that are included with membership
-     * at no per-hour charge. Both hourlyRateCents and memberRateCents are 0 for these.
-     * OPEN: awaiting client confirmation of which categories qualify.
+     * at no per-hour charge. Day-pass holders still pay the canonical hourly rate.
      */
     @Column(name = "free_with_membership", nullable = false)
     private boolean freeWithMembership = false;
@@ -92,6 +90,4 @@ public class Equipment {
 
     @Column(name = "stripe_product_id", length = 255)
     private String stripeProductId;
-
 }
-

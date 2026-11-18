@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="630" viewBox="0 0 1000 630">
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8" fill="none" stroke="#34554a" stroke-width="2"/></marker></defs>
+<rect width="1000" height="630" fill="#fff"/><g font-family="Arial,sans-serif" fill="#23342d">
+<text x="50" y="55" font-size="28" font-weight="bold">Makerspace scanner — conceptual connections</text>
+<text x="50" y="88" font-size="17">Raspberry Pi 4 + ACR122U · lock/driver model not selected · not a final wiring plan</text>
+<g fill="#eef4f0" stroke="#34554a" stroke-width="2"><rect x="50" y="145" width="240" height="100" rx="10"/><rect x="380" y="145" width="240" height="100" rx="10"/><rect x="380" y="345" width="240" height="110" rx="10"/><rect x="720" y="345" width="230" height="110" rx="10"/><rect x="720" y="145" width="230" height="100" rx="10"/></g>
+<g font-size="20" text-anchor="middle"><text x="170" y="185" font-weight="bold">ACR122U reader</text><text x="170" y="215" font-size="16">Built-in LED / buzzer</text><text x="500" y="185" font-weight="bold">Raspberry Pi 4</text><text x="500" y="215" font-size="16">Headless scanner service</text><text x="500" y="380" font-weight="bold">Compatible driver</text><text x="500" y="409" font-size="16">3.3 V input, safe defaults</text><text x="500" y="435" font-size="16">Relay/contacts: model-specific</text><text x="835" y="382" font-weight="bold">Fail-safe lock</text><text x="835" y="413" font-size="16">Power to lock</text><text x="835" y="438" font-size="16">Release on power loss</text><text x="835" y="183" font-weight="bold">Lock power supply</text><text x="835" y="214" font-size="16">Rated for selected lock</text></g>
+<g fill="none" stroke="#34554a" stroke-width="2" marker-end="url(#arrow)"><path d="M290 195 H378"/><path d="M500 245 V343"/><path d="M620 400 H718"/><path d="M835 245 V343"/></g>
+<g font-size="15"><text x="315" y="179">USB</text><text x="518" y="283">BCM17 / pin 11 signal</text><text x="518" y="309">Ground per driver design</text><text x="634" y="382">Control</text><text x="845" y="289">Power circuit*</text></g>
+<text x="50" y="510" font-size="17" font-weight="bold">The reader LED is controlled over USB; it is not the door GPIO output.</text>
+<text x="50" y="544" font-size="16">*Route lock power through the selected driver/contacts as specified by its manufacturer.</text>
+<text x="50" y="571" font-size="16">Never power a lock or relay coil from GPIO. Specify protection, polarity and independent exit.</text>
+<text x="50" y="598" font-size="16">Physical power-loss behavior and relocking must be checked with the actual components.</text>
+</g></svg>

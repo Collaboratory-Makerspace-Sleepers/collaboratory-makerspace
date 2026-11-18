@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { confirmCheckout } from "../../hooks/confirmCheckout";
 
 const PENDING_RESERVATION_KEY = "pendingReservationAfterPayment";
 const PENDING_RESERVATION_TTL_MS = 2 * 60 * 60 * 1000;
@@ -27,6 +28,8 @@ export default function ReservationCheckout() {
   const [status, setStatus] = useState("idle"); // idle | confirming | success | needs_membership | error
   const [errorMsg, setErrorMsg] = useState("");
   const [daypassLoading, setDaypassLoading] = useState(false);
+  const [waiverError, setWaiverError] = useState(false);
+  const [saveCard, setSaveCard] = useState(true);
 
   if (!state?.equipmentId) {
     navigate("/dashboard/rentequipment", { replace: true });
@@ -44,6 +47,7 @@ export default function ReservationCheckout() {
   const {
     equipmentId, equipmentName, startTime, endTime,
     displayDate, displayTime, hourlyRateCents, waiverSignatureId,
+    membershipCheckoutSessionId,
   } = state;
 
   const hours = (new Date(endTime) - new Date(startTime)) / (1000 * 60 * 60);
@@ -54,11 +58,19 @@ export default function ReservationCheckout() {
   async function handleConfirm() {
     setStatus("confirming");
     setErrorMsg("");
+    setWaiverError(false);
     try {
-      const res = await authFetch("/api/v1/reservations", {
+      const create = () => authFetch("/api/v1/reservations", {
         method: "POST",
+        signal: AbortSignal.timeout(30000),
         body: JSON.stringify({ equipmentId, startTime, endTime, waiverSignatureId }),
       });
+      let res = await create();
+      if (res.status === 402) {
+        await confirmCheckout(authFetch, "membership", membershipCheckoutSessionId);
+        await confirmCheckout(authFetch, "daypass", null);
+        res = await create();
+      }
 
       if (res.status === 402) {
         setStatus("needs_membership");
@@ -66,8 +78,9 @@ export default function ReservationCheckout() {
       }
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
+        setWaiverError(/waiver/i.test(body.message || body.detail || ""));
         throw new Error(
-          body.message ||
+          body.message || body.detail ||
             (res.status === 409
               ? "That time slot is no longer available. Please pick a different time."
               : "Unable to complete your reservation.")
@@ -75,7 +88,10 @@ export default function ReservationCheckout() {
       }
 
       sessionStorage.removeItem(PENDING_RESERVATION_KEY);
-      setStatus("success");
+      if (state.waiverSignatureStorageKey) {
+        sessionStorage.removeItem(state.waiverSignatureStorageKey);
+      }
+      navigate("/dashboard/reservations", { replace: true });
     } catch (err) {
       setErrorMsg(err.message || "Something went wrong.");
       setStatus("error");
@@ -92,7 +108,7 @@ export default function ReservationCheckout() {
       }));
       const res = await authFetch("/api/v1/billing/checkout-session", {
         method: "POST",
-        body: JSON.stringify({ planCode: "DAY_PASS", saveCard: false }),
+        body: JSON.stringify({ planCode: "DAY_PASS", saveCard }),
       });
       if (!res.ok) {
         sessionStorage.removeItem(PENDING_RESERVATION_KEY);
@@ -153,8 +169,13 @@ export default function ReservationCheckout() {
       {status === "needs_membership" ? (
         <div className="Dash3">
           <div className="Dash4">
-            <p>You don't have an active membership.</p>
+            <p>No active membership or day pass was found after checking your payments.</p>
+            <p>The day pass costs $25 for 24 hours of access. The waiver itself is free.</p>
             <p>Members reserve equipment at the member rate.</p>
+            <label>
+              <input type="checkbox" checked={saveCard} onChange={(event) => setSaveCard(event.target.checked)} />
+              Save this card securely with Stripe for future payments
+            </label>
           </div>
           {errorMsg && <p style={{ color: "red" }}>{errorMsg}</p>}
           <div className="Dash5 checkout-actions">
@@ -175,13 +196,21 @@ export default function ReservationCheckout() {
               onClick={handleDayPass}
               disabled={daypassLoading}
             >
-              {daypassLoading ? "Redirecting to payment…" : `Pay ${priceLabel} (day pass)`}
+              {daypassLoading ? "Redirecting to payment…" : "Buy day pass ($25)"}
             </button>
           </div>
         </div>
       ) : (
         <div className="Dash5 checkout-actions">
           {status === "error" && <p style={{ color: "red" }}>{errorMsg}</p>}
+          {waiverError && (
+            <button onClick={() => {
+              if (state.waiverSignatureStorageKey) sessionStorage.removeItem(state.waiverSignatureStorageKey);
+              navigate(`/dashboard/rentequipment/${equipmentId}/waiver`, {
+                state: { ...state, waiverRequired: true, waiverSigned: false, waiverSignatureId: null },
+              });
+            }}>Sign waiver again (no additional payment)</button>
+          )}
           <button
             className="checkout-primary-button"
             onClick={handleConfirm}

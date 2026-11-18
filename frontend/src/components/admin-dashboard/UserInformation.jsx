@@ -1,3 +1,4 @@
+import MemberHardware from "./MemberHardware";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 
@@ -348,6 +349,7 @@ export default function UserInformation({ user, onClose: onClosed, onUserUpdated
             )}
           </InfoRow>
         </dl>
+        <MemberHardware userId={localUser.id} />
 
         {actionError && (
           <p className="ra-state ra-error" role="alert" style={{ margin: "0 1rem 0.5rem" }}>

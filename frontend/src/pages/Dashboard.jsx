@@ -24,6 +24,13 @@ export default function Dashboard() {
     <div className="Dash1">
       {/* nav bar */}
       <div className="Dash">
+        <button
+          onClick={() => navigate("/dashboard/home")}
+          style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "block" }}
+        >
+          <img src="/makerspace_logo.png" alt="The Collaboratory" style={{ width: "100%", maxWidth: "160px" }} />
+        </button>
+
         <div className="DashNav">
           <p>Menu</p>
           <div className="DashNav1">

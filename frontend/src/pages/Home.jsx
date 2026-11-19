@@ -9,7 +9,9 @@ export default function Home() {
     <div className="bigdiv">
       <div className="secondDiv">
         <div className="NavBar">
-          <p className="logo">The Collaboratory</p>
+          <Link to="/">
+            <img src="/makerspace_logo.png" alt="The Collaboratory" style={{ height: "40px" }} />
+          </Link>
 
           <div className="links">
             <Link to="/" className="nav-link active">Home</Link>

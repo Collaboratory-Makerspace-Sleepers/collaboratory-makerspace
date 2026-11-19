@@ -1,26 +1,7 @@
-import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 export default function TermsOfService() {
   const navigate = useNavigate();
-
-  // Form states
-  const [fullName, setFullName] = useState("");
-  const [isChecked, setIsChecked] = useState(false);
-  const [isSigned, setIsSigned] = useState(false);
-
-  const handleSign = (e) => {
-    e.preventDefault();
-    if (fullName.trim() && isChecked) {
-      setIsSigned(true);
-    }
-  };
-
-  const handleContinue = () => {
-    if (fullName.trim() && isChecked && isSigned) {
-      navigate("/checkout");
-    }
-  };
 
   return (
     <div className="bigdiv">
@@ -104,58 +85,6 @@ export default function TermsOfService() {
             </p>
           </section>
 
-          <section className="WaiverSection">
-            <h2>Safety Training Video</h2>
-            <p>Please watch the training video. You will confirm it in your account after signing in.</p>
-            <video controls preload="metadata" style={{ width: "100%", borderRadius: 8, background: "#000" }} src={import.meta.env.VITE_LASER_TRAINING_VIDEO_URL || "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"}>
-              Your browser does not support video playback.
-            </video>
-          </section>
-
-          {/* Form Actions */}
-          <form className="WaiverForm">
-            <div className="inputColumn">
-              <label htmlFor="fullName">Full legal name</label>
-              <input
-                id="fullName"
-                type="text"
-                placeholder="Enter your full name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-              />
-            </div>
-
-            <div className="checkboxGroup">
-              <label className="checkboxLabel">
-                <input
-                  type="checkbox"
-                  checked={isChecked}
-                  onChange={(e) => setIsChecked(e.target.checked)}
-                />
-                I have read and agree to this waiver.
-              </label>
-            </div>
-
-            <div className="WaiverButtons">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={handleSign}
-                disabled={!fullName.trim() || !isChecked}
-              >
-                {isSigned ? "Signed ✓" : "Sign electronically"}
-              </button>
-
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={handleContinue}
-                disabled={!isSigned}
-              >
-                Continue to checkout
-              </button>
-            </div>
-          </form>
         </div>
 
         {/* Footer */}

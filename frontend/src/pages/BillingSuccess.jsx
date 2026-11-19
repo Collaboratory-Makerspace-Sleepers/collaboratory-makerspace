@@ -159,12 +159,22 @@ function CompletePaidBooking({ reservation, type, stripeSessionId }) {
   if (confirmed) {
     const content = CONTENT[type];
     return (
-      <div className="DashHome1">
-        <h1>{content.title}</h1>
-        <p>{content.subtitle}</p>
-        <Link to={content.link}>{content.label}</Link>
-        <p><Link to="/dashboard/billing-history">View payment and receipt</Link></p>
-        <p><Link to="/dashboard/payment-methods">View saved cards</Link></p>
+      <div className="DashHome1" style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "70vh" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem", textAlign: "center", maxWidth: "400px", width: "100%" }}>
+          <h1 style={{ margin: 0 }}>{content.title}</h1>
+          <p style={{ margin: 0, color: "#555" }}>{content.subtitle}</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", width: "100%" }}>
+            <Link to={content.link}>
+              <button className="checkout-primary-button" style={{ width: "100%" }}>{content.label}</button>
+            </Link>
+            <Link to="/dashboard/billing-history">
+              <button className="checkout-secondary-button" style={{ width: "100%" }}>View payment and receipt</button>
+            </Link>
+            <Link to="/dashboard/payment-methods">
+              <button className="checkout-secondary-button" style={{ width: "100%" }}>View saved cards</button>
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }

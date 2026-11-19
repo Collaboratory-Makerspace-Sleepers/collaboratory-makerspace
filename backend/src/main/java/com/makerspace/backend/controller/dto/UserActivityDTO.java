@@ -12,5 +12,6 @@ public record UserActivityDTO(
         String allowed,
         boolean waiverSigned,
         List<String> roles,
-        boolean student
+        boolean student,
+        boolean deleted
 ) {}

@@ -22,11 +22,13 @@ export default function MemberSelect({ value, onChange, initialQuery = "" }) {
   return (
     <>
       <input
+        className="au-search"
+        style={{ marginBottom: "4px" }}
         placeholder="Search member name or email"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
-      <select value={value} onChange={(e) => onChange(e.target.value)}>
+      <select className="au-search" value={value} onChange={(e) => onChange(e.target.value)}>
         <option value="">Select member…</option>
         {members.map((m) => (
           <option key={m.id} value={m.id}>{m.name} ({m.email})</option>

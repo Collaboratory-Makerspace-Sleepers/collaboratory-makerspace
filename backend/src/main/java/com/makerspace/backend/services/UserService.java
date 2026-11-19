@@ -18,6 +18,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -87,8 +88,16 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public Page<UserActivityDTO> findRecentActivity(Pageable pageable) {
-        return userRepository.findAll(pageable).map(user -> {
+    public Page<UserActivityDTO> findRecentActivity(Pageable pageable, boolean includeDeleted) {
+        // The native findAllIncludingDeleted query owns its own ORDER BY (created_at DESC).
+        // Passing the Pageable sort directly causes Hibernate to append the camelCase property
+        // name literally (e.g. "createdAt"), which breaks on PostgreSQL snake_case columns.
+        // Strip the sort so only page/size are forwarded; the query's ORDER BY takes effect.
+        Pageable unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        Page<User> users = includeDeleted
+                ? userRepository.findAllIncludingDeleted(unsorted)
+                : userRepository.findAll(pageable);
+        return users.map(user -> {
             Membership membership = membershipRepository.findByUserId(user.getId()).orElse(null);
             UserProfile profile = user.getProfile();
             String name = profile == null
@@ -106,7 +115,8 @@ public class UserService {
                     user.getAccountStatus() == AccountStatus.ACTIVE ? "Allowed" : "Pending",
                     trainingWaiverSignatureRepository.existsByUserId(user.getId()),
                     user.getRoles().stream().map(AppRole::getCode).sorted().toList(),
-                    user.getEmail() != null && user.getEmail().toLowerCase().endsWith(".edu")
+                    user.getEmail() != null && user.getEmail().toLowerCase().endsWith(".edu"),
+                    user.getDeletedAt() != null
             );
         });
     }

@@ -1,7 +1,7 @@
 package com.makerspace.backend.controller.dto;
 
 import com.makerspace.backend.model.HardwareCheckIn;
-
+import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 
 public class HardwareCheckInDTO {
@@ -30,11 +30,17 @@ public class HardwareCheckInDTO {
     public HardwareCheckInDTO(HardwareCheckIn checkIn) {
         this.id = checkIn.getId();
         this.userId = checkIn.getUser().getId();
-        this.userName = checkIn.getUser().getProfile() != null
-            ? checkIn.getUser().getProfile().getFirstName() + " " +
-              (checkIn.getUser().getProfile().getLastName() != null ? checkIn.getUser().getProfile().getLastName() : "")
-            : checkIn.getUser().getEmail();
-        this.userEmail = checkIn.getUser().getEmail();
+        try {
+            this.userEmail = checkIn.getUser().getEmail();
+            this.userName = checkIn.getUser().getProfile() != null
+                ? (checkIn.getUser().getProfile().getFirstName() + " " +
+                   (checkIn.getUser().getProfile().getLastName() != null
+                       ? checkIn.getUser().getProfile().getLastName() : "")).trim()
+                : this.userEmail;
+        } catch (EntityNotFoundException ignored) {
+            this.userEmail = "";
+            this.userName = "(Deleted user)";
+        }
         this.equipmentId = checkIn.getEquipment().getId();
         this.equipmentName = checkIn.getEquipment().getName();
         this.status = checkIn.getStatus().toString();
@@ -54,9 +60,13 @@ public class HardwareCheckInDTO {
 
         if (checkIn.getApprovedByAdmin() != null) {
             this.approvedByUserId = checkIn.getApprovedByAdmin().getId();
-            this.approvedByUserName = checkIn.getApprovedByAdmin().getProfile() != null
-                ? checkIn.getApprovedByAdmin().getProfile().getFirstName()
-                : checkIn.getApprovedByAdmin().getEmail();
+            try {
+                this.approvedByUserName = checkIn.getApprovedByAdmin().getProfile() != null
+                    ? checkIn.getApprovedByAdmin().getProfile().getFirstName()
+                    : checkIn.getApprovedByAdmin().getEmail();
+            } catch (EntityNotFoundException ignored) {
+                this.approvedByUserName = "(Deleted user)";
+            }
         }
     }
 

@@ -4,6 +4,7 @@ import com.makerspace.backend.model.CancellationRequest;
 import com.makerspace.backend.model.CancellationRequestStatus;
 import com.makerspace.backend.model.PaymentRecord;
 
+import jakarta.persistence.EntityNotFoundException;
 import java.time.ZonedDateTime;
 
 public record CancellationRequestDTO(
@@ -26,11 +27,17 @@ public record CancellationRequestDTO(
     public static CancellationRequestDTO from(CancellationRequest cr, PaymentRecord pr) {
         String equipmentName = cr.getReservation().getEquipment() != null
                 ? cr.getReservation().getEquipment().getName() : null;
-        String userName = cr.getRequestedBy().getProfile() != null
-                ? cr.getRequestedBy().getProfile().getFirstName() + " "
-                  + cr.getRequestedBy().getProfile().getLastName()
-                : cr.getRequestedBy().getEmail();
-        String userEmail = cr.getRequestedBy().getEmail();
+        String userEmail, userName;
+        try {
+            userEmail = cr.getRequestedBy().getEmail();
+            userName = cr.getRequestedBy().getProfile() != null
+                    ? (cr.getRequestedBy().getProfile().getFirstName() + " "
+                       + cr.getRequestedBy().getProfile().getLastName()).trim()
+                    : userEmail;
+        } catch (EntityNotFoundException ignored) {
+            userEmail = "";
+            userName = "(Deleted user)";
+        }
 
         return new CancellationRequestDTO(
                 cr.getId(),

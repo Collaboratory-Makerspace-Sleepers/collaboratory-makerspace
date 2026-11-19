@@ -23,7 +23,7 @@ export default function AdminDashboard() {
             {canManageRoles && <NavLink to="/admin-dashboard/home">Home</NavLink>}
             {canManageRoles && <NavLink to="/admin-dashboard/analytics">Analytics</NavLink>}
             {canManageRoles && <NavLink to="/admin-dashboard/user">Users</NavLink>}
-            {canManageRoles && <NavLink to="/admin-dashboard/rentequipment">Rent Equipment</NavLink>}
+            {canManageRoles && <NavLink to="/admin-dashboard/rentequipment">Equipment</NavLink>}
             {canManageClasses && <NavLink to="/admin-dashboard/bookclasses">Classes</NavLink>}
             {canManageRoles && <NavLink to="/admin-dashboard/hardware">Hardware Access</NavLink>}
             {canManageRoles && <NavLink to="/admin-dashboard/roles">Roles</NavLink>}

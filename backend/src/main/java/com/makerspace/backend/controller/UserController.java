@@ -74,8 +74,9 @@ public class UserController {
     @GetMapping("/activity")
     @PreAuthorize("hasAuthority('MANAGE_USERS')")
     public Page<UserActivityDTO> recentActivity(
-            @PageableDefault(size = 6, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return userService.findRecentActivity(pageable);
+            @PageableDefault(size = 6, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @RequestParam(defaultValue = "false") boolean includeDeleted) {
+        return userService.findRecentActivity(pageable, includeDeleted);
     }
 
     @GetMapping

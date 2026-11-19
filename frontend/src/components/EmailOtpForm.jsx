@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 /**
@@ -55,6 +55,10 @@ export default function EmailOtpForm({
         setMessage("A code was already sent recently. Enter it below, or wait a minute to request a new one.");
         return;
       }
+      if (res.status === 410) {
+        navigate("/account-closed");
+        return;
+      }
       if (!res.ok) {
         const message = data?.message || (res.status === 429
           ? "Please wait before requesting another code."
@@ -83,6 +87,10 @@ export default function EmailOtpForm({
         body: JSON.stringify({ email, code }),
       });
       const data = await res.json().catch(() => null);
+      if (res.status === 410) {
+        navigate("/account-closed");
+        return;
+      }
       if (!res.ok) {
         throw new Error(data?.message || (res.status >= 500
           ? "The server could not verify your code. Please try again."

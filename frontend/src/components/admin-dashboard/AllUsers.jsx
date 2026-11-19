@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 
 const PAGE_SIZE = 10;
@@ -24,6 +24,67 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [resendNote, setResendNote] = useState("");
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [roleFilter, setRoleFilter] = useState("");
+  const [membershipFilter, setMembershipFilter] = useState("");
+  const [waiverFilter, setWaiverFilter] = useState("");
+
+  const load = useCallback(() => {
+    const url = `/api/v1/users/activity?page=0&size=${FETCH_SIZE}&sort=createdAt,desc${showDeleted ? "&includeDeleted=true" : ""}`;
+    return authFetch(url)
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Could not load users.");
+        return response.json();
+      })
+      .then((result) => {
+        setUsers(Array.isArray(result.content) ? result.content : []);
+        setError("");
+      })
+      .catch((loadError) => {
+        setError(loadError.message || "Could not load users.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [authFetch, showDeleted]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    const wrappedLoad = () => {
+      if (cancelled) return;
+      load();
+    };
+    wrappedLoad();
+    const timer = setInterval(() => {
+      if (!document.hidden && !cancelled) load();
+    }, 10000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [load, refreshKey]);
+
+  const membershipOptions = useMemo(() => {
+    const plans = new Set(users.map((u) => u.membership).filter((m) => m && m !== "None"));
+    return Array.from(plans).sort();
+  }, [users]);
+
+  const filtered = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    return users.filter((user) => {
+      if (term && !fullName(user).toLowerCase().includes(term) && !(user.email || "").toLowerCase().includes(term) &&
+          !(user.roles ?? []).some((role) => role.toLowerCase().includes(term))) return false;
+      if (roleFilter && !(user.roles ?? []).includes(roleFilter)) return false;
+      if (membershipFilter && user.membership !== membershipFilter) return false;
+      if (waiverFilter === "signed" && !user.waiverSigned) return false;
+      if (waiverFilter === "unsigned" && user.waiverSigned) return false;
+      return true;
+    });
+  }, [users, query, roleFilter, membershipFilter, waiverFilter]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const visible = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   const deleteUser = async (user) => {
     const label = user.email || fullName(user);
@@ -32,7 +93,7 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
     try {
       const res = await authFetch(`/api/v1/users/${user.id}`, { method: "DELETE" });
       if (res.ok) {
-        setUsers((prev) => prev.filter((u) => u.id !== user.id));
+        await load();
         setResendNote(`Deleted ${label}.`);
       } else {
         const data = await res.json().catch(() => ({}));
@@ -40,6 +101,23 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
       }
     } catch {
       setResendNote("Could not delete the user.");
+    }
+  };
+
+  const restoreUser = async (user) => {
+    const label = user.email || fullName(user);
+    setResendNote("");
+    try {
+      const res = await authFetch(`/api/v1/users/${user.id}/restore`, { method: "POST" });
+      if (res.ok) {
+        await load();
+        setResendNote(`Restored ${label}.`);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setResendNote(data.message || `Could not restore ${label}.`);
+      }
+    } catch {
+      setResendNote("Could not restore the user.");
     }
   };
 
@@ -57,48 +135,13 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
     }
   };
 
-  useEffect(() => {
-    let cancelled = false;
-    const load = () =>
-      authFetch(`/api/v1/users/activity?page=0&size=${FETCH_SIZE}&sort=createdAt,desc`)
-        .then(async (response) => {
-          if (!response.ok) throw new Error("Could not load users.");
-          return response.json();
-        })
-        .then((result) => {
-          if (cancelled) return;
-          setUsers(Array.isArray(result.content) ? result.content : []);
-          setError("");
-        })
-        .catch((loadError) => {
-          if (!cancelled) setError(loadError.message || "Could not load users.");
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false);
-        });
-    load();
-    // Poll so people who sign in or get created show up without a manual reload.
-    const timer = setInterval(() => {
-      if (!document.hidden) load();
-    }, 10000);
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
-  }, [authFetch, refreshKey]);
-
-  const filtered = useMemo(() => {
-    const term = query.trim().toLowerCase();
-    if (!term) return users;
-    return users.filter(
-      (user) =>
-        fullName(user).toLowerCase().includes(term) ||
-        (user.roles ?? []).some((role) => role.toLowerCase().includes(term))
-    );
-  }, [users, query]);
-
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const visible = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  function resetFilters() {
+    setQuery("");
+    setRoleFilter("");
+    setMembershipFilter("");
+    setWaiverFilter("");
+    setPage(0);
+  }
 
   return (
     <div className="ra-wrapper">
@@ -131,17 +174,64 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
           </div>
         </div>
 
-        <input
-          type="search"
-          className="au-search"
-          placeholder="Search by name or role"
-          aria-label="Search users by name"
-          value={query}
-          onChange={(event) => {
-            setQuery(event.target.value);
-            setPage(0);
-          }}
-        />
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.5rem" }}>
+          <input
+            type="search"
+            className="au-search"
+            placeholder="Search by name, email, or role"
+            aria-label="Search users"
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setPage(0); }}
+            style={{ flex: "1 1 180px" }}
+          />
+
+          <select
+            className="au-search"
+            value={roleFilter}
+            onChange={(e) => { setRoleFilter(e.target.value); setPage(0); }}
+            aria-label="Filter by role"
+          >
+            <option value="">All roles</option>
+            {["MEMBER", "STAFF", "INSTRUCTOR", "ADMIN"].map((r) => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
+
+          <select
+            className="au-search"
+            value={membershipFilter}
+            onChange={(e) => { setMembershipFilter(e.target.value); setPage(0); }}
+            aria-label="Filter by membership"
+          >
+            <option value="">All memberships</option>
+            <option value="None">None</option>
+            {membershipOptions.map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+
+          <select
+            className="au-search"
+            value={waiverFilter}
+            onChange={(e) => { setWaiverFilter(e.target.value); setPage(0); }}
+            aria-label="Filter by waiver"
+          >
+            <option value="">All waivers</option>
+            <option value="signed">Signed</option>
+            <option value="unsigned">Not signed</option>
+          </select>
+
+          <button
+            className="ra-link"
+            onClick={() => { setShowDeleted((v) => !v); setPage(0); }}
+          >
+            {showDeleted ? "Hide deleted" : "Show deleted accounts"}
+          </button>
+
+          {(query || roleFilter || membershipFilter || waiverFilter) && (
+            <button className="ra-link" onClick={resetFilters}>Clear filters</button>
+          )}
+        </div>
 
         {loading ? (
           <p className="ra-state" role="status">Loading users…</p>
@@ -167,24 +257,38 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
               </thead>
               <tbody>
                 {visible.map((user) => (
-                  <tr key={user.id} className={user.id === selectedId ? "au-selected" : undefined}>
+                  <tr
+                    key={user.id}
+                    className={user.id === selectedId ? "au-selected" : undefined}
+                    style={user.deleted ? { opacity: 0.5 } : undefined}
+                  >
                     <td>{user.id}</td>
-                    <td>{user.email || "—"}</td>
-                    <td>{fullName(user) || user.email || "Unknown user"}</td>
+                    <td title={user.email}>{user.email || "—"}</td>
+                    <td>
+                      {fullName(user) || user.email || "Unknown user"}
+                      {user.deleted && (
+                        <span style={{ marginLeft: "6px", fontSize: "0.75em", color: "#c00", fontWeight: 600 }}>
+                          (Deleted)
+                        </span>
+                      )}
+                    </td>
                     <td>{formatDate(user.createdAt)}</td>
                     <td>{user.membership || "None"}</td>
                     <td>{user.allowed || "Not allowed"}</td>
                     <td>{user.waiverSigned ? "Signed" : "Not signed"}</td>
-                    <td>
-                      <button className="ra-link" onClick={() => onViewProfile(user)}>
-                        View Profile
-                      </button>{" "}
-                      <button className="ra-link" onClick={() => resendCode(user)}>
-                        Resend code
-                      </button>{" "}
-                      <button className="ra-link" onClick={() => deleteUser(user)}>
-                        Delete
-                      </button>
+                    <td className="ae-cell">
+                      <div className="ae-actions">
+                        {!user.deleted && (
+                          <>
+                            <button className="ra-link" onClick={() => onViewProfile(user)}>View Profile</button>
+                            <button className="ra-link" onClick={() => resendCode(user)}>Resend code</button>
+                            <button className="ra-link" onClick={() => deleteUser(user)}>Delete</button>
+                          </>
+                        )}
+                        {user.deleted && (
+                          <button className="ra-link" onClick={() => restoreUser(user)}>Restore</button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

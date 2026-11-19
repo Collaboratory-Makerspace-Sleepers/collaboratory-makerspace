@@ -1,6 +1,7 @@
 package com.makerspace.backend.controller.dto;
 
 import com.makerspace.backend.model.ClassSession;
+import jakarta.persistence.EntityNotFoundException;
 
 import java.time.ZonedDateTime;
 
@@ -27,9 +28,15 @@ public record ClassSessionDTO(
 ) {
     public static ClassSessionDTO from(ClassSession s, long enrolledCount, int resolvedPriceCents) {
         String instructorName = null;
-        if (s.getInstructor() != null && s.getInstructor().getProfile() != null) {
-            var p = s.getInstructor().getProfile();
-            instructorName = (p.getFirstName() + " " + p.getLastName()).trim();
+        if (s.getInstructor() != null) {
+            try {
+                var profile = s.getInstructor().getProfile();
+                if (profile != null) {
+                    instructorName = (profile.getFirstName() + " " + profile.getLastName()).trim();
+                }
+            } catch (EntityNotFoundException ignored) {
+                // instructor was soft-deleted; show no name rather than crashing
+            }
         }
 
         long spotsRemaining = s.getMaxCapacity() == 0

@@ -9,11 +9,13 @@ export default function OAuthCallback() {
   useEffect(() => {
     fetch('/api/v1/auth/token', { credentials: 'include' })
       .then(res => {
+        if (res.status === 410) { navigate('/account-closed'); return null; }
         if (!res.ok) throw new Error()
         return res.json()
       })
-      .then(({ access_token }) => {
-        setToken(access_token)
+      .then(data => {
+        if (!data) return;
+        setToken(data.access_token)
         navigate('/dashboard')
       })
       .catch(() => navigate('/login?error=true'))

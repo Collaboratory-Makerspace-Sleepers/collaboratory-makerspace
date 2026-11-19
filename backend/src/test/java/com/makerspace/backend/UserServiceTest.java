@@ -80,7 +80,7 @@ class UserServiceTest {
         when(membershipRepository.findByUserId(1L)).thenReturn(Optional.of(membership));
         when(trainingWaiverSignatureRepository.existsByUserId(1L)).thenReturn(true);
 
-        var result = userService.findRecentActivity(PageRequest.of(0, 6));
+        var result = userService.findRecentActivity(PageRequest.of(0, 6), false);
 
         assertThat(result.getContent()).singleElement().satisfies(activity -> {
             assertThat(activity.name()).isEqualTo("Test User");

@@ -34,6 +34,7 @@ import RequireAuth from "./components/RequireAuth";
 import RequirePermission from "./components/RequirePermission";
 import BillingSuccess from "./pages/BillingSuccess";
 import BillingCancel from "./pages/BillingCancel";
+import AccountClosed from "./pages/AccountClosed";
 import TermsOfService from "./pages/TermsOfService"; //added this import for Terms of Service page
 
 function App() {
@@ -48,6 +49,7 @@ function App() {
       <Route path="/oauth-callback" element={<OAuthCallback />} />
       <Route path="/billing/success" element={<BillingSuccess />} />
       <Route path="/billing/cancel" element={<BillingCancel />} />
+      <Route path="/account-closed" element={<AccountClosed />} />
       <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>}>
         <Route index element={<DashboardLanding />} />
         <Route path="home" element={<DashboardHome />} />

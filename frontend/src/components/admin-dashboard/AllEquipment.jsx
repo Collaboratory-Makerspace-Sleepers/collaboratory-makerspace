@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import DollarInput from "../DollarInput";
-import { dollarsToCents, formatDollars, sortNewest } from "../../utils/catalog";
+import { sortNewest } from "../../utils/catalog";
 
 const STATUSES = ["AVAILABLE", "IN_USE", "MAINTENANCE", "RETIRED"];
 const PAGE_SIZE = 10;
@@ -124,7 +123,7 @@ export default function AllEquipment({ refreshKey = 0 }) {
       const response = await authFetch(`/api/v1/equipment/${editing.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...editing, hourlyRateCents: dollarsToCents(editing.hourlyRateDollars) }),
+        body: JSON.stringify(editing),
       });
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
@@ -263,7 +262,7 @@ export default function AllEquipment({ refreshKey = 0 }) {
                       <div className="ae-actions">
                         <button className="ra-link" onClick={() => {
                           setSaveError("");
-                          setEditing({ ...e, hourlyRateDollars: formatDollars(e.hourlyRateCents) });
+                          setEditing({ ...e });
                         }}>
                           Edit equipment
                         </button>
@@ -345,19 +344,19 @@ export default function AllEquipment({ refreshKey = 0 }) {
             <dl className="ra-profile-details">
               <div>
                 <dt>Name</dt>
-                <dd><input required value={editing.name || ""} onChange={setField("name")} /></dd>
+                <dd><input className="au-search" required value={editing.name || ""} onChange={setField("name")} /></dd>
               </div>
               <div>
                 <dt>Category</dt>
-                <dd><input required value={editing.category || ""} onChange={setField("category")} /></dd>
+                <dd><input className="au-search" required value={editing.category || ""} onChange={setField("category")} /></dd>
               </div>
               <div>
                 <dt>Description</dt>
-                <dd><input value={editing.description || ""} onChange={setField("description")} /></dd>
+                <dd><input className="au-search" value={editing.description || ""} onChange={setField("description")} /></dd>
               </div>
               <div>
                 <dt>Image URL</dt>
-                <dd><input value={editing.imageUrl || ""} onChange={setField("imageUrl")} /></dd>
+                <dd><input className="au-search" value={editing.imageUrl || ""} onChange={setField("imageUrl")} /></dd>
               </div>
               <div>
                 <dt>Requires waiver</dt>
@@ -375,18 +374,13 @@ export default function AllEquipment({ refreshKey = 0 }) {
               </div>
               <div>
                 <dt>Training video URL {editing.requiresTraining ? "(required)" : "(optional)"}</dt>
-                <dd><input type="url" required={editing.requiresTraining}
+                <dd><input className="au-search" type="url" required={editing.requiresTraining}
                   value={editing.trainingVideoUrl || ""} onChange={setField("trainingVideoUrl")} /></dd>
-              </div>
-              <div>
-                <dt>Hourly rate ($)</dt>
-                <dd><DollarInput value={editing.hourlyRateDollars}
-                  onChange={(value) => setEditing((prev) => ({ ...prev, hourlyRateDollars: value }))} /></dd>
               </div>
               <div>
                 <dt>Status</dt>
                 <dd>
-                  <select value={editing.status} onChange={setField("status")}>
+                  <select className="au-search" value={editing.status} onChange={setField("status")}>
                     {STATUSES.map((s) => (
                       <option key={s} value={s}>{s}</option>
                     ))}
@@ -397,6 +391,7 @@ export default function AllEquipment({ refreshKey = 0 }) {
                 <dt>Hourly rate ($/hr)</dt>
                 <dd>
                   <input
+                    className="au-search"
                     type="text"
                     inputMode="decimal"
                     value={rateInput}
@@ -412,7 +407,7 @@ export default function AllEquipment({ refreshKey = 0 }) {
               {editing.trainingRequired && (
                 <div>
                   <dt>Training fee (cents)</dt>
-                  <dd><input type="number" min="0" value={editing.trainingFeeCents ?? 0}
+                  <dd><input className="au-search" type="number" min="0" value={editing.trainingFeeCents ?? 0}
                     onChange={(e) => setEditing((p) => ({ ...p, trainingFeeCents: Number(e.target.value) }))} /></dd>
                 </div>
               )}
@@ -421,6 +416,7 @@ export default function AllEquipment({ refreshKey = 0 }) {
                   <dt>Training video URL</dt>
                   <dd>
                     <input
+                      className="au-search"
                       type="url"
                       placeholder="https://..."
                       value={editing.trainingVideoUrl || ""}

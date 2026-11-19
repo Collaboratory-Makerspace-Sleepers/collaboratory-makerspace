@@ -2,6 +2,8 @@ package com.makerspace.backend.repository;
 
 import com.makerspace.backend.model.User;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -37,4 +39,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT COUNT(u) FROM User u JOIN u.roles r WHERE r.code = :roleCode")
     long countByRoleCode(@Param("roleCode") String roleCode);
+
+    @Query(value = "SELECT * FROM users ORDER BY created_at DESC",
+           countQuery = "SELECT COUNT(*) FROM users",
+           nativeQuery = true)
+    Page<User> findAllIncludingDeleted(Pageable pageable);
 }

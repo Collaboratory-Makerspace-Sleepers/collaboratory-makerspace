@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
@@ -49,12 +50,16 @@ public class CardService {
     }
 
     public static String displayName(User u) {
-        if (u.getProfile() != null) {
-            String n = ((u.getProfile().getFirstName() == null ? "" : u.getProfile().getFirstName()) + " "
-                    + (u.getProfile().getLastName() == null ? "" : u.getProfile().getLastName())).trim();
-            if (!n.isEmpty()) return n;
+        try {
+            if (u.getProfile() != null) {
+                String n = ((u.getProfile().getFirstName() == null ? "" : u.getProfile().getFirstName()) + " "
+                        + (u.getProfile().getLastName() == null ? "" : u.getProfile().getLastName())).trim();
+                if (!n.isEmpty()) return n;
+            }
+            return u.getEmail();
+        } catch (EntityNotFoundException ignored) {
+            return "(Deleted user)";
         }
-        return u.getEmail();
     }
 
     @Transactional

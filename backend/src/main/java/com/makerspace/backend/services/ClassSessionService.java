@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import jakarta.persistence.EntityNotFoundException;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
@@ -76,14 +77,22 @@ public class ClassSessionService {
                 .stream()
                 .map(e -> {
                     User u = e.getUser();
-                    String name = u.getProfile() != null
-                            ? (u.getProfile().getFirstName() + " " + u.getProfile().getLastName()).trim()
-                            : u.getEmail();
+                    String name, email;
+                    try {
+                        email = u.getEmail();
+                        name = u.getProfile() != null
+                                ? (u.getProfile().getFirstName() + " " + u.getProfile().getLastName()).trim()
+                                : email;
+                        if (name.isBlank()) name = email;
+                    } catch (EntityNotFoundException ignored) {
+                        email = "";
+                        name = "(Deleted user)";
+                    }
                     return Map.<String, Object>of(
                             "enrollmentId", e.getId(),
                             "userId", e.getUserId(),
                             "name", name,
-                            "email", u.getEmail(),
+                            "email", email,
                             "enrolledAt", e.getCreatedAt()
                     );
                 })

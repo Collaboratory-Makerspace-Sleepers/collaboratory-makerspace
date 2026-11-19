@@ -255,12 +255,12 @@ export default function AllClasses({ createOpen, onCreateClose }) {
       throw new Error(body.message || "Create failed.");
     }
     notifyCatalogChanged();
+    await load();
     setPage(0);
     setQuery("");
     setStatus("");
     setSortOrder("newest");
     onCreateClose?.();
-    await load();
   }
 
   async function handleEdit(data) {

@@ -3879,6 +3879,24 @@ p {
 .au-table td:last-child { overflow: visible; }
 .au-table td:last-child .ra-link + .ra-link { margin-left: 12px; }
 .au-table td:last-child .ra-link:last-child { color: #d93025; }
+.admin-classes-page .au-table td:last-child .ra-link + .ra-link { margin-left: 0; }
+
+.cancel-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-weight: 600;
+}
+.cancel-badge--pending  { background: #fff3cd; color: #856404; }
+.cancel-badge--waiting  { background: #cfe2ff; color: #084298; }
+.cancel-badge--resolved { background: #d1e7dd; color: #0a3622; }
+.cancel-badge--refund-ok  { background: #d1e7dd; color: #0a3622; }
+.cancel-badge--refund-exp { background: #f8d7da; color: #842029; }
+
+.au-toggle-btn { transition: background 0.15s, color 0.15s, border-color 0.15s; }
+.au-toggle-btn:not(.au-toggle-btn--active):hover { background: rgba(231, 87, 16, 0.12) !important; border-color: #e75710 !important; color: #e75710 !important; }
+.au-toggle-btn--active:hover { background: rgba(231, 87, 16, 0.75) !important; }
 
 .HWSignedDoc { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; margin: 12px 0; }
 .HWUploadBtn { display: inline-block; cursor: pointer; }

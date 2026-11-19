@@ -2,11 +2,11 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "../../context/AuthContext";
 
 const STATUS_LABELS = {
-  PENDING:              { label: "Pending",         color: "orange" },
-  APPROVED_WITH_REFUND: { label: "Awaiting Stripe", color: "#2563eb" },
-  APPROVED_NO_REFUND:   { label: "Cancelled",       color: "#6b7280" },
-  REJECTED:             { label: "Rejected",        color: "#6b7280" },
-  COMPLETED:            { label: "Completed",       color: "green"  },
+  PENDING:              { label: "Pending",         cls: "cancel-badge--pending"  },
+  APPROVED_WITH_REFUND: { label: "Awaiting Stripe", cls: "cancel-badge--waiting"  },
+  APPROVED_NO_REFUND:   { label: "Cancelled",       cls: "cancel-badge--resolved" },
+  REJECTED:             { label: "Rejected",        cls: "cancel-badge--resolved" },
+  COMPLETED:            { label: "Completed",       cls: "cancel-badge--resolved" },
 };
 
 const FILTERS = [
@@ -17,24 +17,14 @@ const FILTERS = [
 ];
 
 function StatusBadge({ status }) {
-  const { label, color } = STATUS_LABELS[status] || { label: status, color: "#6b7280" };
-  return (
-    <span style={{
-      background: color, color: "#fff", borderRadius: "4px",
-      padding: "2px 8px", fontSize: "0.78rem", fontWeight: 600,
-    }}>
-      {label}
-    </span>
-  );
+  const { label, cls } = STATUS_LABELS[status] || { label: status, cls: "cancel-badge--resolved" };
+  return <span className={`cancel-badge ${cls}`}>{label}</span>;
 }
 
 function RefundBadge({ until }) {
   const eligible = new Date(until) > new Date();
   return (
-    <span style={{
-      background: eligible ? "green" : "#dc2626", color: "#fff",
-      borderRadius: "4px", padding: "2px 8px", fontSize: "0.78rem", fontWeight: 600,
-    }}>
+    <span className={`cancel-badge ${eligible ? "cancel-badge--refund-ok" : "cancel-badge--refund-exp"}`}>
       {eligible ? "Eligible" : "Expired"}
     </span>
   );
@@ -169,104 +159,115 @@ export default function AdminCancellations() {
   }
 
   return (
-    <div className="DashHome1">
-      <div className="Dash2">
-        <p className="admin-page-title">Cancellation Requests</p>
-      </div>
+    <div className="AdUser admin-classes-page">
+      <h1 className="admin-page-title">Cancellations</h1>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      {actionError && <p style={{ color: "red" }}>{actionError}</p>}
+      <div className="AdAct">
+        <div className="ra-wrapper">
+          <div className="ra-card">
+            <div className="ra-header">
+              <div className="ra-title"><h2>Cancellation Requests</h2></div>
+            </div>
 
-      <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
-        {FILTERS.map((f) => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            style={{ fontWeight: filter === f.key ? 700 : 400 }}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <p>Loading…</p>
-      ) : filtered.length === 0 ? (
-        <p>No requests found.</p>
-      ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table className="ra-table cancellations-table" style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                <th>User</th>
-                <th>Equipment</th>
-                <th>Service Period</th>
-                <th>Reason</th>
-                <th>Refund Window</th>
-                <th>Stripe PI</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((r) => (
-                <tr key={r.id}>
-                  <td>
-                    <div>{r.userName}</div>
-                    <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>{r.userEmail}</div>
-                  </td>
-                  <td>{r.equipmentName || "—"}</td>
-                  <td>
-                    {fmtDate(r.startTime)} – {fmtDate(r.endTime)}
-                  </td>
-                  <td style={{ maxWidth: "180px", wordBreak: "break-word" }}>
-                    {r.reason || <em style={{ color: "#9ca3af" }}>None provided</em>}
-                  </td>
-                  <td><RefundBadge until={r.refundEligibleUntil} /></td>
-                  <td>
-                    {r.stripePaymentIntentId ? (
-                      <span
-                        title={r.stripePaymentIntentId}
-                        style={{ cursor: "pointer", textDecoration: "underline dotted" }}
-                        onClick={() => {
-                          navigator.clipboard?.writeText(r.stripePaymentIntentId);
-                        }}
-                      >
-                        {truncatePi(r.stripePaymentIntentId)}
-                      </span>
-                    ) : "—"}
-                  </td>
-                  <td><StatusBadge status={r.status} /></td>
-                  <td>
-                    {r.status === "PENDING" && (
-                      <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-                        <button
-                          disabled={busy === r.id}
-                          onClick={() => setApproveModal(r)}
-                        >
-                          Approve + Refund
-                        </button>
-                        <button
-                          disabled={busy === r.id}
-                          onClick={() => confirmInline(r.id, "APPROVE_NO_REFUND")}
-                        >
-                          Approve, No Refund
-                        </button>
-                        <button
-                          disabled={busy === r.id}
-                          onClick={() => confirmInline(r.id, "REJECT")}
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
+            <div className="catalog-filters" style={{ padding: "0 24px 16px" }}>
+              {FILTERS.map((f) => (
+                <button
+                  key={f.key}
+                  className={`ra-link au-toggle-btn${filter === f.key ? " au-toggle-btn--active" : ""}`}
+                  onClick={() => setFilter(f.key)}
+                >
+                  {f.label}
+                </button>
               ))}
-            </tbody>
-          </table>
+            </div>
+
+            {error && <p style={{ color: "red", padding: "0 24px" }}>{error}</p>}
+            {actionError && <p style={{ color: "red", padding: "0 24px" }}>{actionError}</p>}
+
+            {loading ? (
+              <p className="ra-state">Loading…</p>
+            ) : filtered.length === 0 ? (
+              <p className="ra-state">No requests found.</p>
+            ) : (
+              <div className="ra-table-scroll">
+                <table className="ra-table cancellations-table">
+                  <thead>
+                    <tr>
+                      <th>User</th>
+                      <th>Equipment</th>
+                      <th>Service Period</th>
+                      <th>Reason</th>
+                      <th>Refund Window</th>
+                      <th>Stripe PI</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((r) => (
+                      <tr key={r.id}>
+                        <td>
+                          <div>{r.userName}</div>
+                          <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>{r.userEmail}</div>
+                        </td>
+                        <td>{r.equipmentName || "—"}</td>
+                        <td>
+                          {fmtDate(r.startTime)} – {fmtDate(r.endTime)}
+                        </td>
+                        <td style={{ maxWidth: "180px", wordBreak: "break-word" }}>
+                          {r.reason || <em style={{ color: "#9ca3af" }}>None provided</em>}
+                        </td>
+                        <td><RefundBadge until={r.refundEligibleUntil} /></td>
+                        <td>
+                          {r.stripePaymentIntentId ? (
+                            <span
+                              title={r.stripePaymentIntentId}
+                              style={{ cursor: "pointer", textDecoration: "underline dotted" }}
+                              onClick={() => {
+                                navigator.clipboard?.writeText(r.stripePaymentIntentId);
+                              }}
+                            >
+                              {truncatePi(r.stripePaymentIntentId)}
+                            </span>
+                          ) : "—"}
+                        </td>
+                        <td><StatusBadge status={r.status} /></td>
+                        <td className="ae-cell">
+                          {r.status === "PENDING" && (
+                            <div className="ae-actions">
+                              <button
+                                className="ra-link"
+                                disabled={busy === r.id}
+                                onClick={() => setApproveModal(r)}
+                              >
+                                Approve + Refund
+                              </button>
+                              <button
+                                className="ra-link"
+                                disabled={busy === r.id}
+                                onClick={() => confirmInline(r.id, "APPROVE_NO_REFUND")}
+                              >
+                                Approve, No Refund
+                              </button>
+                              <button
+                                className="ra-link"
+                                disabled={busy === r.id}
+                                onClick={() => confirmInline(r.id, "REJECT")}
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
 
       {approveModal && (
         <ApproveRefundModal

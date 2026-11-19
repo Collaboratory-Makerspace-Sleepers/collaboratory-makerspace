@@ -66,7 +66,7 @@ export default function AdminRentEquipment() {
   };
 
   return (
-    <div className="AdUser">
+    <div className="AdUser admin-classes-page">
       <h1 className="admin-page-title">Equipment</h1>
       <div className="admin-actions-row">
         <button onClick={() => setOpen(true)}>Create New Equipment</button>

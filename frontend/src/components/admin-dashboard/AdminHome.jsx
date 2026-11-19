@@ -112,7 +112,7 @@ export default function AdminHome() {
         </div>
       </div>
 
-      <div className="AdAct">
+      <div className="AdAct admin-classes-page">
         <RecentActivity />
       </div>
     </div>

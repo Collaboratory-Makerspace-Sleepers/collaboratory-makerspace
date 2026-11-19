@@ -116,7 +116,7 @@ export default function AdminRoles() {
   };
 
   return (
-    <div className="AdUser">
+    <div className="AdUser admin-classes-page">
       <h1 className="admin-page-title">Roles</h1>
       <div className="admin-actions-row">
         <button onClick={openCreate}>Create Role</button>
@@ -153,19 +153,21 @@ export default function AdminRoles() {
                             ))
                           }
                         </td>
-                        <td>
-                          <button className="ra-link" onClick={() => openEdit(role)}>
-                            Edit Permissions
-                          </button>{" "}
-                          <button
-                            className="ra-link"
-                            onClick={() => deleteRole(role)}
-                            disabled={role.isSystem}
-                            title={role.isSystem ? "System role — cannot be deleted" : undefined}
-                            style={role.isSystem ? { opacity: 0.4, cursor: "not-allowed" } : undefined}
-                          >
-                            Delete
-                          </button>
+                        <td className="ae-cell">
+                          <div className="ae-actions">
+                            <button className="ra-link" onClick={() => openEdit(role)}>
+                              Edit Permissions
+                            </button>
+                            <button
+                              className="ra-link"
+                              onClick={() => deleteRole(role)}
+                              disabled={role.isSystem}
+                              title={role.isSystem ? "System role — cannot be deleted" : undefined}
+                              style={role.isSystem ? { opacity: 0.4, cursor: "not-allowed" } : undefined}
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

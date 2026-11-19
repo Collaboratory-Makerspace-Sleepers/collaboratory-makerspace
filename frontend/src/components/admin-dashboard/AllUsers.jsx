@@ -83,8 +83,11 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
     });
   }, [users, query, roleFilter, membershipFilter, waiverFilter]);
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const visible = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const activeFiltered = filtered.filter((u) => !u.deleted);
+  const deletedFiltered = filtered.filter((u) => u.deleted);
+
+  const totalPages = Math.ceil(activeFiltered.length / PAGE_SIZE);
+  const visible = activeFiltered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   const deleteUser = async (user) => {
     const label = user.email || fullName(user);
@@ -174,7 +177,7 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.5rem" }}>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center", margin: "0 14px 0.5rem" }}>
           <input
             type="search"
             className="au-search"
@@ -182,7 +185,7 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
             aria-label="Search users"
             value={query}
             onChange={(e) => { setQuery(e.target.value); setPage(0); }}
-            style={{ flex: "1 1 180px" }}
+            style={{ width: "220px", margin: 0 }}
           />
 
           <select
@@ -190,6 +193,7 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
             value={roleFilter}
             onChange={(e) => { setRoleFilter(e.target.value); setPage(0); }}
             aria-label="Filter by role"
+            style={{ width: "130px", margin: 0 }}
           >
             <option value="">All roles</option>
             {["MEMBER", "STAFF", "INSTRUCTOR", "ADMIN"].map((r) => (
@@ -202,6 +206,7 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
             value={membershipFilter}
             onChange={(e) => { setMembershipFilter(e.target.value); setPage(0); }}
             aria-label="Filter by membership"
+            style={{ width: "160px", margin: 0 }}
           >
             <option value="">All memberships</option>
             <option value="None">None</option>
@@ -215,6 +220,7 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
             value={waiverFilter}
             onChange={(e) => { setWaiverFilter(e.target.value); setPage(0); }}
             aria-label="Filter by waiver"
+            style={{ width: "130px", margin: 0 }}
           >
             <option value="">All waivers</option>
             <option value="signed">Signed</option>
@@ -222,10 +228,21 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
           </select>
 
           <button
-            className="ra-link"
             onClick={() => { setShowDeleted((v) => !v); setPage(0); }}
+            className={`au-toggle-btn${showDeleted ? " au-toggle-btn--active" : ""}`}
+            style={{
+              background: showDeleted ? "#e75710" : "none",
+              border: showDeleted ? "none" : "1px solid #ccc",
+              color: showDeleted ? "#fff" : "inherit",
+              padding: "8px 12px",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontWeight: showDeleted ? 600 : "normal",
+              fontSize: "0.875rem",
+              whiteSpace: "nowrap",
+            }}
           >
-            {showDeleted ? "Hide deleted" : "Show deleted accounts"}
+            {showDeleted ? "Hide deleted accounts" : "Show deleted accounts"}
           </button>
 
           {(query || roleFilter || membershipFilter || waiverFilter) && (
@@ -237,64 +254,97 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
           <p className="ra-state" role="status">Loading users…</p>
         ) : error ? (
           <p className="ra-state ra-error" role="alert">{error}</p>
-        ) : visible.length === 0 ? (
-          <p className="ra-state">{query ? "No users match your search." : "No users yet."}</p>
         ) : (
-          <div className="ra-table-scroll">
+          <>
             {resendNote && <p className="ra-state" role="status">{resendNote}</p>}
-            <table className="ra-table au-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Email</th>
-                  <th>Name</th>
-                  <th>Time</th>
-                  <th>Membership</th>
-                  <th>Allowed</th>
-                  <th>Waiver</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visible.map((user) => (
-                  <tr
-                    key={user.id}
-                    className={user.id === selectedId ? "au-selected" : undefined}
-                    style={user.deleted ? { opacity: 0.5 } : undefined}
-                  >
-                    <td>{user.id}</td>
-                    <td title={user.email}>{user.email || "—"}</td>
-                    <td>
-                      {fullName(user) || user.email || "Unknown user"}
-                      {user.deleted && (
-                        <span style={{ marginLeft: "6px", fontSize: "0.75em", color: "#c00", fontWeight: 600 }}>
-                          (Deleted)
-                        </span>
-                      )}
-                    </td>
-                    <td>{formatDate(user.createdAt)}</td>
-                    <td>{user.membership || "None"}</td>
-                    <td>{user.allowed || "Not allowed"}</td>
-                    <td>{user.waiverSigned ? "Signed" : "Not signed"}</td>
-                    <td className="ae-cell">
-                      <div className="ae-actions">
-                        {!user.deleted && (
-                          <>
-                            <button className="ra-link" onClick={() => onViewProfile(user)}>View Profile</button>
-                            <button className="ra-link" onClick={() => resendCode(user)}>Resend code</button>
-                            <button className="ra-link" onClick={() => deleteUser(user)}>Delete</button>
-                          </>
-                        )}
-                        {user.deleted && (
-                          <button className="ra-link" onClick={() => restoreUser(user)}>Restore</button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+
+            {!showDeleted && (
+              visible.length === 0 ? (
+                <p className="ra-state">{query ? "No users match your search." : "No users yet."}</p>
+              ) : (
+                <div className="ra-table-scroll">
+                  <table className="ra-table au-table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Email</th>
+                        <th>Name</th>
+                        <th>Time</th>
+                        <th>Membership</th>
+                        <th>Allowed</th>
+                        <th>Waiver</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visible.map((user) => (
+                        <tr
+                          key={user.id}
+                          className={user.id === selectedId ? "au-selected" : undefined}
+                        >
+                          <td>{user.id}</td>
+                          <td title={user.email}>{user.email || "—"}</td>
+                          <td>{fullName(user) || user.email || "Unknown user"}</td>
+                          <td>{formatDate(user.createdAt)}</td>
+                          <td>{user.membership || "None"}</td>
+                          <td>{user.allowed || "Not allowed"}</td>
+                          <td>{user.waiverSigned ? "Signed" : "Not signed"}</td>
+                          <td className="ae-cell">
+                            <div className="ae-actions">
+                              <button className="ra-link" onClick={() => onViewProfile(user)}>View Profile</button>
+                              <button className="ra-link" onClick={() => resendCode(user)}>Resend code</button>
+                              <button className="ra-link" onClick={() => deleteUser(user)}>Delete</button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            )}
+
+            {showDeleted && (
+              deletedFiltered.length === 0 ? (
+                <p className="ra-state">No deleted accounts.</p>
+              ) : (
+                <div className="ra-table-scroll">
+                  <table className="ra-table au-table" style={{ opacity: 0.75 }}>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Email</th>
+                        <th>Name</th>
+                        <th>Time</th>
+                        <th>Membership</th>
+                        <th>Allowed</th>
+                        <th>Waiver</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {deletedFiltered.map((user) => (
+                        <tr key={user.id}>
+                          <td>{user.id}</td>
+                          <td title={user.email}>{user.email || "—"}</td>
+                          <td>{fullName(user) || user.email || "Unknown user"}</td>
+                          <td>{formatDate(user.createdAt)}</td>
+                          <td>{user.membership || "None"}</td>
+                          <td>{user.allowed || "Not allowed"}</td>
+                          <td>{user.waiverSigned ? "Signed" : "Not signed"}</td>
+                          <td className="ae-cell">
+                            <div className="ae-actions">
+                              <button className="ra-link" onClick={() => restoreUser(user)}>Restore</button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            )}
+          </>
         )}
       </div>
 

@@ -264,9 +264,18 @@ public class BillingService {
                     latest = subscription;
                 }
             }
-            if (latest != null) synchronizeSubscription(user, latest);
-            else if (membershipService.currentMembership(userId).isEmpty()) {
-                paymentHistoryService.synchronize(userId);
+            if (latest != null) {
+                try {
+                    synchronizeSubscription(user, latest);
+                } catch (RuntimeException e) {
+                    log.warn("Subscription sync failed for user {}, returning cached state: {}", userId, e.getMessage());
+                }
+            } else if (membershipService.currentMembership(userId).isEmpty()) {
+                try {
+                    paymentHistoryService.synchronize(userId);
+                } catch (StripeException e) {
+                    log.warn("Payment history sync failed for user {}, returning cached state: {}", userId, e.getMessage());
+                }
             }
         }
         return getSubscription(userId);
@@ -371,6 +380,26 @@ public class BillingService {
                 .setCancelAtPeriodEnd(true)
                 .build();
         Subscription updated = stripeClient.v1().subscriptions().update(subscriptionId, params);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        synchronizeSubscription(user, updated);
+    }
+
+    public void reactivateMembership(Long userId) throws StripeException {
+        Membership membership = membershipService.currentMembership(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "No membership found"));
+        if (!membership.isCancelAtPeriodEnd()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Membership is not scheduled for cancellation");
+        }
+        String subscriptionId = membership.getStripeSubscriptionId();
+        if (subscriptionId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "No Stripe subscription linked to this membership");
+        }
+        Subscription updated = stripeClient.v1().subscriptions().update(subscriptionId,
+                SubscriptionUpdateParams.builder().setCancelAtPeriodEnd(false).build());
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         synchronizeSubscription(user, updated);
@@ -544,7 +573,7 @@ public class BillingService {
                     upcoming.getCurrency(), null);
         } else {
             return new PlanChangePreviewDTO("DOWNGRADE", 0,
-                    currentPlan.getCurrency(), ZonedDateTime.now());
+                    currentPlan.getCurrency(), membership.getCurrentPeriodEnd());
         }
     }
 
@@ -567,6 +596,7 @@ public class BillingService {
         String itemId = subscription.getItems().getData().get(0).getId();
 
         SubscriptionUpdateParams params = SubscriptionUpdateParams.builder()
+                .setCancelAtPeriodEnd(false)
                 .setProrationBehavior(isUpgrade
                         ? SubscriptionUpdateParams.ProrationBehavior.ALWAYS_INVOICE
                         : SubscriptionUpdateParams.ProrationBehavior.NONE)
@@ -609,10 +639,6 @@ public class BillingService {
         if (membership.getStripeSubscriptionId() == null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "No Stripe subscription linked to this membership");
-        }
-        if (membership.isCancelAtPeriodEnd()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Cannot change plan while cancellation is pending");
         }
     }
 

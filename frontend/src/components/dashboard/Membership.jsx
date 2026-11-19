@@ -125,6 +125,20 @@ export default function Membership() {
     }
   }
 
+  async function handleReactivate() {
+    setCheckoutError("");
+    setCheckoutLoading("reactivate");
+    try {
+      const res = await authFetch("/api/v1/billing/reactivate", { method: "POST" });
+      if (!res.ok) throw new Error("Could not reactivate membership");
+      loadMembership();
+    } catch (err) {
+      setCheckoutError(err.message || "Something went wrong.");
+    } finally {
+      setCheckoutLoading(null);
+    }
+  }
+
   return (
     <div className="DashHome1">
       {cancelConfirm && (
@@ -217,12 +231,22 @@ export default function Membership() {
               )}
             </>
           )}
-          {hasActiveMembership && membership?.stripeSubscriptionId && !membership?.cancelAtPeriodEnd && (
+          {hasActiveMembership && membership?.stripeSubscriptionId && (
             <div className="Dash5">
-              <button onClick={() => setCancelConfirm(true)} disabled={!!checkoutLoading}>
-                Cancel membership
-              </button>
+              {!membership.cancelAtPeriodEnd && (
+                <button onClick={() => setCancelConfirm(true)} disabled={!!checkoutLoading}>
+                  Cancel membership
+                </button>
+              )}
+              {membership.cancelAtPeriodEnd && (
+                <button onClick={handleReactivate} disabled={checkoutLoading === "reactivate"}>
+                  {checkoutLoading === "reactivate" ? "Reactivating…" : "Reactivate membership"}
+                </button>
+              )}
             </div>
+          )}
+          {checkoutError && !cancelConfirm && (
+            <p style={{ color: "red", fontSize: "0.85rem", marginTop: "0.25rem" }}>{checkoutError}</p>
           )}
           <button onClick={loadMembership} style={{ marginTop: "0.5rem", fontSize: "0.85rem" }}>
             Check again

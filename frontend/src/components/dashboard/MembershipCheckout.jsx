@@ -163,15 +163,24 @@ export default function MembershipCheckout() {
             {previewLoading && <p style={{ color: "#666" }}>Calculating…</p>}
             {previewError && <p style={{ color: "red" }}>{previewError}</p>}
             {changePreview && changePreview.direction === "UPGRADE" && (
-              <p>
-                You'll be charged{" "}
-                <strong>
-                  {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
-                    changePreview.proratedAmountCents / 100
-                  )}
-                </strong>{" "}
-                today (prorated for the remaining days in your billing period).
-              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <p style={{ margin: 0 }}>
+                  Due today:{" "}
+                  <strong>
+                    {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
+                      changePreview.proratedAmountCents / 100
+                    )}
+                  </strong>
+                </p>
+                <hr style={{ border: "none", borderTop: "1px solid #e5e5e5", margin: 0 }} />
+                <p style={{ margin: 0, color: "#555", fontSize: "0.85rem" }}>
+                  Upgrading from{" "}
+                  <strong>{formatPrice(currentMembership.amountCents, currentMembership.billingInterval)}</strong>{" "}
+                  to{" "}
+                  <strong>{formatPrice(plan.amountCents, plan.billingInterval)}</strong>.{" "}
+                  You receive a credit for unused days on your current plan and are charged for those same days at the new rate.
+                </p>
+              </div>
             )}
             {changePreview && changePreview.direction === "DOWNGRADE" && (
               <p>

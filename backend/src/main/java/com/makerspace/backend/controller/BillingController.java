@@ -97,6 +97,18 @@ public class BillingController {
         }
     }
 
+    @PostMapping("/reactivate")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void reactivateMembership(Authentication auth) {
+        Long userId = userSecurity.getUserId(auth);
+        try {
+            billingService.reactivateMembership(userId);
+        } catch (StripeException e) {
+            log.error("Stripe error reactivating membership for user {}: {}", userId, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Payment provider error");
+        }
+    }
+
     @PostMapping("/payment-methods/setup")
     public CheckoutSessionResponse createSetupSession(Authentication auth) {
         Long userId = userSecurity.getUserId(auth);

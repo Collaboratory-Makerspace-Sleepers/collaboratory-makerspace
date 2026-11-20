@@ -46,12 +46,14 @@ class AdminActivityTest {
         var cards = mock(CardScanRepository.class);
         var classes = mock(ClassEnrollmentRepository.class);
         var training = mock(TrainingCompletionRepository.class);
+        var cancellations = mock(CancellationRequestRepository.class);
         ReflectionTestUtils.setField(controller, "reservationRepository", reservations);
         ReflectionTestUtils.setField(controller, "checkInRepository", waivers);
         ReflectionTestUtils.setField(controller, "paymentRecordRepository", payments);
         ReflectionTestUtils.setField(controller, "cardScanRepository", cards);
         ReflectionTestUtils.setField(controller, "classEnrollmentRepository", classes);
         ReflectionTestUtils.setField(controller, "trainingCompletionRepository", training);
+        ReflectionTestUtils.setField(controller, "cancellationRequestRepository", cancellations);
         Instant approval = Instant.parse("2026-11-10T20:00:00Z");
         Equipment machine = new Equipment();
         machine.setName("Harkonnen");

@@ -41,6 +41,7 @@ export default function AdminDashboard() {
         <div className="DashNav">
           <p>General</p>
           <div className="DashNav1">
+            <NavLink to="/dashboard/home">Back to member dashboard</NavLink>
             <NavLink to="/admin-dashboard/account">Account</NavLink>
             <button onClick={handleSignOut}>Sign Out</button>
           </div>

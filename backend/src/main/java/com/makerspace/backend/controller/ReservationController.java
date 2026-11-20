@@ -7,6 +7,7 @@ import com.makerspace.backend.controller.dto.ExtendReservationRequest;
 import com.makerspace.backend.controller.dto.RescheduleReservationRequest;
 import com.makerspace.backend.controller.dto.ReservationDTO;
 import com.makerspace.backend.services.ReservationService;
+import com.makerspace.backend.services.CancellationRequestService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -28,6 +29,7 @@ import java.util.List;
 public class ReservationController {
 
     @Autowired private ReservationService reservationService;
+    @Autowired private CancellationRequestService cancellationRequestService;
     @Autowired private UserSecurity userSecurity;
 
     @ExceptionHandler(ResponseStatusException.class)
@@ -69,8 +71,12 @@ public class ReservationController {
 
     @GetMapping("/me")
     public List<ReservationDTO> myReservations(Authentication auth) {
-        return reservationService.findByUser(userSecurity.getUserId(auth))
-                .stream().map(ReservationDTO::from).toList();
+        var reservations = reservationService.findByUser(userSecurity.getUserId(auth));
+        var pending = cancellationRequestService.pendingRequestIds(
+                reservations.stream().map(reservation -> reservation.getId()).toList());
+        return reservations.stream()
+                .map(reservation -> ReservationDTO.from(reservation, pending.get(reservation.getId())))
+                .toList();
     }
 
     @GetMapping("/me/{id}")
@@ -85,6 +91,7 @@ public class ReservationController {
     }
 
     @PatchMapping("/{id}/cancel")
+    @PreAuthorize("hasAuthority('MANAGE_RESERVATIONS')")
     public ReservationDTO cancel(@PathVariable Long id, Authentication auth) {
         return ReservationDTO.from(reservationService.cancel(id, userSecurity.getPrincipal(auth)));
     }

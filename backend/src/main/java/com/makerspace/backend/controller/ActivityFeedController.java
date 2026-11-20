@@ -1,6 +1,7 @@
 package com.makerspace.backend.controller;
 
 import com.makerspace.backend.model.CardScan;
+import com.makerspace.backend.model.CancellationRequest;
 import com.makerspace.backend.model.EquipmentReservation;
 import com.makerspace.backend.model.HardwareCheckIn;
 import com.makerspace.backend.model.PaymentRecord;
@@ -12,6 +13,7 @@ import com.makerspace.backend.model.PaymentStatus;
 import com.makerspace.backend.repository.ClassEnrollmentRepository;
 import com.makerspace.backend.repository.TrainingCompletionRepository;
 import com.makerspace.backend.repository.CardScanRepository;
+import com.makerspace.backend.repository.CancellationRequestRepository;
 import com.makerspace.backend.repository.HardwareCheckInRepository;
 import com.makerspace.backend.repository.PaymentRecordRepository;
 import com.makerspace.backend.repository.ReservationRepository;
@@ -33,7 +35,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** What members actually did lately: bookings, waivers, payments and card taps, newest first. */
+/** Recent member activity and related outcomes, newest first. */
 @RestController
 @RequestMapping("/api/v1/users/activity")
 public class ActivityFeedController {
@@ -44,6 +46,7 @@ public class ActivityFeedController {
     @Autowired private CardScanRepository cardScanRepository;
     @Autowired private ClassEnrollmentRepository classEnrollmentRepository;
     @Autowired private TrainingCompletionRepository trainingCompletionRepository;
+    @Autowired private CancellationRequestRepository cancellationRequestRepository;
 
     public record Summary(long upcomingReservations, long pendingWaivers,
                           long classEnrollments, long successfulPayments) {}
@@ -77,6 +80,21 @@ public class ActivityFeedController {
                     + "–" + r.getEndTime();
             add(out, cancelled ? "RESERVATION_CANCELLED" : "RESERVATION", r.getUser(), what,
                     (cancelled ? r.getCancelledAt() : r.getCreatedAt()).toInstant(), r.getStatus().name());
+        }
+        for (CancellationRequest request : cancellationRequestRepository.findAllByOrderByRequestedAtDescIdDesc(page)) {
+            add(out, "CANCELLATION_REQUESTED", request.getRequestedBy(), cancellationDetail(request),
+                    request.getRequestedAt().toInstant(), "SUBMITTED");
+        }
+        for (CancellationRequest request : cancellationRequestRepository.findByResolvedAtIsNotNullOrderByResolvedAtDescIdDesc(page)) {
+            String type = switch (request.getStatus()) {
+                case WITHDRAWN -> "CANCELLATION_WITHDRAWN";
+                case REJECTED -> "CANCELLATION_DECLINED";
+                case APPROVED_NO_REFUND, APPROVED_WITH_REFUND -> "CANCELLATION_APPROVED";
+                case COMPLETED -> "CANCELLATION_REFUND_CONFIRMED";
+                case PENDING -> throw new IllegalStateException("Pending cancellation has a resolution timestamp: " + request.getId());
+            };
+            add(out, type, request.getReservation().getUser(), cancellationDetail(request),
+                    request.getResolvedAt().toInstant(), request.getStatus().name());
         }
         for (HardwareCheckIn c : checkInRepository.findRecentActivity(page)) {
             String slot = c.getRequestedStart() == null ? "" : " · " + c.getRequestedStart()
@@ -112,6 +130,10 @@ public class ActivityFeedController {
 
         out.sort(Comparator.comparing((Map<String, Object> m) -> (Instant) m.get("time")).reversed());
         return out.subList(0, Math.min(sourceLimit, out.size()));
+    }
+
+    private String cancellationDetail(CancellationRequest request) {
+        return request.getReservation().getEquipment().getName() + " · Request #" + request.getId();
     }
 
     private Map<String, Object> add(List<Map<String, Object>> out, String type, User user,

@@ -21,11 +21,25 @@ const TableIcon = () => (
 const TYPE_LABELS = {
   RESERVATION: "Booked",
   RESERVATION_CANCELLED: "Cancelled booking",
+  CANCELLATION_REQUESTED: "Cancellation requested",
+  CANCELLATION_WITHDRAWN: "Cancellation withdrawn",
+  CANCELLATION_DECLINED: "Cancellation declined by staff",
+  CANCELLATION_APPROVED: "Cancellation approved by staff",
+  CANCELLATION_REFUND_CONFIRMED: "Cancellation refund confirmed",
   WAIVER: "Waiver",
   PAYMENT: "Payment",
   CARD_TAP: "Card tap",
   CLASS_ENROLLMENT: "Class booking",
   TRAINING: "Training completed",
+};
+
+const STATUS_LABELS = {
+  SUBMITTED: "Submitted",
+  WITHDRAWN: "Withdrawn",
+  REJECTED: "Declined",
+  APPROVED_NO_REFUND: "Approved · No refund",
+  APPROVED_WITH_REFUND: "Approved · Refund pending",
+  COMPLETED: "Completed",
 };
 
 const REFRESH_MS = 5000;
@@ -123,7 +137,7 @@ export default function RecentActivity({ refreshKey = 0 }) {
           <p className="ra-state">No recent activity.</p>
         ) : (
           <div className="ra-table-scroll">
-            <table className="ra-table">
+            <table className="ra-table recent-activity-table">
               <thead>
                 <tr>
                   <th>Member</th>
@@ -146,7 +160,7 @@ export default function RecentActivity({ refreshKey = 0 }) {
                       {item.receiptUrl && <div><a href={item.receiptUrl} target="_blank" rel="noopener noreferrer">View receipt</a></div>}
                     </td>
                     <td>{formatCreatedAt(item.time)}</td>
-                    <td>{item.status}</td>
+                    <td>{item.type.startsWith("CANCELLATION_") ? STATUS_LABELS[item.status] || item.status : item.status}</td>
                   </tr>
                 ))}
               </tbody>

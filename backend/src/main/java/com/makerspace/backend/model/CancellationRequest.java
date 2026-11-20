@@ -40,6 +40,9 @@ public class CancellationRequest {
     @Column(name = "admin_note", columnDefinition = "text")
     private String adminNote;
 
+    @Column(name = "rejection_reason", length = 1000)
+    private String rejectionReason;
+
     @Column(name = "refund_eligible_until", nullable = false)
     private ZonedDateTime refundEligibleUntil;
 

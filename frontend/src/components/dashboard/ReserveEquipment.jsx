@@ -222,6 +222,7 @@ export default function ReserveEquipment() {
 
   return (
     <div className="DashHome1">
+      <title>Reserve Equipment | The Collaboratory</title>
       <div className="ReserveHeader">
         <button
           onClick={() =>

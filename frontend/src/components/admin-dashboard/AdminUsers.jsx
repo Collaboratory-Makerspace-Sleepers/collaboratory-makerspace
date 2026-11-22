@@ -78,6 +78,7 @@ export default function AdminUsers() {
 
   return (
     <div className="AdUserRow">
+      <title>Users | The Collaboratory</title>
       <div className="AdUser admin-classes-page">
         <h1 className="admin-page-title">Users</h1>
         <div className="admin-actions-row">

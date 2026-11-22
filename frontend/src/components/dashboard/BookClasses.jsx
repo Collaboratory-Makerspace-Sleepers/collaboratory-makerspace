@@ -34,6 +34,7 @@ export default function BookClasses() {
 
   return (
     <div className="DashHome1">
+      <title>Book Classes | The Collaboratory</title>
       <WaiverStatusPanel />
       <div className="Dash2">
         <p>Book Classes</p>

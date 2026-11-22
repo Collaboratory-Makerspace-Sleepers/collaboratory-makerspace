@@ -1,36 +1,17 @@
-import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
-function formatPrice(amountCents, billingInterval) {
-  const dollars = (amountCents / 100).toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-  });
-  if (!billingInterval) return dollars;
-  return `${dollars}/${billingInterval}`;
-}
+import MembershipComparison from "../components/MembershipComparison";
 
 export default function Pricing() {
   const navigate = useNavigate();
-  const [plans, setPlans] = useState([]);
-  const [plansError, setPlansError] = useState("");
-
-  useEffect(() => {
-    fetch("/api/v1/billing/plans")
-      .then((res) => {
-        if (!res.ok) throw new Error("Could not load plans");
-        return res.json();
-      })
-      .then(setPlans)
-      .catch(() => setPlansError("Could not load pricing. Please try again later."));
-  }, []);
 
   return (
     <div className="bigdiv">
+      <title>Pricing | The Collaboratory</title>
       <div className="secondDiv">
         <div className="NavBar">
-          <p>The Collaboratory</p>
+          <Link to="/">
+            <img src="/makerspace_logo.png" alt="The Collaboratory" style={{ height: "40px" }} />
+          </Link>
 
           <div className="links">
             <Link to="/">Home</Link>
@@ -47,28 +28,7 @@ export default function Pricing() {
               The collaboratory is a makerspace that offers state-of-the-art
               equipment, class bookings, and private studios
             </p>
-            <div className="CollaR">
-              <button onClick={() => navigate("/signup")}>Try for free today</button>
-              <button onClick={() => navigate("/signin")}>Sign in</button>
-            </div>
-
-            <div className="CollaR1">
-              {plansError && <p>{plansError}</p>}
-              {plans.map((plan) => (
-                <div className="colla6" key={plan.code}>
-                  <div className="collar2">
-                    <div className="collar3">
-                      <p>Membership</p>
-                    </div>
-                    <div className="colla4">
-                      <p>{plan.displayName}</p>
-                      <p>{formatPrice(plan.amountCents, plan.billingInterval)}</p>
-                    </div>
-                  </div>
-                  <button onClick={() => navigate("/signin")}>Get started</button>
-                </div>
-              ))}
-            </div>
+            <MembershipComparison />
           </div>
         </div>
 

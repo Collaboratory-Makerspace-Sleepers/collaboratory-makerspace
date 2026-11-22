@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 export default function BillingCancel() {
   return (
     <div className="bigdiv2">
+      <title>Billing Cancelled | The Collaboratory</title>
       <div className="SignIn">
         <div className="SignInText">
           <p className="signin-title">Checkout cancelled</p>

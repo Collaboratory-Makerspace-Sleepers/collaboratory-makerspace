@@ -328,6 +328,7 @@ export default function MyReservations() {
 
   return (
     <div className="DashHome1 my-reservations">
+      <title>My Reservations | The Collaboratory</title>
       <div className="Dash2">
         <p>My Reservations</p>
         <p>View, reschedule, or cancel your upcoming bookings.</p>

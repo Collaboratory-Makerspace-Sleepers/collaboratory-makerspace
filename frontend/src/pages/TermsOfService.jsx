@@ -5,16 +5,17 @@ export default function TermsOfService() {
 
   return (
     <div className="bigdiv">
+      <title>Terms of Service | The Collaboratory</title>
       <div className="secondDiv">
         {/* Navigation Bar */}
         <div className="NavBar">
-          <p className="logo" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
-            The Collaboratory
-          </p>
+          <Link to="/">
+            <img src="/makerspace_logo.png" alt="The Collaboratory" style={{ height: "40px" }} />
+          </Link>
 
           <div className="links">
             <Link to="/" className="nav-link">Home</Link>
-            <Link to="/pricing" className="nav-link">Pricing</Link>
+            <a href="/#memberships" className="nav-link">Pricing</a>
             <button className="nav-btn" onClick={() => navigate("/signup")}>Sign Up</button>
             <button className="nav-btn" onClick={() => navigate("/signin")}>Sign In</button>
           </div>
@@ -101,7 +102,7 @@ export default function TermsOfService() {
             <div className="FootDivGrid">
               <Link to="/">Home</Link>
               <Link to="/signin">Sign In</Link>
-              <Link to="/pricing">Pricing</Link>
+              <a href="/#memberships">Pricing</a>
               <Link to="/terms">Terms of Service</Link>
             </div>
           </div>

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 export default function AccountClosed() {
   return (
     <div className="bigdiv2">
+      <title>Account Closed | The Collaboratory</title>
       <div className="SignIn">
         <div className="SignInText">
           <p className="signin-title">Account Closed</p>

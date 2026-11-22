@@ -117,6 +117,7 @@ export default function AdminRoles() {
 
   return (
     <div className="AdUser admin-classes-page">
+      <title>Roles | The Collaboratory</title>
       <h1 className="admin-page-title">Roles</h1>
       <div className="admin-actions-row">
         <button onClick={openCreate}>Create Role</button>

@@ -5,6 +5,7 @@ import OAuthButtons from "../components/OAuthButtons";
 export default function SignUp() {
   return (
     <div className="bigdiv2">
+      <title>Sign Up | The Collaboratory</title>
       <div className="SignIn">
         <div className="SignInText">
           <p className="signin-title">Sign Up</p>

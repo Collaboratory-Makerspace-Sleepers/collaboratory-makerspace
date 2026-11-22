@@ -71,6 +71,7 @@ export default function AdminHome() {
 
   return (
     <div className="DashHome1">
+      <title>Admin Home | The Collaboratory</title>
       <div className="AdHome">
         <div className="admin-welcome">
           <p className="admin-welcome-name">Welcome back, {loading ? "..." : firstName(user) || "Admin"}</p>

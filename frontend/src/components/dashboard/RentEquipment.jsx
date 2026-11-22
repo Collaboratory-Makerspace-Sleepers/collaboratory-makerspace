@@ -61,6 +61,7 @@ export default function RentEquipment() {
 
   return (
     <div className="DashHome1">
+      <title>Rent Equipment | The Collaboratory</title>
       <div className="Dash2">
         <p>Rent Equipment</p>
         <p>

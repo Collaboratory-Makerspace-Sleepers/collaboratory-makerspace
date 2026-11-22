@@ -1,12 +1,12 @@
 import { Link, useNavigate } from "react-router-dom";
-import mainImage from "../assets/image.png";
-import Makerspacecarousel from "../components/Makerspacecarousel";
+import MembershipComparison from "../components/MembershipComparison";
 
 export default function Home() {
   const navigate = useNavigate();
 
   return (
     <div className="bigdiv">
+      <title>The Collaboratory</title>
       <div className="secondDiv">
         <div className="NavBar">
           <Link to="/">
@@ -15,30 +15,29 @@ export default function Home() {
 
           <div className="links">
             <Link to="/" className="nav-link active">Home</Link>
-            <Link to="/pricing" className="nav-link">Pricing</Link>
+            <a href="#memberships" className="nav-link">Pricing</a>
             <button className="nav-btn" onClick={() => navigate("/signup")}>Sign Up</button>
             <button className="nav-btn" onClick={() => navigate("/signin")}>Sign In</button>
           </div>
         </div>
 
-        <div className="Colla">
-          <h1 className="hero-title">The Collaboratory</h1>
-          <p className="hero-description">
-            The collaboratory is a makerspace that offers state-of-the-art
-            equipment, class bookings, and private studios
-          </p>
-          <div className="CollaRow">
-            <button className="btn-primary" onClick={() => navigate("/signup")}>
-              <span>↗</span> Try for free today
-            </button>
-            <button className="btn-secondary" onClick={() => navigate("/signin")}>
-              <span>↗</span> Sign In
-            </button>
-          </div>
-        </div>
+        <div className="HeroSection">
+          <img src="/makerspace_logo.png" alt="The Collaboratory" className="hero-logo" />
 
-        <div className="OrangeDiv">
-          <img src={mainImage} alt="Collaboratory" />
+          <div className="Colla">
+            <p className="hero-description">
+              The collaboratory is a makerspace that offers state-of-the-art
+              equipment, class bookings, and private studios
+            </p>
+            <div className="CollaRow">
+              <button className="btn-primary" onClick={() => navigate("/signup")}>
+                <span>↗</span> Try for free today
+              </button>
+              <button className="btn-secondary" onClick={() => navigate("/signin")}>
+                <span>↗</span> Sign In
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="WhiteDiv">
@@ -56,7 +55,6 @@ export default function Home() {
             </button>
           </div>
 
-          <Makerspacecarousel />
         </div>
 
         <div className="PrivateDiv">
@@ -71,7 +69,7 @@ export default function Home() {
               book classes to learn and create using top-notch equipment and
               private studios.
             </p>
-            <button className="btn-primary" onClick={() => navigate("/pricing")}>
+            <button className="btn-primary" onClick={() => document.getElementById("memberships")?.scrollIntoView({ behavior: "smooth" })}>
               View Membership Options
             </button>
           </div>
@@ -79,6 +77,11 @@ export default function Home() {
             <div className="Square3"></div>
             <div className="Square4"></div>
           </div>
+        </div>
+
+        <div className="MembershipsDiv" id="memberships">
+          <h2 className="section-title">Membership Options</h2>
+          <MembershipComparison />
         </div>
 
         <div className="FootDiv">
@@ -95,7 +98,7 @@ export default function Home() {
               {/* Column 1 */}
               <Link to="/">Home</Link>
               <a href="#about">About</a>
-              <Link to="/pricing">Pricing</Link>
+              <a href="#memberships">Pricing</a>
 
               {/* Column 2 */}
               <Link to="/signin">Sign In</Link>

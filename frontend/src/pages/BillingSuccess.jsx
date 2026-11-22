@@ -214,16 +214,22 @@ export default function BillingSuccess() {
 
   if (type === "class") {
     return (
-      <ClassEnrollmentSuccess
-        enrollmentId={enrollmentId ? parseInt(enrollmentId, 10) : null}
-        stripeSessionId={stripeSessionId}
-      />
+      <>
+        <title>Billing Success | The Collaboratory</title>
+        <ClassEnrollmentSuccess
+          enrollmentId={enrollmentId ? parseInt(enrollmentId, 10) : null}
+          stripeSessionId={stripeSessionId}
+        />
+      </>
     );
   }
 
   if (["membership", "daypass", "setup"].includes(type)) {
-    return <CompletePaidBooking key={`${type}:${stripeSessionId ?? "legacy"}`}
-      reservation={pendingReservation} type={type} stripeSessionId={stripeSessionId} />;
+    return <>
+      <title>Billing Success | The Collaboratory</title>
+      <CompletePaidBooking key={`${type}:${stripeSessionId ?? "legacy"}`}
+        reservation={pendingReservation} type={type} stripeSessionId={stripeSessionId} />
+    </>;
   }
   const content = CONTENT[type] ?? {
         title: "Payment received",
@@ -234,6 +240,7 @@ export default function BillingSuccess() {
 
   return (
     <div className="bigdiv2">
+      <title>Billing Success | The Collaboratory</title>
       <div className="SignIn">
         <div className="SignInText">
           <p className="signin-title">{content.title}</p>

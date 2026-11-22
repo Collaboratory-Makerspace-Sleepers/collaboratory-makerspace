@@ -27,6 +27,7 @@ export default function SignIn() {
 
   return (
     <div className="bigdiv2">
+      <title>Sign In | The Collaboratory</title>
       <div className="SignIn">
         {/* Header */}
         <div className="SignInText">

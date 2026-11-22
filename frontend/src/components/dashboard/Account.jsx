@@ -102,6 +102,7 @@ export default function Account() {
 
   return (
     <div className="AccountDiv">
+      <title>Account | The Collaboratory</title>
       <div className="AccountD1">
         <p>Account Information</p>
         <p>

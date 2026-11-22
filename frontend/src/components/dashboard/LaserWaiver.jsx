@@ -159,6 +159,7 @@ export default function LaserWaiver() {
 
   return (
     <div className="DashHome1 laser-waiver-page">
+      <title>Safety Waiver | The Collaboratory</title>
       <header className="laser-waiver-header">
         <button type="button" onClick={() => navigate(-1)}>↖ Back</button>
         <h1>Makerspace Equipment Waiver</h1>

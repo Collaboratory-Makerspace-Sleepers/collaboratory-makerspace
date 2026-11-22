@@ -384,6 +384,7 @@ export default function HardwareCheckIns() {
   const [tab, setTab] = useState("taps");
   return (
     <div className="HardwareTabs">
+      <title>Hardware | The Collaboratory</title>
       <div className="HWTabBar" role="tablist">
         {TABS.filter((t) => !t.permission || hasPermission(t.permission)).map((t) => (
           <button

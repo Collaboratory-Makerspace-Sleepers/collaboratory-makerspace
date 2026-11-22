@@ -141,6 +141,7 @@ export default function Membership() {
 
   return (
     <div className="DashHome1">
+      <title>Membership | The Collaboratory</title>
       {cancelConfirm && (
         <div
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center" }}

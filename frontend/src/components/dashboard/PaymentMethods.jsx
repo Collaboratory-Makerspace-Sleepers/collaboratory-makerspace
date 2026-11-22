@@ -72,6 +72,7 @@ export default function PaymentMethods() {
 
   return (
     <div className="DashHome1">
+      <title>Payment Methods | The Collaboratory</title>
       <div className="Dash2">
         <p>Payment Methods</p>
         <p>Manage your saved cards.</p>

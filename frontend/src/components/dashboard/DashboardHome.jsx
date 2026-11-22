@@ -26,6 +26,7 @@ export default function DashboardHome() {
 
   return (
     <div className="DashHome1">
+      <title>Home | The Collaboratory</title>
       <div className="Dash2">
         <p>Hi {loading ? "..." : firstName(user) || "there"}</p>
         <p>

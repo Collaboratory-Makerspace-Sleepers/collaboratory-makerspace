@@ -84,6 +84,7 @@ export default function AdminAnalytics() {
 
   return (
     <div className="analytics-page">
+      <title>Analytics | The Collaboratory</title>
       <h2 className="analytics-title">Analytics</h2>
 
       {/* ── Revenue ─────────────────────────────────────────────── */}

@@ -160,6 +160,7 @@ export default function AdminCancellations() {
 
   return (
     <div className="AdUser admin-classes-page">
+      <title>Cancellations | The Collaboratory</title>
       <h1 className="admin-page-title">Cancellations</h1>
 
       <div className="AdAct">

@@ -88,6 +88,7 @@ export default function BillingHistory() {
 
   return (
     <div className="DashHome1">
+      <title>Billing History | The Collaboratory</title>
       <div className="Dash2" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <p>Billing History</p>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.25rem" }}>

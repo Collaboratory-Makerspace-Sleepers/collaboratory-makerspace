@@ -140,6 +140,7 @@ export default function MembershipCheckout() {
 
   return (
     <div className="DashHome1">
+      <title>Checkout | The Collaboratory</title>
       <div className="ReserveHeader">
         <button onClick={() => navigate(-1)}>Back</button>
         <p>Review your plan</p>

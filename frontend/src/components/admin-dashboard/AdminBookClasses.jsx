@@ -7,6 +7,7 @@ export default function AdminBookClasses() {
 
   return (
     <div className="AdUser admin-classes-page">
+      <title>Classes | The Collaboratory</title>
       <h1 className="admin-page-title">Classes</h1>
       <div className="admin-actions-row">
         <button onClick={() => setCreateOpen(true)}>Create New Class</button>

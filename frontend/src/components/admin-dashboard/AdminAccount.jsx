@@ -120,6 +120,7 @@ export default function AdminAccount({
  
   return (
     <main className="account">
+      <title>Account | The Collaboratory</title>
       <h1 className="account__title">
         Account <UserCircleIcon /> Information
       </h1>

@@ -24,12 +24,28 @@ function dayLabel(ts) {
   return (d.getMonth() + 1) + "/" + d.getDate();
 }
 
+function lastNMonths(arr, n) {
+  return arr.slice(-n);
+}
+
+function pctDelta(current, prior) {
+  if (!prior) return null;
+  const pct = ((current - prior) / prior) * 100;
+  return { pct: pct.toFixed(1), up: pct >= 0 };
+}
+
+function SkeletonCard() {
+  return <div className="analytics-mini-card analytics-skeleton" style={{ height: 64, width: 140 }} />;
+}
+
 export default function AdminAnalytics() {
   const { authFetch } = useAuth();
   const [revenue, setRevenue] = useState(null);
   const [memberships, setMemberships] = useState(null);
   const [equipment, setEquipment] = useState(null);
   const [visits, setVisits] = useState(null);
+  const [range, setRange] = useState(12); // 3 | 6 | 12
+  const [equipSort, setEquipSort] = useState("reservations");
 
   useEffect(() => {
     authFetch("/api/v1/admin/analytics/revenue").then(r => r.ok && r.json()).then(d => d && setRevenue(d));
@@ -48,15 +64,18 @@ export default function AdminAnalytics() {
       map[label][row.kind] = (map[label][row.kind] || 0) + (row.totalCents / 100);
       map[label].total = (map[label].total || 0) + (row.totalCents / 100);
     }
-    return Object.values(map);
+    return lastNMonths(Object.values(map), range);
   })();
 
   const revenueKinds = [...new Set((revenue?.monthly || []).map(r => r.kind))];
 
-  const membershipMonthData = (memberships?.newByMonth || []).map(r => ({
-    month: monthLabel(r.month),
-    signups: Number(r.count),
-  }));
+  const membershipMonthData = lastNMonths(
+    (memberships?.newByMonth || []).map(r => ({
+      month: monthLabel(r.month),
+      signups: Number(r.count),
+    })),
+    range
+  );
 
   const membershipPieData = (memberships?.byPlan || []).map(r => ({
     name: r.displayName || r.code,
@@ -68,6 +87,8 @@ export default function AdminAnalytics() {
     reservations: Number(r.reservations),
     hours: parseFloat(Number(r.hours).toFixed(1)),
   }));
+
+  const sortedEquipment = [...topEquipmentData].sort((a, b) => b[equipSort] - a[equipSort]);
 
   const hourData = (() => {
     const all = Array.from({ length: 24 }, (_, i) => ({ hour: i, count: 0 }));
@@ -82,28 +103,56 @@ export default function AdminAnalytics() {
     visits: Number(r.count),
   }));
 
+  const revenueDelta = revenue ? pctDelta(revenue.thisMonthCents, revenue.lastMonthCents) : null;
+
   return (
     <div className="analytics-page">
       <title>Analytics | The Collaboratory</title>
-      <h2 className="analytics-title">Analytics</h2>
+      <div className="analytics-controls-row" style={{ borderBottom: "none", marginBottom: 0 }}>
+        <h2 className="analytics-title">Analytics</h2>
+        <div style={{ display: "flex", gap: 6 }}>
+          {[3, 6, 12].map(n => (
+            <button
+              key={n}
+              className={`analytics-range-btn${range === n ? " active" : ""}`}
+              onClick={() => setRange(n)}
+            >
+              {n}M
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* ── Revenue ─────────────────────────────────────────────── */}
       <section className="analytics-section">
-        <h3>Revenue</h3>
+        <div className="analytics-controls-row">
+          <h3>Revenue</h3>
+        </div>
         <div className="analytics-stat-row">
           <div className="analytics-mini-card">
             <span className="analytics-mini-label">This Month</span>
-            <span className="analytics-mini-value">{revenue ? fmt$(revenue.thisMonthCents) : "—"}</span>
+            {revenue ? (
+              <>
+                <span className="analytics-mini-value">{fmt$(revenue.thisMonthCents)}</span>
+                {revenueDelta && (
+                  <span className={`analytics-delta ${revenueDelta.up ? "up" : "down"}`}>
+                    {revenueDelta.up ? "↑" : "↓"} {Math.abs(revenueDelta.pct)}%
+                  </span>
+                )}
+              </>
+            ) : <SkeletonCard />}
           </div>
           <div className="analytics-mini-card">
             <span className="analytics-mini-label">Last Month</span>
-            <span className="analytics-mini-value">{revenue ? fmt$(revenue.lastMonthCents) : "—"}</span>
+            {revenue
+              ? <span className="analytics-mini-value">{fmt$(revenue.lastMonthCents)}</span>
+              : <SkeletonCard />}
           </div>
         </div>
 
         <div className="analytics-charts-row">
           <div className="analytics-chart-box">
-            <p className="analytics-chart-label">Monthly Total (12 mo)</p>
+            <p className="analytics-chart-label">Monthly Total ({range} mo)</p>
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={revenueLineData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -135,17 +184,21 @@ export default function AdminAnalytics() {
 
       {/* ── Memberships ─────────────────────────────────────────── */}
       <section className="analytics-section">
-        <h3>Memberships</h3>
+        <div className="analytics-controls-row">
+          <h3>Memberships</h3>
+        </div>
         <div className="analytics-stat-row">
           <div className="analytics-mini-card">
             <span className="analytics-mini-label">Active Members</span>
-            <span className="analytics-mini-value">{memberships ? memberships.totalActive : "—"}</span>
+            {memberships
+              ? <span className="analytics-mini-value">{memberships.totalActive}</span>
+              : <SkeletonCard />}
           </div>
         </div>
 
         <div className="analytics-charts-row">
           <div className="analytics-chart-box">
-            <p className="analytics-chart-label">New Signups by Month (12 mo)</p>
+            <p className="analytics-chart-label">New Signups by Month ({range} mo)</p>
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={membershipMonthData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -177,24 +230,38 @@ export default function AdminAnalytics() {
 
       {/* ── Equipment ───────────────────────────────────────────── */}
       <section className="analytics-section">
-        <h3>Equipment Utilization</h3>
+        <div className="analytics-controls-row">
+          <h3>Equipment Utilization</h3>
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <span style={{ fontSize: "0.75rem", color: "#9b6b5a", fontWeight: 600 }}>Sort by:</span>
+            {["reservations", "hours"].map(s => (
+              <button
+                key={s}
+                className={`analytics-range-btn${equipSort === s ? " active" : ""}`}
+                onClick={() => setEquipSort(s)}
+              >
+                {s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="analytics-charts-row">
           <div className="analytics-chart-box">
-            <p className="analytics-chart-label">Top 10 Machines by Reservations</p>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={topEquipmentData} layout="vertical">
+            <p className="analytics-chart-label">Top 10 Machines by {equipSort.charAt(0).toUpperCase() + equipSort.slice(1)}</p>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={sortedEquipment} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
                 <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11 }} />
                 <Tooltip />
-                <Bar dataKey="reservations" fill="#6366f1" />
+                <Bar dataKey={equipSort} fill="#6366f1" />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
           <div className="analytics-chart-box">
             <p className="analytics-chart-label">Reservations by Hour of Day (12 mo)</p>
-            <ResponsiveContainer width="100%" height={260}>
+            <ResponsiveContainer width="100%" height={220}>
               <BarChart data={hourData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="hour" tick={{ fontSize: 11 }} label={{ value: "Hour", position: "insideBottom", offset: -2 }} />
@@ -209,15 +276,21 @@ export default function AdminAnalytics() {
 
       {/* ── Visits ──────────────────────────────────────────────── */}
       <section className="analytics-section">
-        <h3>Facility Visits</h3>
+        <div className="analytics-controls-row">
+          <h3>Facility Visits</h3>
+        </div>
         <div className="analytics-stat-row">
           <div className="analytics-mini-card">
             <span className="analytics-mini-label">Today</span>
-            <span className="analytics-mini-value">{visits ? visits.todayCount : "—"}</span>
+            {visits
+              ? <span className="analytics-mini-value">{visits.todayCount}</span>
+              : <SkeletonCard />}
           </div>
           <div className="analytics-mini-card">
             <span className="analytics-mini-label">This Week</span>
-            <span className="analytics-mini-value">{visits ? visits.thisWeekCount : "—"}</span>
+            {visits
+              ? <span className="analytics-mini-value">{visits.thisWeekCount}</span>
+              : <SkeletonCard />}
           </div>
         </div>
 

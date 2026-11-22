@@ -4368,8 +4368,6 @@ p {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   color: #450b00;
   letter-spacing: -0.1px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #f0ebe8;
 }
 .analytics-stat-row {
   display: flex;
@@ -4422,6 +4420,50 @@ p {
 }
 .analytics-charts-row > .analytics-chart-box:only-child {
   grid-column: 1 / -1;
+}
+/* Date range toggle */
+.analytics-range-btn {
+  padding: 4px 14px;
+  border: 1px solid #d8c5be;
+  background: #fff;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: #6b4c42;
+}
+.analytics-range-btn.active {
+  background: #450b00;
+  color: #fff;
+  border-color: #450b00;
+}
+.analytics-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.analytics-section .analytics-controls-row {
+  border-bottom: 1px solid #f0ebe8;
+  padding-bottom: 12px;
+}
+/* Delta badge */
+.analytics-delta {
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.analytics-delta.up { color: #10b981; }
+.analytics-delta.down { color: #f43f5e; }
+/* Skeleton pulse */
+.analytics-skeleton {
+  background: linear-gradient(90deg, #f0e0d6 25%, #fdf5f0 50%, #f0e0d6 75%);
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.4s ease infinite;
+  border-radius: 8px;
+}
+@keyframes skeleton-pulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 .recharts-tooltip-wrapper .recharts-default-tooltip {
   border-radius: 8px !important;

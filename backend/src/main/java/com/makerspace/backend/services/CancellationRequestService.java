@@ -2,6 +2,7 @@ package com.makerspace.backend.services;
 
 import com.makerspace.backend.config.security.UserPrincipal;
 import com.makerspace.backend.controller.dto.CancellationRequestDTO;
+import com.makerspace.backend.controller.dto.MemberCancellationRequestDTO;
 import com.makerspace.backend.model.*;
 import com.makerspace.backend.repository.*;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.ZonedDateTime;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -54,13 +58,17 @@ public class CancellationRequestService {
             }
         }
 
-        cancellationRequestRepository.findByReservationId(reservationId).ifPresent(existing -> {
-            if (existing.getStatus() == CancellationRequestStatus.PENDING
-                    || existing.getStatus() == CancellationRequestStatus.APPROVED_WITH_REFUND) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "A cancellation request already exists for this reservation");
-            }
-        });
+        String normalizedReason = reason == null ? "" : reason.strip();
+        if (normalizedReason.isBlank() || normalizedReason.length() > 1000) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "A cancellation reason of 1 to 1000 characters is required");
+        }
+
+        if (cancellationRequestRepository.existsByReservationIdAndStatusIn(reservationId,
+                List.of(CancellationRequestStatus.PENDING, CancellationRequestStatus.APPROVED_WITH_REFUND))) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "A cancellation request already exists for this reservation");
+        }
 
         User requester = userRepository.findById(principal.userId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
@@ -68,7 +76,7 @@ public class CancellationRequestService {
         CancellationRequest cr = new CancellationRequest();
         cr.setReservation(reservation);
         cr.setRequestedBy(requester);
-        cr.setReason(reason);
+        cr.setReason(normalizedReason);
         cr.setStatus(CancellationRequestStatus.PENDING);
         cr.setRefundEligibleUntil(reservation.getEndTime().plusHours(48));
 
@@ -78,6 +86,37 @@ public class CancellationRequestService {
 
         PaymentRecord pr = paymentRecordRepository.findByReservationId(reservationId).orElse(null);
         return CancellationRequestDTO.from(saved, pr);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MemberCancellationRequestDTO> listForMember(UserPrincipal principal) {
+        return cancellationRequestRepository.findHistoryByReservationOwner(principal.userId());
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, Long> pendingRequestIds(Collection<Long> reservationIds) {
+        if (reservationIds.isEmpty()) return Map.of();
+        Map<Long, Long> pending = new HashMap<>();
+        for (CancellationRequest request : cancellationRequestRepository
+                .findByReservationIdInAndStatusOrderByIdDesc(reservationIds, CancellationRequestStatus.PENDING)) {
+            pending.putIfAbsent(request.getReservation().getId(), request.getId());
+        }
+        return pending;
+    }
+
+    @Transactional
+    public void withdraw(Long reservationId, Long requestId, UserPrincipal principal) {
+        CancellationRequest request = cancellationRequestRepository.findByIdForUpdate(requestId)
+                .filter(candidate -> candidate.getReservation().getId().equals(reservationId)
+                        && candidate.getReservation().getUserId().equals(principal.userId()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cancellation request not found"));
+        if (request.getStatus() != CancellationRequestStatus.PENDING) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This request is no longer pending");
+        }
+        request.setStatus(CancellationRequestStatus.WITHDRAWN);
+        request.setResolvedAt(ZonedDateTime.now());
+        cancellationRequestRepository.save(request);
+        log.info("Cancellation request {} withdrawn by reservation owner {}", requestId, principal.userId());
     }
 
     // -------------------------------------------------------------------------
@@ -116,9 +155,9 @@ public class CancellationRequestService {
     // -------------------------------------------------------------------------
 
     @Transactional
-    public CancellationRequestDTO adminResolve(Long requestId, String decision, String adminNote,
+    public CancellationRequestDTO adminResolve(Long requestId, String decision, String adminNote, String rejectionReason,
                                                UserPrincipal principal) {
-        CancellationRequest cr = cancellationRequestRepository.findById(requestId)
+        CancellationRequest cr = cancellationRequestRepository.findByIdForUpdate(requestId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Cancellation request not found"));
 
@@ -143,6 +182,12 @@ public class CancellationRequestService {
                 cr.setStatus(CancellationRequestStatus.APPROVED_NO_REFUND);
             }
             case "REJECT" -> {
+                String reason = rejectionReason == null ? "" : rejectionReason.strip();
+                if (reason.length() > 1000) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "The message to the member must be at most 1000 characters");
+                }
+                cr.setRejectionReason(reason.isBlank() ? null : reason);
                 cr.setStatus(CancellationRequestStatus.REJECTED);
             }
             default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -178,14 +223,13 @@ public class CancellationRequestService {
 
         if (pr.getReservationId() == null) return;
 
-        cancellationRequestRepository.findByReservationId(pr.getReservationId()).ifPresent(cr -> {
-            if (cr.getStatus() == CancellationRequestStatus.APPROVED_WITH_REFUND) {
-                cr.setStatus(CancellationRequestStatus.COMPLETED);
-                cr.setResolvedAt(ZonedDateTime.now());
-                cancellationRequestRepository.save(cr);
-                log.info("CancellationRequest {} marked COMPLETED after Stripe refund confirmed", cr.getId());
-            }
-        });
+        cancellationRequestRepository.findFirstByReservationIdAndStatusOrderByIdDesc(
+                pr.getReservationId(), CancellationRequestStatus.APPROVED_WITH_REFUND).ifPresent(cr -> {
+                    cr.setStatus(CancellationRequestStatus.COMPLETED);
+                    cr.setResolvedAt(ZonedDateTime.now());
+                    cancellationRequestRepository.save(cr);
+                    log.info("CancellationRequest {} marked COMPLETED after Stripe refund confirmed", cr.getId());
+                });
     }
 
     // -------------------------------------------------------------------------

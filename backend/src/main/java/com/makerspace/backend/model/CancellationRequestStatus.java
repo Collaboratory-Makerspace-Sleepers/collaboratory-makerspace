@@ -5,5 +5,6 @@ public enum CancellationRequestStatus {
     APPROVED_WITH_REFUND,
     APPROVED_NO_REFUND,
     REJECTED,
+    WITHDRAWN,
     COMPLETED
 }

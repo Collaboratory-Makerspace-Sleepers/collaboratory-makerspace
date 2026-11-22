@@ -74,7 +74,7 @@ function App() {
         path="/admin-dashboard"
         element={
           <RequireAuth>
-            <RequirePermission anyOf={["MANAGE_ROLES", "MANAGE_CLASSES"]}>
+            <RequirePermission anyOf={["MANAGE_ROLES", "MANAGE_CLASSES"]} deniedRedirect="/dashboard/home">
               <AdminDashboard />
             </RequirePermission>
           </RequireAuth>

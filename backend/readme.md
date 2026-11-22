@@ -104,6 +104,43 @@ stripe trigger customer.subscription.updated
 stripe trigger customer.subscription.deleted
 ```
 
+### Payment acceptance test (Stripe sandbox)
+
+Use an isolated local PostgreSQL database and Redis, a Stripe sandbox/test-mode
+`sk_test_` key, and test-mode prices for that account. Do not copy production data or
+use a real payment card. Start the frontend and backend on ports 5173 and 8080.
+Run `stripe listen --forward-to localhost:8080/api/dev/stripe/webhook` in test
+mode, set `stripe.webhook.secret` locally to the listener's signing secret, and
+start the backend with the `dev` profile. Keep the listener running during the test.
+
+1. As a test member, buy a paid booking or class through the app. In hosted Stripe
+   Checkout, use `4242 4242 4242 4242`, a future expiry, and any three-digit CVC.
+   Verify the return page confirms the purchase, the booking/enrollment appears
+   in the app, and the payment appears exactly once in payment history. Reload
+   the confirmation page and verify no duplicate.
+2. Repeat a checkout and back out before paying. Verify the app does not show
+   a paid booking or a successful payment.
+3. For the paid equipment reservation, submit a cancellation reason. Reject it
+   once as an admin and verify the booking stays active. Resubmit, approve with a
+   refund in the app, then refund the **same test payment** in Stripe. Verify the
+   signed `charge.refunded` event arrives, payment history shows `REFUNDED`, and
+   the cancellation moves from Awaiting Stripe to Completed.
+
+The local Maven tests for checkout confirmation, class booking, and Stripe
+event handling do not contact Stripe. The opt-in `StripeLiveCheckoutTest`
+(`./mvnw -Dstripe.live=true -Dtest=StripeLiveCheckoutTest test`) creates a
+sandbox Checkout Session, but does not pay, refund, or exercise the browser.
+
+### Database rollout
+
+These cancellation changes use the existing `reason`, `status`, and `admin_note`
+columns from V23; no new migration or backfill is required. Existing requests
+without reasons remain reviewable. Paired Pi registration requires the existing
+V28 and V29 Flyway migrations. Back up PostgreSQL and validate Flyway on a staging
+copy before rollout. Do not disable validation or edit applied migration files to
+work around checksum mismatches. Verify a known allowed and denied tap after
+upgrading; see the [Pi setup and recovery guide](../hardware/makerspace-pi/START_HERE.md).
+
 ---
 
 ## Project Structure

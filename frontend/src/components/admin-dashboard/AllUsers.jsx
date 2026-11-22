@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 
 const PAGE_SIZE = 10;
@@ -18,6 +18,7 @@ function fullName(user) {
 
 export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) {
   const { authFetch } = useAuth();
+  const filterId = useId();
   const [users, setUsers] = useState([]);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
@@ -88,6 +89,7 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
 
   const totalPages = Math.ceil(activeFiltered.length / PAGE_SIZE);
   const visible = activeFiltered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const hasFilters = Boolean(query.trim() || roleFilter || membershipFilter || waiverFilter);
 
   const deleteUser = async (user) => {
     const label = user.email || fullName(user);
@@ -177,77 +179,63 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center", margin: "0 14px 0.5rem" }}>
-          <input
-            type="search"
-            className="au-search"
-            placeholder="Search by name, email, or role"
-            aria-label="Search users"
-            value={query}
-            onChange={(e) => { setQuery(e.target.value); setPage(0); }}
-            style={{ width: "220px", margin: 0 }}
-          />
+        <div className="au-filters" role="group" aria-label="User filters">
+          <div className="au-filter-fields">
+            <label className="au-filter-field au-filter-field--search">
+              Search users
+              <input
+                type="search"
+                placeholder="Name, email, or role"
+                value={query}
+                onChange={(e) => { setQuery(e.target.value); setPage(0); }}
+              />
+            </label>
 
-          <select
-            className="au-search"
-            value={roleFilter}
-            onChange={(e) => { setRoleFilter(e.target.value); setPage(0); }}
-            aria-label="Filter by role"
-            style={{ width: "130px", margin: 0 }}
-          >
-            <option value="">All roles</option>
-            {["MEMBER", "STAFF", "INSTRUCTOR", "ADMIN"].map((r) => (
-              <option key={r} value={r}>{r}</option>
-            ))}
-          </select>
+            <div className="au-filter-field">
+              <label htmlFor={`${filterId}-role`}>Role</label>
+              <select id={`${filterId}-role`} value={roleFilter} onChange={(e) => { setRoleFilter(e.target.value); setPage(0); }}>
+                <option value="">All roles</option>
+                {["MEMBER", "STAFF", "INSTRUCTOR", "ADMIN"].map((r) => (
+                  <option key={r} value={r}>{r[0] + r.slice(1).toLowerCase()}</option>
+                ))}
+              </select>
+            </div>
 
-          <select
-            className="au-search"
-            value={membershipFilter}
-            onChange={(e) => { setMembershipFilter(e.target.value); setPage(0); }}
-            aria-label="Filter by membership"
-            style={{ width: "160px", margin: 0 }}
-          >
-            <option value="">All memberships</option>
-            <option value="None">None</option>
-            {membershipOptions.map((m) => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
+            <div className="au-filter-field">
+              <label htmlFor={`${filterId}-membership`}>Membership</label>
+              <select id={`${filterId}-membership`} value={membershipFilter} onChange={(e) => { setMembershipFilter(e.target.value); setPage(0); }}>
+                <option value="">All memberships</option>
+                <option value="None">None</option>
+                {membershipOptions.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
 
-          <select
-            className="au-search"
-            value={waiverFilter}
-            onChange={(e) => { setWaiverFilter(e.target.value); setPage(0); }}
-            aria-label="Filter by waiver"
-            style={{ width: "130px", margin: 0 }}
-          >
-            <option value="">All waivers</option>
-            <option value="signed">Signed</option>
-            <option value="unsigned">Not signed</option>
-          </select>
+            <div className="au-filter-field">
+              <label htmlFor={`${filterId}-waiver`}>Waiver status</label>
+              <select id={`${filterId}-waiver`} value={waiverFilter} onChange={(e) => { setWaiverFilter(e.target.value); setPage(0); }}>
+                <option value="">All waivers</option>
+                <option value="signed">Signed</option>
+                <option value="unsigned">Not signed</option>
+              </select>
+            </div>
+          </div>
 
-          <button
-            onClick={() => { setShowDeleted((v) => !v); setPage(0); }}
-            className={`au-toggle-btn${showDeleted ? " au-toggle-btn--active" : ""}`}
-            style={{
-              background: showDeleted ? "#e75710" : "none",
-              border: showDeleted ? "none" : "1px solid #ccc",
-              color: showDeleted ? "#fff" : "inherit",
-              padding: "8px 12px",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontWeight: showDeleted ? 600 : "normal",
-              fontSize: "0.875rem",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {showDeleted ? "Hide deleted accounts" : "Show deleted accounts"}
-          </button>
+          <div className="au-filter-actions">
+            <label className="au-deleted-filter">
+              <input
+                type="checkbox"
+                checked={showDeleted}
+                onChange={(e) => { setShowDeleted(e.target.checked); setPage(0); }}
+              />
+              Deleted accounts only
+            </label>
 
-          {(query || roleFilter || membershipFilter || waiverFilter) && (
-            <button className="ra-link" onClick={resetFilters}>Clear filters</button>
-          )}
+            {hasFilters && (
+              <button type="button" className="ra-link" onClick={resetFilters}>Clear filters</button>
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -260,7 +248,7 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
 
             {!showDeleted && (
               visible.length === 0 ? (
-                <p className="ra-state">{query ? "No users match your search." : "No users yet."}</p>
+                <p className="ra-state">{hasFilters ? "No users match your filters." : "No users yet."}</p>
               ) : (
                 <div className="ra-table-scroll">
                   <table className="ra-table au-table">
@@ -306,7 +294,7 @@ export default function AllUsers({ onViewProfile, selectedId, refreshKey = 0 }) 
 
             {showDeleted && (
               deletedFiltered.length === 0 ? (
-                <p className="ra-state">No deleted accounts.</p>
+                <p className="ra-state">{hasFilters ? "No deleted accounts match your filters." : "No deleted accounts."}</p>
               ) : (
                 <div className="ra-table-scroll">
                   <table className="ra-table au-table" style={{ opacity: 0.75 }}>

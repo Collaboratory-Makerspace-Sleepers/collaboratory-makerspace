@@ -10,7 +10,7 @@ import { useAuth } from "../context/AuthContext";
  * the @PreAuthorize expressions on the controllers, so hiding a route here is
  * never the thing that actually protects the data.
  */
-export default function RequirePermission({ anyOf, children }) {
+export default function RequirePermission({ anyOf, children, deniedRedirect }) {
   const { isAuthenticated, permissions, loadingProfile } = useAuth();
   const location = useLocation();
 
@@ -25,6 +25,8 @@ export default function RequirePermission({ anyOf, children }) {
   }
 
   if (!anyOf.some((code) => permissions.includes(code))) {
+    if (deniedRedirect) return <Navigate to={deniedRedirect} replace />;
+
     return (
       <div className="AdminDenied">
         <h2>Access denied</h2>

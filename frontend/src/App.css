@@ -781,8 +781,14 @@ p {
   text-decoration: underline;
 }
 
-.otp-back:hover {
+.otp-back:hover:not(:disabled) {
   color: #a51200;
+}
+
+.otp-back:disabled {
+  color: #646464;
+  cursor: not-allowed;
+  text-decoration: none;
 }
 
 .error-text {
@@ -2876,6 +2882,12 @@ p {
   background: #fafafa;
 }
 
+.recent-activity-table td:nth-child(2),
+.recent-activity-table td:last-child {
+  white-space: normal;
+  padding-block: 8px;
+}
+
 /* View Profile link */
 .ra-table td.ae-cell {
   padding: 0;
@@ -3947,7 +3959,8 @@ p {
 .nu-dialog .nu-close:hover { background: #e2e2e2; }
 .nu-field { display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; font-weight: 600; color: #333; }
 .nu-field input,
-.nu-field select {
+.nu-field select,
+.nu-field textarea {
   padding: 10px 12px;
   border: 1px solid #d4d4d4;
   border-radius: 8px;
@@ -3957,7 +3970,8 @@ p {
   font-weight: 400;
 }
 .nu-field input:focus,
-.nu-field select:focus { outline: 2px solid #e75710; border-color: #e75710; }
+.nu-field select:focus,
+.nu-field textarea:focus { outline: 2px solid #e75710; border-color: #e75710; }
 .nu-message { margin: 0; padding: 10px 12px; border-radius: 8px; background: #fcd8b6; color: #450b00; font-size: 0.9rem; }
 .nu-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
 .nu-actions button { padding: 10px 18px; border-radius: 8px; font-size: 0.95rem; cursor: pointer; }
@@ -3968,12 +3982,266 @@ p {
 .nu-check { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: #333; }
 
 /* Wide Actions column so View Profile / Resend / Delete are not clipped */
+.au-filters {
+  margin: 0 14px 16px;
+  padding: 14px;
+  background: #f9f7f6;
+  border: 1px solid #e8e2df;
+  border-radius: 8px;
+}
+
+.au-filter-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.au-filter-field {
+  display: grid;
+  gap: 6px;
+  flex: 1 1 154px;
+  min-width: 0;
+  color: var(--ra-heading);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.au-filter-field--search {
+  flex: 2 1 212px;
+}
+
+.au-filter-field input,
+.au-filter-field select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid #cfc6c2;
+  border-radius: 6px;
+  background-color: #fff;
+  color: var(--ra-heading);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.au-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #e8e2df;
+}
+
+.au-deleted-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  color: var(--ra-heading);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.au-deleted-filter input {
+  margin: 0;
+  accent-color: #e75710;
+}
+
+.au-filters :is(input, select, button):focus-visible {
+  outline: 2px solid #b6420c;
+  outline-offset: 2px;
+}
+
 .au-table { min-width: 1000px; }
 .au-table th:last-child { width: 300px; }
 .au-table td:last-child { overflow: visible; }
 .au-table td:last-child .ra-link + .ra-link { margin-left: 12px; }
 .au-table td:last-child .ra-link:last-child { color: #d93025; }
 .admin-classes-page .au-table td:last-child .ra-link + .ra-link { margin-left: 0; }
+
+.cancel-dialog { color: #24201f; }
+.cancel-dialog .nu-actions { flex-wrap: wrap; }
+.cancel-dialog:has(.cancel-review-reason) {
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+.cancel-review-reason {
+  padding: 12px;
+  background: #f7f3f1;
+  border-radius: 6px;
+}
+.cancel-review-reason h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+.cancel-comment {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.cancel-reason-details > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.cancel-reason-details:not([open]) .cancel-reason-hide,
+.cancel-reason-details[open] .cancel-reason-show,
+.cancel-reason-details[open] .cancel-reason-preview {
+  display: none;
+}
+.cancel-reason-preview,
+.cancel-reason-full {
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+.cancel-reason-preview {
+  display: block;
+  font-weight: normal;
+}
+.cancel-reason-full,
+.cancel-note-scroll {
+  max-height: 9rem;
+  overflow-y: auto;
+}
+.cancel-reason-full {
+  padding: 6px 8px;
+  background: #f7f3f1;
+  border-radius: 6px;
+}
+.admin-classes-page .cancel-filters {
+  padding: 0 24px 12px;
+  flex-wrap: wrap;
+}
+.cancel-table-hint {
+  margin: 0;
+  padding: 0 24px 12px;
+  color: #57534e;
+  font-size: 0.875rem;
+}
+.admin-classes-page .cancellations-table {
+  min-width: 1475px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.admin-classes-page .cancellations-table th,
+.admin-classes-page .cancellations-table td {
+  padding: 12px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.cancellations-table tbody td {
+  vertical-align: top;
+  font-weight: 400;
+}
+.cancellations-table .cancel-reason-cell,
+.cancellations-table .cancel-note-cell {
+  width: 290px;
+}
+.cancellations-table .cancel-actions-cell {
+  width: 160px;
+}
+.cancel-row-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cancel-action {
+  padding: 6px 9px;
+  border: 1px solid var(--cancel-action-border);
+  border-radius: 6px;
+  background: var(--cancel-action-bg);
+  color: var(--cancel-action-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: normal;
+  cursor: pointer;
+}
+.cancel-action-refund {
+  --cancel-action-border: #8eb3e5;
+  --cancel-action-bg: #eff6ff;
+  --cancel-action-hover: #dbeafe;
+  --cancel-action-text: #1e40af;
+}
+.cancel-action-approve {
+  --cancel-action-border: #86c3a0;
+  --cancel-action-bg: #ecfdf3;
+  --cancel-action-hover: #dcfce7;
+  --cancel-action-text: #166534;
+}
+.cancel-action-reject {
+  --cancel-action-border: #e7aaa5;
+  --cancel-action-bg: #fef2f2;
+  --cancel-action-hover: #fee2e2;
+  --cancel-action-text: #991b1b;
+}
+.cancel-action:hover:not(:disabled) { background: var(--cancel-action-hover); }
+.cancel-action:focus-visible { outline: 2px solid #a63b08; outline-offset: 2px; }
+.cancel-action:disabled { opacity: 0.5; cursor: not-allowed; }
+.cancel-no-action { color: #57534e; font-size: 0.8125rem; }
+@media (min-width: 900px) {
+  .cancellations-table .cancel-actions-cell {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    box-shadow: -4px 0 8px #0000000d;
+  }
+  .cancellations-table tbody .cancel-actions-cell { background: #fff; }
+  .cancellations-table tbody tr:hover .cancel-actions-cell { background: #fafafa; }
+}
+.reservation-cancellation-status {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #edcd96;
+  border-radius: 6px;
+  background: #fff7e7;
+  color: #57380c;
+}
+.my-reservations .reservation-cancellation-status p {
+  margin: 0 0 8px;
+  color: inherit;
+}
+.reservation-cancellation-history {
+  margin: 24px 0;
+  padding: 16px;
+  border: 1px solid #e6ddd8;
+  border-radius: 8px;
+  background: #fff;
+  color: #24201f;
+  --ra-text: #24201f;
+  --ra-bg: #f7f3f1;
+  --ra-border: #e6ddd8;
+}
+.reservation-cancellation-history h2 {
+  margin: 0 0 12px;
+  font-size: 1.15rem;
+}
+.reservation-cancellation-history .ra-table {
+  min-width: 650px;
+  table-layout: auto;
+}
+.reservation-cancellation-history .ra-table td {
+  padding: 10px 12px;
+  font-weight: normal;
+}
+.reservation-cancellation-history .ra-table .cancel-history-reason {
+  max-width: 280px;
+  white-space: normal;
+}
+.cancel-filter {
+  padding: 8px 12px;
+  border: 1px solid #cfc6c2;
+  border-radius: 6px;
+  background: #fff;
+  color: #450b00;
+  cursor: pointer;
+}
+.cancel-filter[aria-pressed="true"] { background: #a63b08; border-color: #a63b08; color: #fff; }
+.cancel-filter:focus-visible { outline: 2px solid #a63b08; outline-offset: 2px; }
 
 .cancel-badge {
   display: inline-block;

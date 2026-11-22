@@ -5,7 +5,8 @@ const STATUS_LABELS = {
   PENDING:              { label: "Pending",         cls: "cancel-badge--pending"  },
   APPROVED_WITH_REFUND: { label: "Awaiting Stripe", cls: "cancel-badge--waiting"  },
   APPROVED_NO_REFUND:   { label: "Cancelled",       cls: "cancel-badge--resolved" },
-  REJECTED:             { label: "Rejected",        cls: "cancel-badge--resolved" },
+  REJECTED:             { label: "Rejected",        cls: "cancel-badge--refund-exp" },
+  WITHDRAWN:            { label: "Withdrawn",       cls: "cancel-badge--resolved" },
   COMPLETED:            { label: "Completed",       cls: "cancel-badge--resolved" },
 };
 
@@ -13,7 +14,7 @@ const FILTERS = [
   { key: "ALL",                  label: "All" },
   { key: "PENDING",              label: "Pending" },
   { key: "APPROVED_WITH_REFUND", label: "Awaiting Stripe" },
-  { key: "APPROVED_NO_REFUND",   label: "Resolved" },
+  { key: "RESOLVED",            label: "Resolved" },
 ];
 
 function StatusBadge({ status }) {
@@ -30,66 +31,92 @@ function RefundBadge({ until }) {
   );
 }
 
-function ApproveRefundModal({ request, onClose, onConfirm, busy }) {
-  const [adminNote, setAdminNote] = useState("");
+const REASON_PREVIEW_LENGTH = 120;
+
+function MemberReason({ reason, collapsible = false }) {
+  if (!reason?.trim()) return <em>No reason provided</em>;
+  if (!collapsible) return <span className="cancel-comment">{reason}</span>;
+
+  const preview = Array.from(reason.trim().replace(/\s+/g, " "));
+  if (preview.length <= REASON_PREVIEW_LENGTH && !/[\r\n]/.test(reason.trim())) {
+    return <span className="cancel-comment">{reason}</span>;
+  }
+
+  return (
+    <details className="cancel-reason-details">
+      <summary>
+        <span className="cancel-reason-show">Show full reason</span>
+        <span className="cancel-reason-hide">Hide full reason</span>
+        <span className="cancel-reason-preview">
+          {preview.slice(0, REASON_PREVIEW_LENGTH).join("")}
+          {preview.length > REASON_PREVIEW_LENGTH && "..."}
+        </span>
+      </summary>
+      <div className="cancel-reason-full cancel-comment" tabIndex={0} role="region" aria-label="Full member reason">
+        {reason}
+      </div>
+    </details>
+  );
+}
+
+function ReviewModal({ request, decision, onClose, onConfirm, busy, error }) {
+  const [decisionNote, setDecisionNote] = useState("");
+  const refund = decision === "APPROVE_WITH_REFUND";
+  const reject = decision === "REJECT";
+  const title = refund ? "Approve cancellation with refund" : reject ? "Reject cancellation" : "Approve without refund";
   const windowExpired = new Date(request.refundEligibleUntil) < new Date();
   const dollars = request.refundAmountCents > 0
     ? `$${(request.refundAmountCents / 100).toFixed(2)}`
     : "Unknown";
 
   return (
-    <div className="ra-profile-backdrop" onClick={onClose}>
-      <div className="nu-dialog" onClick={(e) => e.stopPropagation()}>
-        <h2>Approve Cancellation + Refund</h2>
+    <div className="ra-profile-backdrop" onClick={busy ? undefined : onClose}>
+      <form className="ra-profile-dialog nu-dialog cancel-dialog" role="dialog" aria-modal="true"
+        aria-labelledby="admin-cancel-title" onClick={(e) => e.stopPropagation()}
+        onSubmit={(e) => { e.preventDefault(); if (!busy) onConfirm(decision, decisionNote.trim()); }}>
+        <h2 id="admin-cancel-title">{title}</h2>
+        <p>{request.equipmentName} · {request.userName || request.userEmail}</p>
+        <section className="cancel-review-reason" aria-labelledby="admin-cancel-reason">
+          <h3 id="admin-cancel-reason">Member’s reason</h3>
+          <MemberReason reason={request.reason} />
+        </section>
 
-        <p><strong>Refund amount:</strong> {dollars}</p>
+        {refund && <p><strong>Refund amount:</strong> {dollars}</p>}
 
-        {windowExpired && (
+        {refund && windowExpired && (
           <p style={{ color: "#dc2626", fontWeight: 600 }}>
             The 48-hour refund window has passed. Proceeding anyway.
           </p>
         )}
 
-        {request.stripePaymentIntentId ? (
-          <button
-            onClick={() =>
-              window.open(
-                `https://dashboard.stripe.com/payments/${request.stripePaymentIntentId}`,
-                "_blank"
-              )
-            }
-          >
-            Open in Stripe
-          </button>
-        ) : (
-          <p style={{ color: "#6b7280" }}>No Stripe payment found for this reservation.</p>
+        {refund && (
+          <p>Approve here first, then issue the refund in the matching Stripe dashboard (test or live).
+            The request completes when Stripe confirms the refund.</p>
         )}
 
-        <p style={{ fontSize: "0.9rem", marginTop: "8px" }}>
-          Issue the refund in Stripe, then click Confirm. The request will auto-complete when
-          Stripe confirms.
-        </p>
+        {reject && <p>The existing reservation will not be changed, and no refund will be issued.</p>}
+        {!refund && !reject && <p>The cancellation will be approved without issuing a refund.</p>}
 
-        <label style={{ display: "block", marginTop: "12px" }}>
-          <span>Admin note (optional)</span>
+        <label className="nu-field">
+          <span>{reject ? "Message to member (optional)" : "Internal decision note (optional)"}</span>
           <textarea
             rows={3}
-            style={{ width: "100%", marginTop: "4px" }}
-            value={adminNote}
-            onChange={(e) => setAdminNote(e.target.value)}
+            maxLength={reject ? 1000 : undefined}
+            value={decisionNote}
+            onChange={(e) => setDecisionNote(e.target.value)}
+            disabled={busy}
           />
+          {reject && <small>The member can read this message in My Reservations.</small>}
         </label>
 
-        <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
-          <button onClick={onClose} disabled={busy}>Cancel</button>
-          <button
-            onClick={() => onConfirm("APPROVE_WITH_REFUND", adminNote)}
-            disabled={busy}
-          >
-            {busy ? "Saving…" : "Confirm — I've issued the refund"}
+        {error && <p className="nu-message" role="alert">{error}</p>}
+        <div className="nu-actions">
+          <button type="button" className="nu-cancel" onClick={onClose} disabled={busy}>Back</button>
+          <button type="submit" disabled={busy}>
+            {busy ? "Saving…" : reject ? "Reject request" : "Confirm approval"}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 }
@@ -100,7 +127,7 @@ export default function AdminCancellations() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("ALL");
-  const [approveModal, setApproveModal] = useState(null);
+  const [review, setReview] = useState(null);
   const [busy, setBusy] = useState(null);
   const [actionError, setActionError] = useState("");
 
@@ -108,7 +135,7 @@ export default function AdminCancellations() {
     setLoading(true);
     authFetch("/api/v1/admin/cancellation-requests?status=ALL")
       .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((data) => { setRequests(data); setLoading(false); })
+      .then((data) => { setRequests(data); setError(""); setLoading(false); })
       .catch(() => { setError("Could not load cancellation requests."); setLoading(false); });
   }, [authFetch]);
 
@@ -116,21 +143,29 @@ export default function AdminCancellations() {
 
   const filtered = filter === "ALL"
     ? requests
-    : requests.filter((r) => r.status === filter);
+    : requests.filter((r) => filter === "RESOLVED"
+      ? ["APPROVED_NO_REFUND", "REJECTED", "WITHDRAWN", "COMPLETED"].includes(r.status)
+      : r.status === filter);
 
-  async function resolve(requestId, decision, adminNote) {
+  async function resolve(requestId, decision, decisionNote) {
     setActionError("");
+    if (decision === "REJECT" && decisionNote && !Object.hasOwn(review.request, "rejectionReason")) {
+      setActionError("The backend must be updated before it can save a message to the member.");
+      return;
+    }
     setBusy(requestId);
     try {
       const res = await authFetch(`/api/v1/admin/cancellation-requests/${requestId}/resolve`, {
         method: "POST",
-        body: JSON.stringify({ decision, adminNote }),
+        body: JSON.stringify({ decision, ...(decision === "REJECT"
+          ? { rejectionReason: decisionNote }
+          : { adminNote: decisionNote }) }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.message || "Could not resolve request");
       }
-      setApproveModal(null);
+      setReview(null);
       load();
     } catch (err) {
       setActionError(err.message || "Something went wrong.");
@@ -139,11 +174,9 @@ export default function AdminCancellations() {
     }
   }
 
-  function confirmInline(requestId, decision) {
-    const label = decision === "APPROVE_NO_REFUND" ? "Approve (No Refund)" : "Reject";
-    if (window.confirm(`${label} this request?`)) {
-      resolve(requestId, decision, "");
-    }
+  function openReview(request, decision) {
+    setActionError("");
+    setReview({ request, decision });
   }
 
   function fmtDate(iso) {
@@ -167,14 +200,15 @@ export default function AdminCancellations() {
         <div className="ra-wrapper">
           <div className="ra-card">
             <div className="ra-header">
-              <div className="ra-title"><h2>Cancellation Requests</h2></div>
+              <div className="ra-title"><h2 id="cancellation-requests-title">Cancellation Requests</h2></div>
             </div>
 
-            <div className="catalog-filters" style={{ padding: "0 24px 16px" }}>
+            <div className="catalog-filters cancel-filters" role="group" aria-label="Filter cancellation requests">
               {FILTERS.map((f) => (
                 <button
                   key={f.key}
-                  className={`ra-link au-toggle-btn${filter === f.key ? " au-toggle-btn--active" : ""}`}
+                  className="cancel-filter"
+                  aria-pressed={filter === f.key}
                   onClick={() => setFilter(f.key)}
                 >
                   {f.label}
@@ -183,25 +217,32 @@ export default function AdminCancellations() {
             </div>
 
             {error && <p style={{ color: "red", padding: "0 24px" }}>{error}</p>}
-            {actionError && <p style={{ color: "red", padding: "0 24px" }}>{actionError}</p>}
+
+            {!loading && filtered.length > 0 && (
+              <p id="cancel-table-hint" className="cancel-table-hint">
+                Review buttons are available for pending requests. Scroll sideways to see all columns.
+              </p>
+            )}
 
             {loading ? (
               <p className="ra-state">Loading…</p>
             ) : filtered.length === 0 ? (
               <p className="ra-state">No requests found.</p>
             ) : (
-              <div className="ra-table-scroll">
-                <table className="ra-table cancellations-table">
+              <div className="ra-table-scroll cancel-table-scroll" tabIndex={0} role="region"
+                aria-label="Cancellation requests table" aria-describedby="cancel-table-hint">
+                <table className="ra-table cancellations-table" aria-labelledby="cancellation-requests-title">
                   <thead>
                     <tr>
-                      <th>User</th>
-                      <th>Equipment</th>
-                      <th>Service Period</th>
-                      <th>Reason</th>
-                      <th>Refund Window</th>
-                      <th>Stripe PI</th>
-                      <th>Status</th>
-                      <th>Actions</th>
+                      <th scope="col">User</th>
+                      <th scope="col">Equipment</th>
+                      <th scope="col">Service Period</th>
+                      <th scope="col" className="cancel-reason-cell">Member’s reason</th>
+                      <th scope="col">Refund Window</th>
+                      <th scope="col">Stripe PI</th>
+                      <th scope="col">Status</th>
+                      <th scope="col" className="cancel-note-cell">Decision notes</th>
+                      <th scope="col" className="cancel-actions-cell">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -215,8 +256,8 @@ export default function AdminCancellations() {
                         <td>
                           {fmtDate(r.startTime)} – {fmtDate(r.endTime)}
                         </td>
-                        <td style={{ maxWidth: "180px", wordBreak: "break-word" }}>
-                          {r.reason || <em style={{ color: "#9ca3af" }}>None provided</em>}
+                        <td className="cancel-reason-cell">
+                          <MemberReason reason={r.reason} collapsible />
                         </td>
                         <td><RefundBadge until={r.refundEligibleUntil} /></td>
                         <td>
@@ -233,32 +274,50 @@ export default function AdminCancellations() {
                           ) : "—"}
                         </td>
                         <td><StatusBadge status={r.status} /></td>
-                        <td className="ae-cell">
-                          {r.status === "PENDING" && (
-                            <div className="ae-actions">
+                        <td className="cancel-note-cell">
+                          {r.status === "REJECTED" || r.adminNote?.trim() ? (
+                            <div className="cancel-note-scroll" tabIndex={0} role="region"
+                              aria-label={`Decision notes for request ${r.id}`}>
+                              {r.status === "REJECTED" && (
+                                <div><strong>Message to member:</strong>{" "}
+                                  <span className="cancel-comment">{r.rejectionReason || "None"}</span>
+                                </div>
+                              )}
+                              {r.adminNote?.trim() && (
+                                <div><strong>Internal:</strong>{" "}<span className="cancel-comment">{r.adminNote}</span></div>
+                              )}
+                            </div>
+                          ) : "—"}
+                        </td>
+                        <td className="cancel-actions-cell">
+                          {r.status === "PENDING" ? (
+                            <div className="cancel-row-actions">
                               <button
-                                className="ra-link"
-                                disabled={busy === r.id}
-                                onClick={() => setApproveModal(r)}
+                                type="button"
+                                className="cancel-action cancel-action-refund"
+                                disabled={busy === r.id || !r.stripePaymentIntentId}
+                                onClick={() => openReview(r, "APPROVE_WITH_REFUND")}
                               >
                                 Approve + Refund
                               </button>
                               <button
-                                className="ra-link"
+                                type="button"
+                                className="cancel-action cancel-action-approve"
                                 disabled={busy === r.id}
-                                onClick={() => confirmInline(r.id, "APPROVE_NO_REFUND")}
+                                onClick={() => openReview(r, "APPROVE_NO_REFUND")}
                               >
                                 Approve, No Refund
                               </button>
                               <button
-                                className="ra-link"
+                                type="button"
+                                className="cancel-action cancel-action-reject"
                                 disabled={busy === r.id}
-                                onClick={() => confirmInline(r.id, "REJECT")}
+                                onClick={() => openReview(r, "REJECT")}
                               >
                                 Reject
                               </button>
                             </div>
-                          )}
+                          ) : <span className="cancel-no-action">No review actions</span>}
                         </td>
                       </tr>
                     ))}
@@ -270,12 +329,14 @@ export default function AdminCancellations() {
         </div>
       </div>
 
-      {approveModal && (
-        <ApproveRefundModal
-          request={approveModal}
-          onClose={() => setApproveModal(null)}
-          onConfirm={(decision, adminNote) => resolve(approveModal.id, decision, adminNote)}
-          busy={busy === approveModal.id}
+      {review && (
+        <ReviewModal
+          request={review.request}
+          decision={review.decision}
+          onClose={() => setReview(null)}
+          onConfirm={(decision, decisionNote) => resolve(review.request.id, decision, decisionNote)}
+          busy={busy === review.request.id}
+          error={actionError}
         />
       )}
     </div>

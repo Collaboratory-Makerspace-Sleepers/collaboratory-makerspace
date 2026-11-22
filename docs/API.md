@@ -54,7 +54,9 @@ Exchanges the HttpOnly `access_token` cookie (set after OAuth2 login) for a Bear
 
 ### POST `/api/v1/auth/otp/send`
 
-Sends a 6-digit OTP to the given email address. Rate-limited to one send per 60 seconds per email. Always returns 200 regardless of whether the email exists (prevents enumeration).
+Sends a 6-digit OTP to the given email address. Rate-limited to one send per 60 seconds per email.
+The sign-in and sign-up forms show a 60-second countdown after a successful send
+or a `429` cooldown response. Once the timer ends, users can select **Resend code**.
 
 **Auth:** None (public)
 
@@ -66,6 +68,9 @@ Sends a 6-digit OTP to the given email address. Rate-limited to one send per 60 
 ```
 
 **Response 200:** Empty body
+
+**Response 429:** A code was requested too recently. The current code can still
+be entered if it was received.
 
 **Response 400 — missing email:**
 ```json
@@ -683,23 +688,66 @@ Returns a single reservation. Users can only see their own. Users with `VIEW_ALL
 
 ### PATCH `/api/v1/reservations/{id}/cancel`
 
-Cancels a reservation. Users can cancel their own. `MANAGE_RESERVATIONS` can cancel any.
+Directly cancels a reservation as an administrator. Members use the cancellation request endpoint below.
 
-**Auth:** Authenticated (own) or `MANAGE_RESERVATIONS`
+**Auth:** `MANAGE_RESERVATIONS` permission
 
 **Request:** Empty body
 
 **Response 200:** Updated reservation object with `"status": "CANCELLED"`.
 
-**Response 403 — not the owner:**
+**Response 403 — missing permission:**
 ```json
 { "status": 403, "error": "Not authorized to cancel this reservation" }
 ```
 
-**Response 409 — already cancelled:**
+**Response 400 — already cancelled:**
 ```json
-{ "status": 409, "error": "Reservation is already cancelled" }
+{ "status": 400, "error": "Reservation is already cancelled" }
 ```
+
+---
+
+### POST `/api/v1/reservations/{id}/cancellation-request`
+
+An owner can request cancellation of an active reservation or a refund for a completed
+reservation still within the refund window. Send `{"reason":"I can no longer attend."}`.
+The trimmed reason must be 1–1,000 characters. Success returns `201` with a `PENDING`
+request and does not change the reservation. An open request returns `409`.
+
+Administrators with `MANAGE_RESERVATIONS` review requests using
+`POST /api/v1/admin/cancellation-requests/{id}/resolve` with a `decision` of
+`APPROVE_NO_REFUND`, `APPROVE_WITH_REFUND`, or `REJECT`, and an optional `adminNote`.
+Rejection records the decision without cancelling the reservation or issuing a refund.
+For `REJECT`, an optional `rejectionReason` (up to 1,000 characters) is shared
+with the member. Long messages scroll inside the **Reason from staff** cell in
+My Reservations. Omitted or blank reasons display as **None**. The `adminNote`
+field remains private, including on earlier rejected requests.
+In **Admin → Cancellations**, long or multiline reasons show a preview in the
+table. Select **Show full reason** to expand a scrollable view. The review dialog
+still shows the full reason. Long decision notes scroll within their table cell.
+Internal notes are not part of the member’s cancellation history.
+Only pending requests have review buttons. The buttons stack vertically in the
+narrow Actions column, which stays visible while scrolling on wider screens.
+**Approve + Refund** is blue, **Approve, No Refund** is green, and **Reject** is red.
+
+`GET /api/v1/reservations/me` includes `pendingCancellationRequestId` for bookings
+with a request awaiting staff review (otherwise `null`). The reservation owner can
+withdraw that exact request using
+`POST /api/v1/reservations/{id}/cancellation-request/{requestId}/withdraw`.
+Success returns `204` and records `WITHDRAWN` without changing the reservation.
+An already resolved request returns `409` and cannot reverse a cancellation or refund.
+
+`GET /api/v1/reservations/me/cancellation-requests` lists requests for the signed-in
+member's reservations, newest first. It includes pending, approved, rejected,
+withdrawn, and refund-confirmed requests, with reservation details and submission
+and resolution timestamps. It does not expose staff notes or payment identifiers.
+
+Admin Recent User Activity (`GET /api/v1/users/activity/feed`) includes a
+`CANCELLATION_REQUESTED` entry at submission and a separate entry for the recorded
+withdrawal, staff decision, or confirmed refund. The feed is newest first and
+requires `MANAGE_USERS`. The cancellation outcome uses the latest recorded
+resolution timestamp; it is not a full audit log of earlier refund transitions.
 
 ---
 

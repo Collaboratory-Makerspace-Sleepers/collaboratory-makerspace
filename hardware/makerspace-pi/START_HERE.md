@@ -58,6 +58,31 @@ Each Pi needs its own registration. Existing credentials remain usable with the
 same paired-device backend/database. Pair again if you switch backends or move
 from the older scanner_devices implementation to this hardware_devices version.
 
+### Cards to order and verify
+
+The ACR122U reads **13.56 MHz contactless cards**; it does not read 125 kHz
+proximity cards, magnetic stripes, or contact-only chip cards. For purchasing,
+start with a sample 13.56 MHz ISO/IEC 14443 Type A card (such as MIFARE Classic
+or Ultralight), then verify the exact SKU using the supplied reader and scanner
+before ordering in bulk. The app uses the UID returned by the reader; use
+cards that return the same UID on repeated presentations. Do not treat
+manufacturer protocol support as proof that a particular badge works.
+
+The seven local card variants are not identified in this repository. For each
+variant, record its vendor/model, successful UID reads over five separate
+presentations, and a successful assigned-member tap. Mark any untested or
+failed variant as not approved for deployment.
+
+### Manage the Pi from the website
+
+**Register Pi** creates a record and a pairing code; it does not install software
+remotely. Use steps 2 and 3 first. After pairing, **Connected/Offline** reports
+heartbeat freshness; **Enabled/Disabled** is the admin setting. Use **Edit →
+Device enabled → Save changes** to change it without revoking pairing. Use
+**Assign next tap** on a connected, enabled Pi to select a member and arm that
+reader. Confirm the result in **Recent device events** and **Cards**; the
+assignment tap is not an entry approval, so remove and tap the card again.
+
 **Local testing:** if your team is running the backend locally, use an existing
 local TLS gateway and **Find computer**, or the SSH tunnel described in the app's
 HARDWARE_SETUP.md. A local gateway is not included in this folder and is not needed
@@ -91,6 +116,25 @@ backend, a **Connection lost** entry appears after about 45–55 seconds. It can
 prove whether power, Wi-Fi or the scanner service failed. Reconnection is logged too.
 A powered-off backend cannot monitor Pis while it is off; very short outages may not
 cross the timeout. Pi startup and queued reports appear when connection is restored.
+
+### Busy-entry acceptance check
+
+Present **one card at a time** and remove it before the next tap. The scanner
+waits for each backend decision and then pauses 0.9 seconds after approval or
+1.6 seconds otherwise, before polling again. Network latency and reader feedback
+add time, so these pauses are not a throughput guarantee. Do not expect
+overlapping taps or stacked cards to be processed as separate visits.
+
+Before opening a high-traffic entrance, turn door output off and time at least
+30 successive taps using several test cards, including denied taps. Record
+tap-to-feedback time and check server-side device events for missed or duplicate
+decisions. Compare the sustained rate with the site's expected peak; if one
+reader is not enough, test independent lanes with a Pi/reader per lane.
+
+For an outage, use staffed manual check-in; never treat an offline tap as
+approved. Check Pi power, USB, and Wi-Fi, then use the scanner diagnostics and
+compare **Last seen** with **Recent device events**. After recovery, verify
+one known allowed and one denied test tap before returning to normal use.
 
 ## Updating
 

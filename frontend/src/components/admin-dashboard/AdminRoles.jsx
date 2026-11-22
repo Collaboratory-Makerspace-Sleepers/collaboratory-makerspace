@@ -24,11 +24,13 @@ export default function AdminRoles() {
         authFetch("/api/v1/admin/roles"),
         authFetch("/api/v1/admin/permissions"),
       ]);
-      if (rolesRes.ok) setRoles(await rolesRes.json());
-      if (permsRes.ok) setAllPerms(await permsRes.json());
+      if (!rolesRes.ok || !permsRes.ok) throw new Error("Could not load roles and permissions.");
+      const [nextRoles, nextPerms] = await Promise.all([rolesRes.json(), permsRes.json()]);
+      setRoles(nextRoles);
+      setAllPerms(nextPerms);
       setError("");
-    } catch {
-      setError("Could not load roles.");
+    } catch (err) {
+      setError(err.message || "Could not load roles.");
     } finally {
       setLoading(false);
     }
@@ -44,17 +46,26 @@ export default function AdminRoles() {
 
   const submitCreate = async (e) => {
     e.preventDefault();
+    const code = createForm.code.trim().toUpperCase();
+    const description = createForm.description.trim();
+    if (!/^[A-Z0-9_]{1,30}$/.test(code) || !description) {
+      setCreateMsg("Enter a description and a role code of up to 30 letters, numbers, or underscores.");
+      return;
+    }
     setCreateBusy(true);
     setCreateMsg("");
     try {
       const res = await authFetch("/api/v1/admin/roles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: createForm.code.toUpperCase(), description: createForm.description }),
+        body: JSON.stringify({ code, description }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || "Could not create role.");
+        const fallback = res.status === 409 ? `Role ${code} already exists.`
+          : res.status === 403 ? "You do not have permission to create roles."
+          : `Could not create role (HTTP ${res.status}).`;
+        throw new Error(data.detail || data.message || fallback);
       }
       setCreateOpen(false);
       loadRoles();
@@ -198,7 +209,8 @@ export default function AdminRoles() {
               Code
               <input
                 required
-                placeholder="e.g. INSTRUCTOR"
+                maxLength={30}
+                placeholder="e.g. SHOP_VOLUNTEER"
                 value={createForm.code}
                 onChange={(e) => setCreateForm({ ...createForm, code: e.target.value.toUpperCase() })}
               />
@@ -206,6 +218,7 @@ export default function AdminRoles() {
             <label className="nu-field">
               Description
               <input
+                required
                 value={createForm.description}
                 onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
               />

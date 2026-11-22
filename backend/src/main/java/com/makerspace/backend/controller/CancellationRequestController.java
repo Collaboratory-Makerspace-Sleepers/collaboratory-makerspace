@@ -3,6 +3,7 @@ package com.makerspace.backend.controller;
 import com.makerspace.backend.config.security.UserPrincipal;
 import com.makerspace.backend.config.security.UserSecurity;
 import com.makerspace.backend.controller.dto.CancellationRequestDTO;
+import com.makerspace.backend.controller.dto.MemberCancellationRequestDTO;
 import com.makerspace.backend.model.CancellationRequestStatus;
 import com.makerspace.backend.model.Permission;
 import com.makerspace.backend.services.CancellationRequestService;
@@ -21,6 +22,11 @@ public class CancellationRequestController {
     @Autowired private CancellationRequestService cancellationRequestService;
     @Autowired private UserSecurity userSecurity;
 
+    @GetMapping("/api/v1/reservations/me/cancellation-requests")
+    public List<MemberCancellationRequestDTO> memberHistory(Authentication auth) {
+        return cancellationRequestService.listForMember(userSecurity.getPrincipal(auth));
+    }
+
     // -------------------------------------------------------------------------
     // User: submit a cancellation/refund request
     // -------------------------------------------------------------------------
@@ -34,6 +40,12 @@ public class CancellationRequestController {
         UserPrincipal principal = userSecurity.getPrincipal(auth);
         String reason = body != null ? body.get("reason") : null;
         return cancellationRequestService.submit(reservationId, reason, principal);
+    }
+
+    @PostMapping("/api/v1/reservations/{reservationId}/cancellation-request/{requestId}/withdraw")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void withdraw(@PathVariable Long reservationId, @PathVariable Long requestId, Authentication auth) {
+        cancellationRequestService.withdraw(reservationId, requestId, userSecurity.getPrincipal(auth));
     }
 
     // -------------------------------------------------------------------------
@@ -80,6 +92,6 @@ public class CancellationRequestController {
         UserPrincipal principal = userSecurity.getPrincipal(auth);
         String decision   = body.get("decision");
         String adminNote  = body.get("adminNote");
-        return cancellationRequestService.adminResolve(id, decision, adminNote, principal);
+        return cancellationRequestService.adminResolve(id, decision, adminNote, body.get("rejectionReason"), principal);
     }
 }

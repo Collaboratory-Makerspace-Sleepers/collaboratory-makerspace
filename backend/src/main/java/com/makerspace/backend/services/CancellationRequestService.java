@@ -5,6 +5,10 @@ import com.makerspace.backend.controller.dto.CancellationRequestDTO;
 import com.makerspace.backend.controller.dto.MemberCancellationRequestDTO;
 import com.makerspace.backend.model.*;
 import com.makerspace.backend.repository.*;
+import com.stripe.StripeClient;
+import com.stripe.exception.StripeException;
+import com.stripe.model.Refund;
+import com.stripe.param.RefundCreateParams;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -26,6 +30,7 @@ public class CancellationRequestService {
     @Autowired private ReservationRepository reservationRepository;
     @Autowired private PaymentRecordRepository paymentRecordRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private StripeClient stripeClient;
 
     // -------------------------------------------------------------------------
     // Submit (user-facing)
@@ -173,6 +178,31 @@ public class CancellationRequestService {
                 if (cr.getRefundEligibleUntil().isBefore(ZonedDateTime.now())) {
                     log.warn("Refund window expired for cancellation request {} but admin proceeding anyway",
                             requestId);
+                }
+                PaymentRecord pr = paymentRecordRepository.findByReservationId(reservation.getId()).orElse(null);
+                if (pr == null) {
+                    throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                            "No payment record found for this reservation — cannot issue a Stripe refund");
+                }
+                try {
+                    RefundCreateParams.Builder refundParams = RefundCreateParams.builder()
+                            .setAmount((long) pr.getAmountCents());
+                    if (pr.getStripeChargeId() != null) {
+                        refundParams.setCharge(pr.getStripeChargeId());
+                    } else if (pr.getStripePaymentIntentId() != null) {
+                        refundParams.setPaymentIntent(pr.getStripePaymentIntentId());
+                    } else {
+                        throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                                "No Stripe charge or payment intent found — cannot issue a Stripe refund");
+                    }
+                    Refund refund = stripeClient.v1().refunds().create(refundParams.build());
+                    pr.setStripeRefundId(refund.getId());
+                    paymentRecordRepository.save(pr);
+                    log.info("Stripe refund {} created for cancellation request {}", refund.getId(), requestId);
+                } catch (StripeException e) {
+                    log.error("Stripe refund failed for cancellation request {}: {}", requestId, e.getMessage());
+                    throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                            "Stripe refund failed: " + e.getMessage());
                 }
                 cancelIfActive(reservation);
                 cr.setStatus(CancellationRequestStatus.APPROVED_WITH_REFUND);

@@ -90,8 +90,8 @@ function ReviewModal({ request, decision, onClose, onConfirm, busy, error }) {
         )}
 
         {refund && (
-          <p>Approve here first, then issue the refund in the matching Stripe dashboard (test or live).
-            The request completes when Stripe confirms the refund.</p>
+          <p>Approving will automatically issue a Stripe refund of {dollars}. The status will update to
+            Completed once Stripe confirms.</p>
         )}
 
         {reject && <p>The existing reservation will not be changed, and no refund will be issued.</p>}
@@ -240,6 +240,7 @@ export default function AdminCancellations() {
                       <th scope="col" className="cancel-reason-cell">Member’s reason</th>
                       <th scope="col">Refund Window</th>
                       <th scope="col">Stripe PI</th>
+                      <th scope="col">Amount</th>
                       <th scope="col">Status</th>
                       <th scope="col" className="cancel-note-cell">Decision notes</th>
                       <th scope="col" className="cancel-actions-cell">Actions</th>
@@ -272,6 +273,11 @@ export default function AdminCancellations() {
                               {truncatePi(r.stripePaymentIntentId)}
                             </span>
                           ) : "—"}
+                        </td>
+                        <td>
+                          {r.refundAmountCents > 0
+                            ? "$" + (r.refundAmountCents / 100).toFixed(2)
+                            : "—"}
                         </td>
                         <td><StatusBadge status={r.status} /></td>
                         <td className="cancel-note-cell">
